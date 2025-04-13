@@ -1,0 +1,44 @@
+package org.socius.sociuswebbackend.mappers;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
+import org.socius.sociuswebbackend.model.dtos.permission.PermissionRequestDto;
+import org.socius.sociuswebbackend.model.dtos.permission.PermissionResponseDto;
+import org.socius.sociuswebbackend.model.entities.PermissionEntity;
+import org.socius.sociuswebbackend.model.entities.RolePermissionEntity;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Mapper for Permission entities and DTOs
+ */
+@Mapper(componentModel = "spring")
+public interface PermissionMapper extends BaseEntityMapper, 
+        GenericMapper<PermissionEntity, PermissionResponseDto, PermissionRequestDto> {
+    
+    @Override
+    PermissionResponseDto entityToDto(PermissionEntity entity);
+    
+    @Override
+    PermissionEntity requestDtoToEntity(PermissionRequestDto dto);
+    
+    @Override
+    void updateEntityFromDto(PermissionRequestDto dto, @MappingTarget PermissionEntity entity);
+    
+    /**
+     * Convert set of RolePermissionEntity to set of PermissionResponseDto
+     */
+    @Named("rolePermissionsToPermissionDtos")
+    default Set<PermissionResponseDto> rolePermissionsToPermissionDtos(Set<RolePermissionEntity> rolePermissions) {
+        if (rolePermissions == null) {
+            return new HashSet<>();
+        }
+        return rolePermissions.stream()
+                .filter(rp -> rp != null && rp.getPermission() != null)
+                .map(rp -> entityToDto(rp.getPermission()))
+                .collect(Collectors.toSet());
+    }
+}
