@@ -1,0 +1,33 @@
+package org.socius.sociuswebbackend.model.dtos.task;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import org.socius.sociuswebbackend.model.enums.TaskStatus;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+public class TaskRequestDto {
+    @NotBlank(message = "Task name must not be empty")
+    private String name;
+    
+    private String description;
+    
+    @NotNull(message = "Deadline must not be null")
+    @Future(message = "Deadline must be in the future")
+    private LocalDate deadline;
+    
+    @NotNull(message = "Status must not be null")
+    private TaskStatus status;
+    
+    private UUID assignedToId;
+}
