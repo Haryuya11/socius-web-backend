@@ -28,17 +28,69 @@ ext {
     set('snippetsDir', file("build/generated-snippets"))
 }
 
+ext {
+    // Define versions for easier updates
+    modelMapperVersion = '3.2.2'
+    mapstructVersion = '1.5.5.Final'
+    hibernateValidatorVersion = '8.0.1.Final'
+    jakartaValidationVersion = '3.0.2'
+    lombokMapstructBindingVersion = '0.2.0'
+    lettuceVersion = '6.3.2.RELEASE'
+}
+
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-security'
+    // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    
+    // Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    
+    // Data Access
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     runtimeOnly 'org.postgresql:postgresql'
+    
+    // Session Management
+    implementation 'org.springframework.session:spring-session-core'
+    implementation 'org.springframework.session:spring-session-jdbc'
+    implementation 'org.springframework.session:spring-session-data-redis'
+    implementation "io.lettuce:lettuce-core:${lettuceVersion}"    
+    
+    // Validation
+    implementation "jakarta.validation:jakarta.validation-api:${jakartaValidationVersion}"
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation "org.hibernate.validator:hibernate-validator:${hibernateValidatorVersion}"
+    
+    // Utilities
+    implementation "org.modelmapper:modelmapper:${modelMapperVersion}"
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    
+    // MapStruct processors
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+    annotationProcessor "org.projectlombok:lombok-mapstruct-binding:${lombokMapstructBindingVersion}"
+    
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Add this block to properly configure the annotation processor order
+tasks.withType(JavaCompile) {
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs += [
+            '-Amapstruct.defaultComponentModel=spring',
+            '-Amapstruct.unmappedTargetPolicy=IGNORE',
+            '-Amapstruct.verbose=true'
+    ]
 }
 
 tasks.named('test') {
