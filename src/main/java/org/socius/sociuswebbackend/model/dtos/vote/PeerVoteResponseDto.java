@@ -1,14 +1,15 @@
 package org.socius.sociuswebbackend.model.dtos.vote;
 
+import org.socius.sociuswebbackend.model.dtos.BaseDto;
+import org.socius.sociuswebbackend.model.dtos.period.PeriodResponseDto;
+import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+import org.socius.sociuswebbackend.model.enums.VoteType;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.socius.sociuswebbackend.model.dtos.BaseDto;
-import org.socius.sociuswebbackend.model.dtos.period.PeriodResponseDto;
-import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
-import org.socius.sociuswebbackend.model.enums.VoteType;
 
 @Data
 @NoArgsConstructor

@@ -1,15 +1,15 @@
 package org.socius.sociuswebbackend.model.dtos.user;
 
+import java.time.LocalDate;
+
+import org.socius.sociuswebbackend.model.dtos.BaseDto;
+import org.socius.sociuswebbackend.model.enums.Gender;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
-import org.socius.sociuswebbackend.model.dtos.BaseDto;
-import org.socius.sociuswebbackend.model.enums.Gender;
-
-import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -19,6 +19,7 @@ import java.time.LocalDate;
 public class UserResponseDto extends BaseDto {
     private String firstName;
     private String lastName;
+    private String fullName;
     private String email;
     private LocalDate birthDate;
     private String imageUrl;

@@ -1,10 +1,10 @@
 package org.socius.sociuswebbackend.model.dtos.auth;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
+
+import lombok.Data;
 
 @Data
 public class SessionInfoDto {

@@ -1,15 +1,15 @@
 package org.socius.sociuswebbackend.model.dtos.account;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.LocalDateTime;
+
+import org.socius.sociuswebbackend.model.dtos.BaseDto;
+import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.socius.sociuswebbackend.model.dtos.BaseDto;
-import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
-
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
