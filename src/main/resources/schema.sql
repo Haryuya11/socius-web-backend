@@ -288,6 +288,7 @@ CREATE TABLE
     user_id                  UUID NOT NULL,
     last_login              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_active                BOOLEAN DEFAULT TRUE,
+    is_default_password                BOOLEAN DEFAULT TRUE,
     password                 TEXT NOT NULL,
     created_at               TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at               TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,

@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.socius.sociuswebbackend.model.dtos.user.UserRequestDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
@@ -14,6 +15,7 @@ public interface UserMapper extends BaseEntityMapper,
         GenericMapper<UserEntity, UserResponseDto, UserRequestDto> {
     
     @Override
+    @Mapping(target = "fullName", ignore = true)
     UserResponseDto entityToDto(UserEntity entity);
     
     @Override

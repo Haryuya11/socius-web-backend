@@ -1,5 +1,7 @@
 package org.socius.sociuswebbackend.config;
 
+import java.time.Duration;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
@@ -7,8 +9,6 @@ import org.springframework.session.web.context.AbstractHttpSessionApplicationIni
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.session.web.http.HttpSessionIdResolver;
-
-import java.time.Duration;
 
 @Configuration
 @EnableRedisHttpSession(maxInactiveIntervalInSeconds = 86400) // 24 hours, same as in properties
