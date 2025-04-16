@@ -46,4 +46,8 @@ public class AccountEntity extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    @Column(name = "is_default_password", nullable = false)
+    @Builder.Default
+    private Boolean isDefaultPassword = true;
 }

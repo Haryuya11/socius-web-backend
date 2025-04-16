@@ -54,7 +54,7 @@ dependencies {
     
     // Session Management
     implementation 'org.springframework.session:spring-session-core'
-    implementation 'org.springframework.session:spring-session-jdbc'
+//    implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.springframework.session:spring-session-data-redis'
     implementation "io.lettuce:lettuce-core:${lettuceVersion}"    
     

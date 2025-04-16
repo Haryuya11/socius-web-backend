@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.UserMapper;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginResponseDto;
+import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.SessionInfoDto;
 import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
 import org.socius.sociuswebbackend.model.entities.AccountEntity;
@@ -29,9 +30,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -62,6 +65,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Autowired
     private WebSocketService webSocketService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public LoginResponseDto login(LoginRequestDto loginRequest, HttpServletRequest request,
@@ -96,15 +102,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
 
             UserEntity user = userOptional.get();
-
-            // 5. Cập nhật thời gian đăng nhập cuối cùng
             AccountEntity account = user.getAccount();
+
+            // 5. Kiểm tra nếu người dùng đang sử dụng mật khẩu mặc định
+            if (account != null && account.getIsDefaultPassword() != null && account.getIsDefaultPassword()) {
+                responseDto.setPasswordChangeRequired(true);
+            }
+
+            // 6. Cập nhật thời gian đăng nhập cuối cùng
             if (account != null) {
                 account.setLastLogin(LocalDateTime.now());
                 accountRepository.save(account);
             }
 
-            // 6. Lưu thông tin vào session
+            // 7. Lưu thông tin vào session
             session.setAttribute(SESSION_USER_KEY, user.getId());
             if (user.getEmploymentDetail() != null) {
                 EmploymentDetailEntity employmentDetail = user.getEmploymentDetail();
@@ -118,7 +129,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 }
             }
 
-            // 7. Lấy danh sách các quyền của người dùng
+            // 8. Lấy danh sách các quyền của người dùng
             Set<String> permissions = new HashSet<>();
             if (user.getEmploymentDetail() != null && user.getEmploymentDetail().getRole() != null) {
                 permissions = user.getEmploymentDetail().getRole().getRolePermissions().stream()
@@ -127,7 +138,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                         .collect(Collectors.toSet());
             }
 
-            // 8. Lưu thông tin lịch sử đăng nhập
+            // 9. Lưu thông tin lịch sử đăng nhập
             String ipAddress = getClientIp(request);
             String deviceInfo = request.getHeader("User-Agent");
 
@@ -140,10 +151,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             loginHistoryService.createLoginHistory(historyDto);
 
-            // 9. Gửi thông báo đến WebSocket
+            // 10. Gửi thông báo đến WebSocket
             webSocketService.sendUserLoginNotification(user.getFirstName() + " " + user.getLastName());
 
-            // 10. Tạo đối tượng phản hồi
+            // 11. Tạo đối tượng phản hồi
             responseDto.setUser(userMapper.entityToDto(user));
             responseDto.setAuthenticated(true);
             responseDto.setSessionId(session.getId());
@@ -230,5 +241,59 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return xForwardedForHeader.split(",")[0];
         }
         return request.getRemoteAddr();
+    }
+
+    @Override
+    @Transactional
+    public boolean changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request) {
+        try {
+            if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
+                throw new IllegalArgumentException("Password và Confirm Password không khớp");
+            }
+
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                return false;
+            }
+
+            UUID userId = (UUID) session.getAttribute(SESSION_USER_KEY);
+            if (userId == null) {
+                return false;
+            }
+
+            Optional<UserEntity> userOptional = userRepository.findById(userId);
+            if (userOptional.isEmpty()) {
+                return false;
+            }
+
+            UserEntity user = userOptional.get();
+            Optional<AccountEntity> accountOptional = accountRepository.findByUser(user);
+
+            if (accountOptional.isEmpty()) {
+                return false;
+            }
+
+            AccountEntity account = accountOptional.get();
+
+            // Kiểm tra mật khẩu hiện tại
+            if (!passwordEncoder.matches(requestDto.getCurrentPassword(), account.getPassword())) {
+                return false;
+            }
+
+            // Mã hóa và lưu mật khẩu mới
+            account.setPassword(passwordEncoder.encode(requestDto.getNewPassword()));
+
+            // Nếu đang đổi mật khẩu mặc định, cập nhật trạng thái isDefaultPassword
+            if (account.getIsDefaultPassword()) {
+                account.setIsDefaultPassword(false);
+            }
+
+            accountRepository.save(account);
+
+            return true;
+        } catch (Exception e) {
+            logger.error("Lỗi khi đổi mật khẩu: {}", e.getMessage());
+            return false;
+        }
     }
 }

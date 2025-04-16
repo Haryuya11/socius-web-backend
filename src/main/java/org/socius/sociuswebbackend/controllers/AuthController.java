@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.controllers;
 
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginResponseDto;
+import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.SessionInfoDto;
 import org.socius.sociuswebbackend.services.AuthenticationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
-
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -28,9 +28,10 @@ public class AuthController {
      * Xác thực người dùng và tạo phiên đăng nhập
      * 
      * @param loginRequest Thông tin đăng nhập (email và mật khẩu)
-     * @param request Request HTTP hiện tại
-     * @param response Response HTTP hiện tại
-     * @return Thông tin phản hồi đăng nhập bao gồm thông tin người dùng và trạng thái xác thực
+     * @param request      Request HTTP hiện tại
+     * @param response     Response HTTP hiện tại
+     * @return Thông tin phản hồi đăng nhập bao gồm thông tin người dùng và trạng
+     *         thái xác thực
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(
@@ -49,7 +50,7 @@ public class AuthController {
     /**
      * Đăng xuất người dùng và hủy phiên hiện tại
      * 
-     * @param request Request HTTP hiện tại
+     * @param request  Request HTTP hiện tại
      * @param response Response HTTP hiện tại
      * @return HTTP 200 OK sau khi đăng xuất thành công
      */
@@ -63,7 +64,8 @@ public class AuthController {
      * Kiểm tra thông tin phiên hiện tại
      * 
      * @param request Request HTTP hiện tại
-     * @return Thông tin phiên nếu người dùng đã xác thực, hoặc 401 Unauthorized nếu chưa
+     * @return Thông tin phiên nếu người dùng đã xác thực, hoặc 401 Unauthorized nếu
+     *         chưa
      */
     @GetMapping("/session")
     public ResponseEntity<SessionInfoDto> checkSession(HttpServletRequest request) {
@@ -72,6 +74,31 @@ public class AuthController {
             return ResponseEntity.ok(sessionInfo);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    /**
+     * 
+     * @param requestDto Thông tin yêu cầu đổi mật khẩu bao gồm mật khẩu hiện tại và
+     *                   mật khẩu mới
+     * @param request    Request HTTP hiện tại
+     * @return HTTP 200 OK nếu đổi mật khẩu thành công, hoặc 400 Bad Request nếu
+     *         mật khẩu hiện tại không đúng hoặc mật khẩu mới không khớp
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @Valid @RequestBody PasswordChangeRequestDto requestDto,
+            HttpServletRequest request) {
+        if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
+            return ResponseEntity.badRequest().body("Password vầ Confirm password không khớp");
+        }
+
+        boolean success = authenticationService.changePassword(requestDto, request);
+
+        if (success) {
+            return ResponseEntity.ok("Thay đổi mật khẩu thành công");
+        } else {
+            return ResponseEntity.badRequest().body("Mật khẩu hiện tại không đúng");
         }
     }
 }

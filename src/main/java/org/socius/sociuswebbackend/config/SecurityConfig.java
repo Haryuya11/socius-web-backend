@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,6 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Autowired
@@ -37,24 +39,27 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/logout", "/error", "/ws/**").permitAll()
-                        .requestMatchers("/api/session/active-users").hasAuthority("CAN")
+                        .requestMatchers("/api/auth/login", "/api/auth/logout", "/api/auth/change-password", "api/auth/session").permitAll()
+                        .requestMatchers("/error", "/ws/**").permitAll()
+                        .requestMatchers("/api/session/active-users").permitAll()
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/master-data/**").authenticated()
                         .requestMatchers("/api/public/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .maximumSessions(1) // Giới hạn số phiên đăng nhập đồng thời là 1
-                        .expiredUrl("/api/auth/session-expired"));
-                // .formLogin(form -> form
-                //         .loginProcessingUrl("/form-login")
-                //         .usernameParameter("email")
-                //         .passwordParameter("password")
-                //         .permitAll())
-                // .logout(logout -> logout
-                //         .logoutUrl("/form-logout")
-                //         .logoutSuccessUrl("/api/auth/logout")
-                //         .invalidateHttpSession(true)
-                //         .deleteCookies("SOCIUS_SESSION")
-                //         .permitAll());
+                        .expiredUrl("/api/auth/session-expired"))
+                 .formLogin(form -> form
+                         .loginProcessingUrl("/form-login")
+                         .usernameParameter("email")
+                         .passwordParameter("password")
+                         .permitAll())
+                 .logout(logout -> logout
+                         .logoutUrl("/form-logout")
+                         .logoutSuccessUrl("/api/auth/logout")
+                         .invalidateHttpSession(true)
+                         .deleteCookies("SOCIUS_SESSION")
+                         .permitAll());
 
         return http.build();
     }

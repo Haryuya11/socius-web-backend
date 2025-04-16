@@ -1,16 +1,23 @@
 package org.socius.sociuswebbackend.model.dtos.employee;
 
-import lombok.Data;
-import org.socius.sociuswebbackend.model.enums.Gender;
-import org.socius.sociuswebbackend.model.enums.WorkingStatus;
-import jakarta.validation.constraints.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import org.socius.sociuswebbackend.model.enums.Gender;
+import org.socius.sociuswebbackend.model.enums.WorkingStatus;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
+import lombok.Data;
+
 @Data
-public class EmployeeOnboardingRequestDto {
+public class EmployeeCreationRequestDto {
     // Thông tin cá nhân
     @NotBlank(message = "First name must not be empty")
     private String firstName;
@@ -37,7 +44,7 @@ public class EmployeeOnboardingRequestDto {
     private String address;
     
     // Thông tin công việc
-    @NotNull(message = "Hỉe date must not be empty")
+    @NotNull(message = "Hire date must not be empty")
     @PastOrPresent(message = "Hire date must be today or in the past")
     private LocalDate hireDate;
     
@@ -58,7 +65,4 @@ public class EmployeeOnboardingRequestDto {
     
     private WorkingStatus workingStatus = WorkingStatus.active;
     
-    // Thông tin tài khoản
-    @NotBlank(message = "Mật khẩu không được để trống")
-    private String password;
 }

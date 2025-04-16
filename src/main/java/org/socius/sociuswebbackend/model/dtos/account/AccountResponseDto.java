@@ -20,4 +20,5 @@ public class AccountResponseDto extends BaseDto {
     private UserResponseDto user;
     private LocalDateTime lastLogin;
     private Boolean isActive;
+    private Boolean isDefaultPassword;
 }

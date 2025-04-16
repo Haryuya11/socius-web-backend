@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.services;
 
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginResponseDto;
+import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.SessionInfoDto;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,4 +43,13 @@ public interface AuthenticationService {
      * @return true nếu người dùng đã được xác thực, false nếu chưa
      */
     boolean isAuthenticated(HttpServletRequest request);
+
+    /**
+     * Đổi mật khẩu lần đầu sau khi đăng nhập với mật khẩu mặc định
+     * 
+     * @param requestDto Thông tin mật khẩu mới
+     * @param request Request HTTP hiện tại
+     * @return true nếu thành công, false nếu thất bại
+     */
+    boolean changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request);
 }
