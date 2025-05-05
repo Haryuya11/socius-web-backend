@@ -3,7 +3,7 @@ package org.socius.sociuswebbackend.model.entities;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,8 +14,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@ToString(exclude = {"employmentDetails", "employmentHistories", "rolePermissions"})
+@SuperBuilder
 public class RoleEntity extends BaseEntity {
 
     @NotBlank(message = "Role name must not be empty")
@@ -25,18 +24,7 @@ public class RoleEntity extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
-    private Set<EmploymentDetailEntity> employmentDetails = new HashSet<>();
-
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
-    private Set<EmploymentHistoryEntity> employmentHistories = new HashSet<>();
-
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<RolePermissionEntity> rolePermissions = new HashSet<>();
 }

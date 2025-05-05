@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.model.dtos.target;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 public class TargetRequestDto {
     @NotBlank(message = "Target name must not be empty")
     private String name;

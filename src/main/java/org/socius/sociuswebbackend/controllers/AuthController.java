@@ -26,12 +26,12 @@ public class AuthController {
 
     /**
      * Xác thực người dùng và tạo phiên đăng nhập
-     * 
+     *
      * @param loginRequest Thông tin đăng nhập (email và mật khẩu)
      * @param request      Request HTTP hiện tại
      * @param response     Response HTTP hiện tại
      * @return Thông tin phản hồi đăng nhập bao gồm thông tin người dùng và trạng
-     *         thái xác thực
+     * thái xác thực
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(
@@ -49,23 +49,28 @@ public class AuthController {
 
     /**
      * Đăng xuất người dùng và hủy phiên hiện tại
-     * 
+     *
      * @param request  Request HTTP hiện tại
      * @param response Response HTTP hiện tại
      * @return HTTP 200 OK sau khi đăng xuất thành công
      */
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+
+        if (!authenticationService.isAuthenticated(request)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
         authenticationService.logout(request, response);
         return ResponseEntity.ok().build();
     }
 
     /**
      * Kiểm tra thông tin phiên hiện tại
-     * 
+     *
      * @param request Request HTTP hiện tại
      * @return Thông tin phiên nếu người dùng đã xác thực, hoặc 401 Unauthorized nếu
-     *         chưa
+     * chưa
      */
     @GetMapping("/session")
     public ResponseEntity<SessionInfoDto> checkSession(HttpServletRequest request) {
@@ -78,12 +83,11 @@ public class AuthController {
     }
 
     /**
-     * 
      * @param requestDto Thông tin yêu cầu đổi mật khẩu bao gồm mật khẩu hiện tại và
      *                   mật khẩu mới
      * @param request    Request HTTP hiện tại
      * @return HTTP 200 OK nếu đổi mật khẩu thành công, hoặc 400 Bad Request nếu
-     *         mật khẩu hiện tại không đúng hoặc mật khẩu mới không khớp
+     * mật khẩu hiện tại không đúng hoặc mật khẩu mới không khớp
      */
     @PostMapping("/change-password")
     public ResponseEntity<?> changePassword(

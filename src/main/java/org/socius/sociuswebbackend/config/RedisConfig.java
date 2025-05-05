@@ -10,8 +10,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.session.data.redis.RedisIndexedSessionRepository;
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
+
+import java.time.Duration;
 
 @Configuration
+@EnableRedisHttpSession()
 public class RedisConfig {
     @Value("${spring.data.redis.host}")
     private String redisHost;
@@ -47,11 +51,11 @@ public class RedisConfig {
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         return template;
     }
-    
+
     @Bean
     public RedisIndexedSessionRepository redisIndexedSessionRepository(RedisTemplate<String, Object> redisTemplate) {
         RedisIndexedSessionRepository repository = new RedisIndexedSessionRepository(redisTemplate);
-        repository.setDefaultMaxInactiveInterval(86400); // 24 giờ
+        repository.setDefaultMaxInactiveInterval(Duration.ofMinutes(30)); // 30 minutes
         return repository;
     }
 }

@@ -1,18 +1,17 @@
 package org.socius.sociuswebbackend.model.dtos.notification;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
-import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 public class NotificationRecipientRequestDto {
     @NotNull(message = "Notification ID must not be null")
     private UUID notificationId;

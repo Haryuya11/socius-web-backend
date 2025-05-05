@@ -1,18 +1,18 @@
 package org.socius.sociuswebbackend.model.dtos.vote;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.enums.VoteType;
-import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 public class PeerVoteRequestDto {
     @NotNull(message = "Voter ID must not be null")
     private UUID voterId;

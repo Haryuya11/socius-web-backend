@@ -54,4 +54,6 @@ public class EntityMappingUtil {
     public PermissionEntity mapPermissionIdToEntity(UUID id) {
         return mapIdToEntity(id, PermissionEntity.class);
     }
+
+    
 }

@@ -1,22 +1,24 @@
 package org.socius.sociuswebbackend.services;
 
-import java.util.List;
-
-import org.socius.sociuswebbackend.model.dtos.user.OnlineUserDto;
+import java.util.Set;
+import java.util.UUID;
 
 public interface SessionManagementService {
+
     /**
-     * Lấy danh sách người dùng đang hoạt động (đang đăng nhập) trong hệ thống
-     * 
-     * @return Danh sách người dùng đang online
+     * Lấy danh sách các phiên (session) của một người dùng có role cụ thể
+     *
+     * @param roleId ID của role
+     * @return Danh sách các session của người dùng
      */
-    List<OnlineUserDto> getOnlineUsers();
-    
+    Set<String> getSessionsByRoleId(UUID roleId);
+
     /**
-     * Kiểm tra xem một người dùng có đang hoạt động hay không
-     * 
-     * @param userId ID của người dùng cần kiểm tra
-     * @return true nếu người dùng đang online, false nếu không
+     * Hủy phiên làm việc theo sessionId
+     * @param sessionId ID của phiên làm việc cần hủy
+     * @return true nếu hủy thành công, false nếu không tìm thấy phiên làm việc
      */
-    boolean isUserActive(String userId);
+    boolean invalidateSession(String sessionId);
+
+
 }

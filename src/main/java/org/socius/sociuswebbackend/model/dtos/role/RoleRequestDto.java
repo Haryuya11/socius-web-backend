@@ -14,7 +14,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 public class RoleRequestDto {
     @NotBlank(message = "Role name must not be empty")
     private String name;

@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.model.dtos.user;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -12,7 +13,7 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 public class UserRequestDto {
     @NotBlank(message = "First name must not be empty")
     private String firstName;
