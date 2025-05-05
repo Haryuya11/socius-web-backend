@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.model.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SuperBuilder
 @EqualsAndHashCode(of = "id")
 public abstract class BaseEntity {
     @Id

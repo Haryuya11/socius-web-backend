@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.model.dtos.salary;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 public class SalaryHistoryRequestDto {
     @NotNull(message = "User ID must not be null")
     private UUID userId;

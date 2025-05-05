@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.repositories;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.socius.sociuswebbackend.model.entities.RoleEntity;
@@ -13,5 +14,12 @@ public interface RoleRepository extends JpaRepository<RoleEntity, UUID> {
      * @return true nếu vai trò tồn tại, false nếu không tồn tại
      */
     boolean existsByName(String name);
-    
+
+    /**
+     * Tìm vai trò theo tên
+     *
+     * @param adminRoleName
+     * @return Optional<RoleEntity> nếu tìm thấy vai trò, Optional.empty() nếu không tìm thấy
+     */
+    Optional<RoleEntity> findByName(String adminRoleName);
 }

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.enums.Gender;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -21,7 +22,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @ToString(exclude = {"account", "employmentDetail", "employmentHistories", "salaryHistories", 
     "assignedTasks", "assignedTargets", "receivedReviews", "givenReviews", 
     "givenVotes", "receivedVotes", "sentNotifications", "receivedNotifications",
@@ -145,7 +146,8 @@ public class UserEntity extends BaseEntity {
     }
 
     @PrePersist
-    @PreUpdate void validateAge() {
+    @PreUpdate
+    void validateAge() {
         if (birthDate != null && birthDate.isAfter(LocalDate.now().minusYears(18))) {
             throw new IllegalArgumentException("User must be at least 18 years old");
         }

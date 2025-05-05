@@ -1,12 +1,12 @@
 package org.socius.sociuswebbackend.model.dtos.performance;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -14,7 +14,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 public class PerformanceReviewRequestDto {
     @NotNull(message = "Employee ID must not be null")
     private UUID employeeId;

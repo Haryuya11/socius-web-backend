@@ -12,20 +12,22 @@ import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * Mapper for Role entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {PermissionMapper.class})
-public interface RoleMapper extends BaseEntityMapper, 
+public interface RoleMapper extends BaseEntityMapper,
         GenericMapper<RoleEntity, RoleResponseDto, RoleRequestDto> {
-    
+
     @Override
     @Mapping(target = "permissions", ignore = true)
     RoleResponseDto entityToDto(RoleEntity entity);
-    
+
     /**
      * Process permissions after entity mapping
      */
@@ -35,24 +37,24 @@ public interface RoleMapper extends BaseEntityMapper,
             dto.setPermissions(new HashSet<>());
             return;
         }
-        
+
         PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
         Set<PermissionResponseDto> permissions = entity.getRolePermissions().stream()
-            .filter(rp -> rp != null && rp.getPermission() != null)
-            .map(rp -> permissionMapper.entityToDto(rp.getPermission()))
-            .collect(Collectors.toSet());
-            
+                .filter(rp -> rp != null && rp.getPermission() != null)
+                .map(rp -> permissionMapper.entityToDto(rp.getPermission()))
+                .collect(Collectors.toSet());
+
         dto.setPermissions(permissions);
     }
-    
+
     @Override
     @Mapping(target = "rolePermissions", ignore = true)
     RoleEntity requestDtoToEntity(RoleRequestDto dto);
-    
+
     @Override
     @Mapping(target = "rolePermissions", ignore = true)
     void updateEntityFromDto(RoleRequestDto dto, @MappingTarget RoleEntity entity);
-    
+
     /**
      * Post-processing after entity update to handle permissions
      */
@@ -64,23 +66,49 @@ public interface RoleMapper extends BaseEntityMapper,
             } else {
                 entity.getRolePermissions().clear();
             }
-            
+
             EntityMappingUtil mappingUtil = getEntityMappingUtil();
-            
+
             dto.getPermissionIds().stream()
-                .filter(permissionId -> permissionId != null)
-                .forEach(permissionId -> {
-                    PermissionEntity permission = mappingUtil.mapPermissionIdToEntity(permissionId);
-                    
-                    RolePermissionId id = new RolePermissionId(entity.getId(), permissionId);
-                    RolePermissionEntity rolePermission = RolePermissionEntity.builder()
-                        .id(id)
-                        .role(entity)
-                        .permission(permission)
-                        .build();
-                        
-                    entity.getRolePermissions().add(rolePermission);
-                });
+                    .filter(permissionId -> permissionId != null)
+                    .forEach(permissionId -> {
+                        PermissionEntity permission = mappingUtil.mapPermissionIdToEntity(permissionId);
+
+                        RolePermissionId id = new RolePermissionId(entity.getId(), permissionId);
+                        RolePermissionEntity rolePermission = RolePermissionEntity.builder()
+                                .id(id)
+                                .role(entity)
+                                .permission(permission)
+                                .build();
+
+                        entity.getRolePermissions().add(rolePermission);
+                    });
         }
+    }
+
+    /**
+     * Create RolePermission entities from permission IDs
+     */
+    default Set<RolePermissionEntity> createRolePermissions(RoleEntity role, Set<UUID> permissionIds) {
+        if (permissionIds == null || permissionIds.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        EntityMappingUtil mappingUtil = ApplicationContextHelper.getBean(EntityMappingUtil.class);
+        return permissionIds.stream()
+                .map(id -> {
+                    PermissionEntity permission = mappingUtil.mapPermissionIdToEntity(id);
+                    if (permission == null) {
+                        return null;
+                    }
+
+                    RolePermissionEntity rolePermission = new RolePermissionEntity();
+                    rolePermission.setId(new RolePermissionId(role.getId(), permission.getId()));
+                    rolePermission.setRole(role);
+                    rolePermission.setPermission(permission);
+                    return rolePermission;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 }

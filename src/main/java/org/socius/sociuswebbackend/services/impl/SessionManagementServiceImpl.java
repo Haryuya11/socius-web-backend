@@ -1,16 +1,12 @@
 package org.socius.sociuswebbackend.services.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.socius.sociuswebbackend.model.dtos.user.OnlineUserDto;
-import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.services.RBACRedisService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,59 +18,60 @@ import org.springframework.stereotype.Service;
 public class SessionManagementServiceImpl implements SessionManagementService {
 
     private static final Logger logger = LoggerFactory.getLogger(SessionManagementServiceImpl.class);
-    private static final String SESSION_USER_KEY = "USER_ID";
 
     @Autowired
     private RedisIndexedSessionRepository sessionRepository;
-    
+
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
-    
+
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ConfigService configService;
+
+    @Autowired
+    private RBACRedisService rbacRedisService;
+
     @Override
-    public List<OnlineUserDto> getOnlineUsers() {
-        List<OnlineUserDto> onlineUsers = new ArrayList<>();
-        
+    public Set<String> getSessionsByRoleId(UUID roleId) {
+        Set<String> sessionIds = new HashSet<>();
         try {
-            // Lấy tất cả các session keys từ Redis
-            Set<String> sessionIds = (Set<String>) sessionRepository.findByPrincipalName("*");
-            
-            for (String sessionId : sessionIds) {
-                Session session = sessionRepository.findById(sessionId);
-                
-                if (session != null) {
-                    UUID userId = session.getAttribute(SESSION_USER_KEY);
-                    
-                    if (userId != null) {
-                        Optional<UserEntity> userOpt = userRepository.findById(userId);
-                        
-                        if (userOpt.isPresent()) {
-                            UserEntity user = userOpt.get();
-                            
-                            OnlineUserDto onlineUser = OnlineUserDto.builder()
-                                    .userId(userId)
-                                    .fullName(user.getFirstName() + " " + user.getLastName())
-                                    .imageUrl(user.getImageUrl())
-                                    .build();
-                            
-                            onlineUsers.add(onlineUser);
-                        }
-                    }
-                }
+            String roleUserPrefix = configService.getString("rbac.role.users.prefix", "role:users:");
+            String roleKey = roleUserPrefix + roleId.toString();
+            sessionIds = (Set<String>) (Set<?>) redisTemplate.opsForSet().members(roleKey);
+            if (sessionIds != null) {
+                logger.info("Đã tìm thấy {} phiên cho roleId: {}", sessionIds.size(), roleId);
+            } else {
+                logger.info("Không tìm thấy phiên nào cho roleId: {}", roleId);
             }
         } catch (Exception e) {
-            logger.error("Lỗi khi lấy danh sách người dùng đang online", e);
+            logger.error("Lỗi khi lấy danh sách phiên cho roleId {}: {}", roleId, e.getMessage(), e);
         }
-        
-        return onlineUsers;
+        return sessionIds;
     }
 
     @Override
-    public boolean isUserActive(String userId) {
-        List<OnlineUserDto> activeUsers = getOnlineUsers();
-        return activeUsers.stream()
-                .anyMatch(user -> user.getUserId().toString().equals(userId));
+    public boolean invalidateSession(String sessionId) {
+        try {
+            Session session = sessionRepository.findById(sessionId);
+            if (session == null) {
+                logger.warn("Không tìm thấy phiên với sessionId: {}", sessionId);
+                return false;
+            }
+
+            sessionRepository.deleteById(sessionId);
+            rbacRedisService.deleteUserPermissions(sessionId);
+            String sessionPrefix = "spring:session:";
+            redisTemplate.delete(sessionPrefix + "sessions:" + sessionId);
+            redisTemplate.delete(sessionPrefix + "sessions:expires:" + sessionId);
+
+            logger.info("Đã xóa phiên {} khỏi Redis", sessionId);
+            return true;
+        } catch (Exception e) {
+            logger.error("Lỗi khi hủy phiên {}: {}", sessionId, e.getMessage(), e);
+            return false;
+        }
     }
 }

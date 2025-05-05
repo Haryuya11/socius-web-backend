@@ -38,19 +38,36 @@ public class MasterDataController {
     private TeamService teamService;
     
     // POSITION ENDPOINTS
-    
+
+    /**
+     * Lấy danh sách tất cả các vị trí
+     *
+     * @return Danh sách các vị trí
+     */
     @GetMapping("/positions")
     public ResponseEntity<List<PositionResponseDto>> getAllPositions() {
         List<PositionResponseDto> positions = positionService.findAll();
         return ResponseEntity.ok(positions);
     }
-    
+
+    /**
+     * Lấy thông tin một vị trí theo ID
+     *
+     * @param id ID của vị trí cần tìm
+     * @return Thông tin vị trí nếu tìm thấy, null nếu không tìm thấy
+     */
     @GetMapping("/positions/{id}")
     public ResponseEntity<PositionResponseDto> getPositionById(@PathVariable UUID id) {
         PositionResponseDto position = positionService.findById(id);
         return ResponseEntity.ok(position);
     }
-    
+
+    /**
+     * Tạo một vị trí mới
+     *
+     * @param requestDto Thông tin yêu cầu tạo vị trí
+     * @return Thông tin vị trí đã được tạo
+     */
     @PostMapping("/positions")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<PositionResponseDto> createPosition(@Valid @RequestBody PositionRequestDto requestDto) {
@@ -59,19 +76,36 @@ public class MasterDataController {
     }
     
     // DEPARTMENT ENDPOINTS
-    
+
+    /**
+     * Lấy danh sách tất cả các phòng ban
+     *
+     * @return Danh sách các phòng ban
+     */
     @GetMapping("/departments")
     public ResponseEntity<List<DepartmentResponseDto>> getAllDepartments() {
         List<DepartmentResponseDto> departments = departmentService.findAll();
         return ResponseEntity.ok(departments);
     }
-    
+
+    /**
+     * Lấy thông tin một phòng ban theo ID
+     *
+     * @param id ID của phòng ban cần tìm
+     * @return Thông tin phòng ban nếu tìm thấy, null nếu không tìm thấy
+     */
     @GetMapping("/departments/{id}")
     public ResponseEntity<DepartmentResponseDto> getDepartmentById(@PathVariable UUID id) {
         DepartmentResponseDto department = departmentService.findById(id);
         return ResponseEntity.ok(department);
     }
-    
+
+    /**
+     * Tạo một phòng ban mới
+     *
+     * @param requestDto Thông tin yêu cầu tạo phòng ban
+     * @return Thông tin phòng ban đã được tạo
+     */
     @PostMapping("/departments")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<DepartmentResponseDto> createDepartment(@Valid @RequestBody DepartmentRequestDto requestDto) {
@@ -80,19 +114,36 @@ public class MasterDataController {
     }
     
     // TEAM ENDPOINTS
-    
+
+    /**
+     * Lấy danh sách tất cả các team
+     *
+     * @return Danh sách các team
+     */
     @GetMapping("/teams")
     public ResponseEntity<List<TeamResponseDto>> getAllTeams() {
         List<TeamResponseDto> teams = teamService.findAll();
         return ResponseEntity.ok(teams);
     }
-    
+
+    /**
+     * Lấy thông tin một team theo ID
+     *
+     * @param id ID của team cần tìm
+     * @return Thông tin team nếu tìm thấy, null nếu không tìm thấy
+     */
     @GetMapping("/teams/{id}")
     public ResponseEntity<TeamResponseDto> getTeamById(@PathVariable UUID id) {
         TeamResponseDto team = teamService.findById(id);
         return ResponseEntity.ok(team);
     }
-    
+
+    /**
+     * Tạo một team mới
+     *
+     * @param requestDto Thông tin yêu cầu tạo team
+     * @return Thông tin team đã được tạo
+     */
     @PostMapping("/teams")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<TeamResponseDto> createTeam(@Valid @RequestBody TeamRequestDto requestDto) {
@@ -101,19 +152,36 @@ public class MasterDataController {
     }
     
     // ROLE ENDPOINTS
-    
+
+    /**
+     * Lấy danh sách tất cả các vai trò
+     *
+     * @return Danh sách các vai trò
+     */
     @GetMapping("/roles")
     public ResponseEntity<List<RoleResponseDto>> getAllRoles() {
         List<RoleResponseDto> roles = roleService.findAll();
         return ResponseEntity.ok(roles);
     }
-    
+
+    /**
+     * Lấy thông tin một vai trò theo ID
+     *
+     * @param id ID của vai trò cần tìm
+     * @return Thông tin vai trò nếu tìm thấy, null nếu không tìm thấy
+     */
     @GetMapping("/roles/{id}")
     public ResponseEntity<RoleResponseDto> getRoleById(@PathVariable UUID id) {
         RoleResponseDto role = roleService.findById(id);
         return ResponseEntity.ok(role);
     }
-    
+
+    /**
+     * Tạo một vai trò mới
+     *
+     * @param requestDto Thông tin yêu cầu tạo vai trò
+     * @return Thông tin vai trò đã được tạo
+     */
     @PostMapping("/roles")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<RoleResponseDto> createRole(@Valid @RequestBody RoleRequestDto requestDto) {

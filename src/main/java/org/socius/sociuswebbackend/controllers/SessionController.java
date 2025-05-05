@@ -1,8 +1,10 @@
 package org.socius.sociuswebbackend.controllers;
 
 import java.util.List;
+import java.util.UUID;
 
-import org.socius.sociuswebbackend.model.dtos.user.OnlineUserDto;
+import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
+import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,16 +20,18 @@ public class SessionController {
     @Autowired
     private SessionManagementService sessionManagementService;
 
+    @Autowired
+    private OnlineUserService onlineUserService;
+
     /**
-     * Lấy danh sách người dùng đang hoạt động trong hệ thống
-     * Endpoint này yêu cầu quyền "CAN" để truy cập (được cấu hình trong SecurityConfig)
-     * 
-     * @return Danh sách người dùng đang online
+     * Lấy danh sách người dùng đang online
+     *
+     * @return Danh sách người dùng online
      */
-    @GetMapping("/active-users")
-    public ResponseEntity<List<OnlineUserDto>> getOnlineUsers() {
-        List<OnlineUserDto> activeUsers = sessionManagementService.getOnlineUsers();
-        return ResponseEntity.ok(activeUsers);
+    @GetMapping("/online-users")
+    public ResponseEntity<List<OnlineUserStatusDto>> getOnlineUsers() {
+        List<OnlineUserStatusDto> onlineUsers = onlineUserService.getOnlineUsers();
+        return ResponseEntity.ok(onlineUsers);
     }
 
     /**
@@ -37,8 +41,8 @@ public class SessionController {
      * @return true nếu người dùng đang online, false nếu không
      */
     @GetMapping("/user/{userId}/status")
-    public ResponseEntity<Boolean> checkUserStatus(@PathVariable String userId) {
-        boolean isActive = sessionManagementService.isUserActive(userId);
-        return ResponseEntity.ok(isActive);
+    public ResponseEntity<Boolean> checkUserStatus(@PathVariable UUID userId) {
+        boolean isOnline = onlineUserService.isUserOnline(userId);
+        return ResponseEntity.ok(isOnline);
     }
 }

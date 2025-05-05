@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.enums.NotificationType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -17,7 +18,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @ToString(exclude = {"sender", "recipients"})
 public class NotificationEntity extends BaseEntity {
 

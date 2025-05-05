@@ -1,6 +1,9 @@
 package org.socius.sociuswebbackend.model.dtos.performance;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.socius.sociuswebbackend.model.enums.PeriodType;
 
 import java.math.BigDecimal;
@@ -8,6 +11,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class PerformanceReviewSummaryDto {
     private UUID employeeId;
     private String employeeName;

@@ -8,6 +8,7 @@ import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.*;
 import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.services.AdminService;
+import org.socius.sociuswebbackend.services.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,6 @@ import java.util.Optional;
 public class AdminServiceImpl implements AdminService {
     
     private static final Logger logger = LoggerFactory.getLogger(AdminServiceImpl.class);
-    private static final String DEFAULT_PASSWORD = "1";
 
     @Autowired
     private UserRepository userRepository;
@@ -47,6 +47,9 @@ public class AdminServiceImpl implements AdminService {
     
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ConfigService configService;
 
     @Override
     @Transactional
@@ -95,11 +98,12 @@ public class AdminServiceImpl implements AdminService {
         
         // Lưu người dùng
         user = userRepository.save(user);
+        String defaultPassword = configService.getString("default.password", "1");
         
         // Tạo tài khoản với mật khẩu mặc định
         AccountEntity account = new AccountEntity();
         account.setUser(user);
-        account.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
+        account.setPassword(passwordEncoder.encode(defaultPassword));
         account.setIsActive(true);
         account.setIsDefaultPassword(true);
         

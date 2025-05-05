@@ -4,9 +4,16 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class SessionInfoDto {
     private UUID userId;
     private String username;
@@ -18,5 +25,5 @@ public class SessionInfoDto {
     private LocalDateTime sessionExpiryTime;
     private String ipAddress;
     private String deviceInfo;
-    private Set<String> permissions;
+    private RoleResponseDto role;
 }

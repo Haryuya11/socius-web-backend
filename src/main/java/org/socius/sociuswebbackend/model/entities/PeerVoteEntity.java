@@ -3,6 +3,7 @@ package org.socius.sociuswebbackend.model.entities;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.enums.VoteType;
 
 @Entity
@@ -11,7 +12,7 @@ import org.socius.sociuswebbackend.model.enums.VoteType;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @ToString(exclude = {"voter", "votedEmployee", "period"})
 public class PeerVoteEntity extends BaseEntity {
 

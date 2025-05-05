@@ -1,7 +1,7 @@
 package org.socius.sociuswebbackend.config;
 
-import java.time.Duration;
-
+import org.socius.sociuswebbackend.services.ConfigService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
@@ -11,21 +11,27 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.session.web.http.HttpSessionIdResolver;
 
 @Configuration
-@EnableRedisHttpSession(maxInactiveIntervalInSeconds = 86400) // 24 hours, same as in properties
+@EnableRedisHttpSession()
 public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
+
+    @Autowired
+    private ConfigService configService;
 
     @Bean
     public HttpSessionIdResolver httpSessionIdResolver() {
         CookieHttpSessionIdResolver resolver = new CookieHttpSessionIdResolver();
         DefaultCookieSerializer cookieSerializer = new DefaultCookieSerializer();
-        cookieSerializer.setCookieName("SOCIUS_SESSION");
-        cookieSerializer.setCookiePath("/");
-        cookieSerializer.setCookieMaxAge((int) Duration.ofDays(1).getSeconds()); // 24 hours
-        cookieSerializer.setUseSecureCookie(true); // Set to true if using HTTPS
-        cookieSerializer.setUseBase64Encoding(false);
-        cookieSerializer.setUseHttpOnlyCookie(true);
-        cookieSerializer.setSameSite("Lax");
+
+        cookieSerializer.setCookieName(configService.getString("cookie.name", "SOCIUS_SESSION"));
+        cookieSerializer.setCookiePath(configService.getString("cookie.path", "/"));
+        cookieSerializer.setSameSite(configService.getString("cookie.same.site", "Lax"));
         resolver.setCookieSerializer(cookieSerializer);
+
         return resolver;
+    }
+
+    @Bean
+    public int springSessionDefaultTimeout() {
+        return configService.getInt("session_timeout", 30) * 60; // Thời gian timeout mặc định là 30 phút
     }
 }

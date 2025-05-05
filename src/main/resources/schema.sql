@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS notification_recipients CASCADE;
 DROP TABLE IF EXISTS employee_ranking CASCADE;
 DROP TABLE IF EXISTS login_history CASCADE;
+DROP TABLE IF EXISTS app_settings CASCADE;
 
 CREATE TABLE
     positions
@@ -87,10 +88,11 @@ CREATE TABLE
 CREATE TABLE
     users
 (
-    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    first_name   VARCHAR(100) NOT NULL,
-    last_name    VARCHAR(100) NOT NULL,
-    email        VARCHAR(100) NOT NULL UNIQUE CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    first_name VARCHAR(100) NOT NULL,
+    last_name  VARCHAR(100) NOT NULL,
+    email      VARCHAR(100) NOT NULL UNIQUE CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+) ,
     birth_date   DATE         NOT NULL CHECK (birth_date <= CURRENT_DATE - INTERVAL '18 years'),
     image_url    TEXT,
     gender       VARCHAR(10) CHECK (gender IN ('male', 'female')),
@@ -183,7 +185,7 @@ CREATE TABLE
     status      VARCHAR(10) CHECK (
         status IN ('pending', 'completed', 'failed', 'in_progress')
         )                    NOT NULL,
-    assigned_to UUID         NULL,
+    assigned_to UUID NULL,
     created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assigned_to) REFERENCES users (id) ON DELETE CASCADE
@@ -199,7 +201,7 @@ CREATE TABLE
     status      VARCHAR(10) CHECK (
         status IN ('pending', 'completed', 'failed', 'in_progress')
         )                    NOT NULL,
-    assigned_to UUID         NULL,
+    assigned_to UUID NULL,
     created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assigned_to) REFERENCES users (id) ON DELETE CASCADE
@@ -248,8 +250,8 @@ CREATE TABLE
     period_id   UUID                                                                                          NOT NULL,
     rank        DECIMAL(2, 1)                                                                                 NOT NULL,
     criteria    VARCHAR(20) CHECK (criteria IN ('performance', 'peer_vote', 'attendance', 'task_completion')) NOT NULL,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (employee_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (period_id) REFERENCES periods (id) ON DELETE CASCADE
 );
@@ -284,28 +286,40 @@ CREATE TABLE
 CREATE TABLE
     account
 (
-    id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id                  UUID NOT NULL,
-    last_login              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_active                BOOLEAN DEFAULT TRUE,
-    is_default_password                BOOLEAN DEFAULT TRUE,
-    password                 TEXT NOT NULL,
-    created_at               TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
-    updated_at               TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL,
+    last_login          TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    is_active           BOOLEAN          DEFAULT TRUE,
+    is_default_password BOOLEAN          DEFAULT TRUE,
+    password            TEXT NOT NULL,
+    created_at          TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE login_history(
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
-    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(45),
+CREATE TABLE login_history
+(
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL,
+    login_time  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    ip_address  VARCHAR(45),
     device_info TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     UNIQUE (user_id, login_time) -- Đảm bảo mỗi user chỉ có một lần đăng nhập tại một thời điểm nhất định
 );
+
+CREATE TABLE app_settings
+(
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    setting_key  VARCHAR(100) NOT NULL UNIQUE,
+    setting_value VARCHAR(255) NOT NULL,
+    description  TEXT,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 --Constraints
 --Không có hai period trùng name, type, start_date, end_date.
@@ -327,3 +341,13 @@ ALTER TABLE tasks
 --Một thông báo chỉ được gửi 1 lần  đến một user, một user chỉ có thể nhận được 1 thông báo 1 lần duy nhất
 ALTER TABLE notification_recipients
     ADD CONSTRAINT unique_notification_recipient UNIQUE (notification_id, user_id);
+
+
+INSERT INTO app_settings (setting_key, setting_value, description)
+VALUES 
+    ('session_timeout', '30', 'Thời gian phiên làm việc (phút)'),
+    ('session_extension_threshold', '2', 'Ngưỡng thời gian còn lại để gia hạn phiên (phút)'),
+    ('default_user_password', '1', 'Mật khẩu mặc định cho tài khoản mới'),
+    ('allowed_origins', 'http://localhost:3000,https://app.socius.com', 'Danh sách domain được phép truy cập API'),
+    ('max_login_sessions', '1', 'Số phiên đăng nhập tối đa cho mỗi người dùng')
+ON CONFLICT (setting_key) DO NOTHING;

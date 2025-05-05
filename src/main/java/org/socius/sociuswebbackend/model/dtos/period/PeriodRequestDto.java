@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.model.dtos.period;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -14,7 +15,7 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 public class PeriodRequestDto {
     @NotBlank(message = "Period name must not be empty")
     private String name;

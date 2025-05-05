@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.socius.sociuswebbackend.model.enums.Gender;
 import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 
@@ -17,6 +20,9 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class EmployeeCreationRequestDto {
     // Thông tin cá nhân
     @NotBlank(message = "First name must not be empty")
@@ -62,7 +68,8 @@ public class EmployeeCreationRequestDto {
     @NotNull(message = "Salary must not be empty")
     @DecimalMin(value = "0.00", message = "Salary must be a positive number")
     private BigDecimal salary;
-    
+
+    @Builder.Default
     private WorkingStatus workingStatus = WorkingStatus.active;
     
 }

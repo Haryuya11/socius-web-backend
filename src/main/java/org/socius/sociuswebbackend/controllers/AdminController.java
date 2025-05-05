@@ -12,15 +12,15 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasAuthority('ADMIN')")
+@PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
 public class AdminController {
 
     @Autowired
     private AdminService adminService;
-    
+
     /**
      * Tạo tài khoản nhân viên mới với mật khẩu mặc định
-     * 
+     *
      * @param requestDto Thông tin nhân viên cần tạo
      * @return Thông tin nhân viên đã tạo
      */

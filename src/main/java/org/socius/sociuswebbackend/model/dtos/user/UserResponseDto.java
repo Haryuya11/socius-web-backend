@@ -3,6 +3,7 @@ package org.socius.sociuswebbackend.model.dtos.user;
 import java.time.LocalDate;
 
 import org.socius.sociuswebbackend.model.dtos.BaseDto;
+import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
 import org.socius.sociuswebbackend.model.enums.Gender;
 
 import lombok.AllArgsConstructor;
@@ -19,7 +20,6 @@ import lombok.experimental.SuperBuilder;
 public class UserResponseDto extends BaseDto {
     private String firstName;
     private String lastName;
-    private String fullName;
     private String email;
     private LocalDate birthDate;
     private String imageUrl;
@@ -28,8 +28,5 @@ public class UserResponseDto extends BaseDto {
     private String phoneNumber;
     private LocalDate hireDate;
     private String address;
-    
-    public String getFullName() {
-        return this.firstName + " " + this.lastName;
-    }
+    private RoleResponseDto role;
 }

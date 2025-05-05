@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Lớp kiểm thử cho NotificationEntity.
- * 
+ * <p>
  * Các bài kiểm tra này xác minh các quy tắc nghiệp vụ và logic xác thực dữ liệu được triển khai trong lớp NotificationEntity.
  * Xác thực chính được kiểm tra là xác thực ngày hết hạn (ngày hết hạn phải là ngày hiện tại hoặc trong tương lai).
  */
@@ -19,17 +19,17 @@ class NotificationEntityTest {
 
     /**
      * Kiểm tra logic xác thực ngày hết hạn trong NotificationEntity.
-     * 
+     * <p>
      * Bài kiểm tra này xác minh rằng phương thức validateExpiryDate đúng thực thi quy tắc nghiệp vụ
      * yêu cầu ngày hết hạn thông báo không được là ngày trong quá khứ.
-     * 
+     * <p>
      * Các trường hợp kiểm thử:
      * 1. Ngày hết hạn trong quá khứ - phải ném IllegalArgumentException
      * 2. Ngày hết hạn là ngày hiện tại - phải vượt qua xác thực (trường hợp biên)
      * 3. Ngày hết hạn trong tương lai - phải vượt qua xác thực (trường hợp bình thường)
-     * 
+     * <p>
      * Đầu vào: Một thực thể thông báo với các ngày hết hạn khác nhau
-     * Kết quả mong đợi: 
+     * Kết quả mong đợi:
      * - Ngoại lệ khi ngày hết hạn trong quá khứ
      * - Không có ngoại lệ khi ngày hết hạn là ngày hiện tại hoặc trong tương lai
      */
@@ -43,22 +43,22 @@ class NotificationEntityTest {
         notification.setMessage("This is an important notification");
         notification.setType(NotificationType.info);
         notification.setIsUrgent(false);
-        
+
         // Thiết lập người gửi giả lập cho thông báo
         UserEntity sender = new UserEntity();
         sender.setId(UUID.randomUUID());
         notification.setSender(sender);
-        
+
         // Khi & Thì
         // Trường hợp 1: Ngày hết hạn trong quá khứ (không hợp lệ)
         notification.setExpiryDate(LocalDate.now().minusDays(1));
         Exception exception = assertThrows(IllegalArgumentException.class, notification::validateExpiryDate);
         assertEquals("Expiry date must be in the future", exception.getMessage());
-        
+
         // Trường hợp 2: Ngày hết hạn là ngày hiện tại (trường hợp biên, hợp lệ)
         notification.setExpiryDate(LocalDate.now());
         assertDoesNotThrow(notification::validateExpiryDate);
-        
+
         // Trường hợp 3: Ngày hết hạn trong tương lai (trường hợp bình thường, hợp lệ)
         notification.setExpiryDate(LocalDate.now().plusDays(7));
         assertDoesNotThrow(notification::validateExpiryDate);

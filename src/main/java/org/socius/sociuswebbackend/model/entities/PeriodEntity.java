@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.enums.PeriodStatus;
 import org.socius.sociuswebbackend.model.enums.PeriodType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -19,7 +20,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @ToString(exclude = {"performanceReviews", "peerVotes", "employeeRankings"})
 public class PeriodEntity extends BaseEntity {
 
