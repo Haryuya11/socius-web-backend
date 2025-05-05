@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Lớp kiểm thử cho EmploymentHistoryEntity.
- * 
+ * <p>
  * Các bài kiểm tra này xác minh các quy tắc nghiệp vụ và logic xác thực dữ liệu được triển khai trong lớp EmploymentHistoryEntity.
  * Xác thực chính được kiểm tra là xác thực phạm vi ngày (ngày kết thúc phải không trước ngày bắt đầu).
  */
@@ -20,17 +20,17 @@ class EmploymentHistoryEntityTest {
 
     /**
      * Kiểm tra logic xác thực ngày tháng trong EmploymentHistoryEntity.
-     * 
+     * <p>
      * Bài kiểm tra này xác minh rằng phương thức validateDates đúng thực thi quy tắc nghiệp vụ
      * yêu cầu ngày kết thúc của thời gian làm việc không được sớm hơn ngày bắt đầu.
-     * 
+     * <p>
      * Các trường hợp kiểm thử:
      * 1. Ngày kết thúc trước ngày bắt đầu - phải ném IllegalArgumentException
      * 2. Ngày kết thúc trùng với ngày bắt đầu - phải vượt qua xác thực (trường hợp biên)
      * 3. Ngày kết thúc sau ngày bắt đầu - phải vượt qua xác thực (trường hợp bình thường)
-     * 
+     * <p>
      * Đầu vào: Một thực thể lịch sử việc làm với các tổ hợp ngày bắt đầu và kết thúc khác nhau
-     * Kết quả mong đợi: 
+     * Kết quả mong đợi:
      * - Ngoại lệ khi ngày kết thúc trước ngày bắt đầu
      * - Không có ngoại lệ khi ngày kết thúc trùng với hoặc sau ngày bắt đầu
      */

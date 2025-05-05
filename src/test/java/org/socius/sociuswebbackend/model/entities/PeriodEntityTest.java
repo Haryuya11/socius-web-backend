@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Lớp kiểm thử cho PeriodEntity.
- * 
+ * <p>
  * Các bài kiểm tra này xác minh các quy tắc nghiệp vụ và logic xác thực dữ liệu được triển khai trong lớp PeriodEntity.
  * Xác thực chính được kiểm tra là xác thực phạm vi ngày (ngày kết thúc không được trước ngày bắt đầu).
  */
@@ -20,17 +20,17 @@ class PeriodEntityTest {
 
     /**
      * Kiểm tra logic xác thực ngày tháng trong PeriodEntity.
-     * 
+     * <p>
      * Bài kiểm tra này xác minh rằng phương thức validateDates đúng thực thi quy tắc nghiệp vụ
      * yêu cầu ngày kết thúc của kỳ không được sớm hơn ngày bắt đầu.
-     * 
+     * <p>
      * Các trường hợp kiểm thử:
      * 1. Ngày kết thúc trước ngày bắt đầu - phải ném IllegalArgumentException
      * 2. Ngày kết thúc trùng với ngày bắt đầu - phải vượt qua xác thực (trường hợp biên)
      * 3. Ngày kết thúc sau ngày bắt đầu - phải vượt qua xác thực (trường hợp bình thường)
-     * 
+     * <p>
      * Đầu vào: Một thực thể kỳ với các tổ hợp ngày bắt đầu và kết thúc khác nhau
-     * Kết quả mong đợi: 
+     * Kết quả mong đợi:
      * - Ngoại lệ khi ngày kết thúc trước ngày bắt đầu
      * - Không có ngoại lệ khi ngày kết thúc trùng với hoặc sau ngày bắt đầu
      */
@@ -43,19 +43,19 @@ class PeriodEntityTest {
         period.setName("Q1 2023");
         period.setType(PeriodType.monthly);
         period.setStatus(PeriodStatus.active);
-        
+
         // Khi & Thì
         // Trường hợp 1: Ngày kết thúc trước ngày bắt đầu (không hợp lệ)
         period.setStartDate(LocalDate.of(2023, 3, 1));
         period.setEndDate(LocalDate.of(2023, 2, 28));
         Exception exception = assertThrows(IllegalArgumentException.class, period::validateDates);
         assertEquals("End date must be after start date", exception.getMessage());
-        
+
         // Trường hợp 2: Ngày kết thúc trùng với ngày bắt đầu (trường hợp biên, hợp lệ)
         period.setStartDate(LocalDate.of(2023, 3, 1));
         period.setEndDate(LocalDate.of(2023, 3, 1));
         assertDoesNotThrow(period::validateDates);
-        
+
         // Trường hợp 3: Ngày kết thúc sau ngày bắt đầu (trường hợp bình thường, hợp lệ)
         period.setStartDate(LocalDate.of(2023, 3, 1));
         period.setEndDate(LocalDate.of(2023, 3, 31));
