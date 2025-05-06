@@ -9,7 +9,6 @@ import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -101,8 +100,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
                 List<Object> values = redisTemplate.opsForValue().multiGet(redisKeys);
                 if (values != null) {
                     for (Object value : values) {
-                        if (value instanceof OnlineUserStatusDto) {
-                            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) value;
+                        if (value instanceof OnlineUserStatusDto onlineUserStatusDto) {
                             if (isRecentlyActive(onlineUserStatusDto.getLastSeen())) {
                                 onlineUsers.add(onlineUserStatusDto.toPublicDto());
                             }
@@ -140,21 +138,4 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         return minutesSinceLastSeen < timeoutMinutes;
     }
 
-    @Scheduled(fixedRate = 300000)
-    public void cleanupExpiredOnlineStatus(){
-        try {
-            Set<String> redisKeys = redisTemplate.keys(ONLINE_USERS_PREFIX + "*");
-            if (!redisKeys.isEmpty()) {
-                for (String redisKey : redisKeys) {
-                    OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
-                    if (onlineUserStatusDto != null && !isRecentlyActive(onlineUserStatusDto.getLastSeen())) {
-                        redisTemplate.delete(redisKey);
-                        logger.info("Đã dọn dẹp trạng thái online hết hạn cho người dùng: {}", onlineUserStatusDto.getUserId());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Lỗi khi dọn dẹp trạng thái online hết hạn: {}", e.getMessage(), e);
-        }
-    }
 }
