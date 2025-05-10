@@ -1,5 +1,7 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
@@ -80,7 +82,19 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     public void markUserOffline(UUID userId, String sessionId) {
         try {
             String redisKey = ONLINE_USERS_PREFIX + userId;
-            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
+            Object value = redisTemplate.opsForValue().get(redisKey);
+
+            OnlineUserStatusDto onlineUserStatusDto;
+            if (value instanceof OnlineUserStatusDto) {
+                onlineUserStatusDto = (OnlineUserStatusDto) value;
+            } else if (value instanceof Map) {
+                // Chuyển đổi từ Map sang DTO thông qua ObjectMapper
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
+                onlineUserStatusDto = mapper.convertValue(value, OnlineUserStatusDto.class);
+            } else {
+                return;
+            }
 
             if (onlineUserStatusDto != null && sessionId.equals(onlineUserStatusDto.getSessionId())) {
                 redisTemplate.delete(redisKey);
@@ -118,8 +132,19 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     public boolean isUserOnline(UUID userId) {
         try {
             String redisKey = ONLINE_USERS_PREFIX + userId;
-            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
+            Object value = redisTemplate.opsForValue().get(redisKey);
 
+            OnlineUserStatusDto onlineUserStatusDto;
+            if (value instanceof OnlineUserStatusDto) {
+                onlineUserStatusDto = (OnlineUserStatusDto) value;
+            } else if (value instanceof Map) {
+                // Chuyển đổi từ Map sang DTO thông qua ObjectMapper
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
+                onlineUserStatusDto = mapper.convertValue(value, OnlineUserStatusDto.class);
+            } else {
+                return false;
+            }
             return onlineUserStatusDto != null && isRecentlyActive(onlineUserStatusDto.getLastSeen());
         } catch (Exception e) {
             logger.error("Lỗi khi kiểm tra trạng thái người dùng: {}", e.getMessage(), e);

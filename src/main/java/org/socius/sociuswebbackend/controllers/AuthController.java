@@ -4,6 +4,7 @@ import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginResponseDto;
 import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.SessionInfoDto;
+import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 import org.socius.sociuswebbackend.services.AuthenticationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,7 +35,7 @@ public class AuthController {
      * thái xác thực
      */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(
+    public ResponseEntity<?> login(
             @Valid @RequestBody LoginRequestDto loginRequest,
             HttpServletRequest request,
             HttpServletResponse response) {
@@ -42,8 +43,12 @@ public class AuthController {
         LoginResponseDto result = authenticationService.login(loginRequest, request, response);
         if (result.isAuthenticated()) {
             return ResponseEntity.ok(result);
+        } else if(result.getMessage().contains("Không tìm thấy người dùng")){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result.getMessage());
+        } else if (result.getMessage().contains("Sai mật khẩu")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result.getMessage());
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result.getMessage());
         }
     }
 
@@ -55,10 +60,10 @@ public class AuthController {
      * @return HTTP 200 OK sau khi đăng xuất thành công
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
 
         if (!authenticationService.isAuthenticated(request)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
         }
 
         authenticationService.logout(request, response);
@@ -73,12 +78,12 @@ public class AuthController {
      * chưa
      */
     @GetMapping("/session")
-    public ResponseEntity<SessionInfoDto> checkSession(HttpServletRequest request) {
+    public ResponseEntity<?> checkSession(HttpServletRequest request) {
         SessionInfoDto sessionInfo = authenticationService.getCurrentSession(request);
         if (sessionInfo != null) {
             return ResponseEntity.ok(sessionInfo);
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
         }
     }
 
@@ -97,12 +102,16 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Password vầ Confirm password không khớp");
         }
 
-        boolean success = authenticationService.changePassword(requestDto, request);
+        PasswordChangeResult result = authenticationService.changePassword(requestDto, request);
 
-        if (success) {
-            return ResponseEntity.ok("Thay đổi mật khẩu thành công");
-        } else {
-            return ResponseEntity.badRequest().body("Mật khẩu hiện tại không đúng");
-        }
+        return switch (result) {
+            case SUCCESS -> ResponseEntity.ok("Đổi mật khẩu thành công");
+            case NOT_AUTHENTICATED -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
+            case USER_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Người dùng không tồn tại");
+            case ACCOUNT_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tài khoản không tồn tại");
+            case INCORRECT_PASSWORD ->
+                    ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Mật khẩu hiện tại không đúng");
+            default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống");
+        };
     }
 }

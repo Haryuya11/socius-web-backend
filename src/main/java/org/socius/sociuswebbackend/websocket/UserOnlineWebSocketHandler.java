@@ -1,6 +1,5 @@
 package org.socius.sociuswebbackend.websocket;
 
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -19,9 +18,9 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 import java.util.Map;
 
 @Component
-public class UserActivityWebSocketHandler implements HandshakeInterceptor {
+public class UserOnlineWebSocketHandler implements HandshakeInterceptor {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserActivityWebSocketHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserOnlineWebSocketHandler.class);
 
     @Autowired
     private OnlineUserService onlineUserService;

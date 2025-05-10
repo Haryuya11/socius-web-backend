@@ -344,10 +344,12 @@ ALTER TABLE notification_recipients
 
 
 INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES 
+VALUES
     ('session_timeout', '30', 'Thời gian phiên làm việc (phút)'),
     ('session_extension_threshold', '2', 'Ngưỡng thời gian còn lại để gia hạn phiên (phút)'),
     ('default_user_password', '1', 'Mật khẩu mặc định cho tài khoản mới'),
     ('allowed_origins', 'http://localhost:3000,https://app.socius.com', 'Danh sách domain được phép truy cập API'),
-    ('max_login_sessions', '1', 'Số phiên đăng nhập tối đa cho mỗi người dùng')
+    ('max_login_sessions', '1', 'Số phiên đăng nhập tối đa cho mỗi người dùng'),
+    ('online.status.timeout.minutes', '5', 'Thời gian chờ trạng thái online của người dùng (phút)'),
+    ('websocket.heartbeat.interval', '60000', 'Khoảng thời gian gửi tín hiệu heartbeat của WebSocket (milli giây)')
 ON CONFLICT (setting_key) DO NOTHING;

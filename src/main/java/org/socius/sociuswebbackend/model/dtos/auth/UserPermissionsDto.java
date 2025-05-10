@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
 
@@ -13,7 +15,10 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserPermissionsDto {
+public class UserPermissionsDto implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private UUID userId;
     private UUID roleId;
     private String roleName;

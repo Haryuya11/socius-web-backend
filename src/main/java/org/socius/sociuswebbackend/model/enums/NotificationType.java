@@ -1,5 +1,8 @@
 package org.socius.sociuswebbackend.model.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum NotificationType {
     info,
     reminder,
@@ -11,7 +14,4 @@ public enum NotificationType {
         this.value = name().toLowerCase();
     }
 
-    public String getValue() {
-        return value;
-    }
 }

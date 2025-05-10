@@ -1,7 +1,7 @@
 package org.socius.sociuswebbackend.config;
 
 import org.socius.sociuswebbackend.services.ConfigService;
-import org.socius.sociuswebbackend.websocket.UserActivityWebSocketHandler;
+import org.socius.sociuswebbackend.websocket.UserOnlineWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -18,7 +18,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private ConfigService configService;
 
     @Autowired
-    private UserActivityWebSocketHandler userActivityWebSocketHandler;
+    private UserOnlineWebSocketHandler userOnlineWebSocketHandler;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -35,7 +35,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Điểm kết nối riêng cho heartbeat
         registry.addEndpoint("/ws-heartbeat")
                 .setAllowedOrigins(allowedOrigins)
-                .addInterceptors(userActivityWebSocketHandler)
+                .addInterceptors(userOnlineWebSocketHandler)
                 .withSockJS();
     }
 

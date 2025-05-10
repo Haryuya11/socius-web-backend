@@ -23,6 +23,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/master-data")
+@PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
 public class MasterDataController {
 
     @Autowired

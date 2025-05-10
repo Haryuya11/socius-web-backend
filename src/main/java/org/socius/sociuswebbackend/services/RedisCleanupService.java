@@ -1,8 +1,5 @@
 package org.socius.sociuswebbackend.services;
 
-/**
- * Giao diện dịch vụ dọn dẹp Redis
- */
 public interface RedisCleanupService {
 
     /**
