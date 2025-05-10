@@ -1,7 +1,7 @@
 package org.socius.sociuswebbackend.controllers;
 
 import org.socius.sociuswebbackend.services.OnlineUserService;
-import org.socius.sociuswebbackend.websocket.WebSocketService;
+import org.socius.sociuswebbackend.services.WebSocketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-public class UserActivityController {
+public class UserOnlineController {
     @Autowired
     private OnlineUserService onlineUserService;
 

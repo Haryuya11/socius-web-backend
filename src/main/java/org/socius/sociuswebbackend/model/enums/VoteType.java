@@ -1,5 +1,8 @@
 package org.socius.sociuswebbackend.model.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum VoteType {
     positive,
     negative;
@@ -10,7 +13,4 @@ public enum VoteType {
         this.value = name().toLowerCase();
     }
 
-    public String getValue() {
-        return value;
-    }
 }

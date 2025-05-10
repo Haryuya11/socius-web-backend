@@ -4,6 +4,7 @@ import org.socius.sociuswebbackend.model.dtos.auth.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 
 public interface AuthenticationService {
 
@@ -48,7 +49,7 @@ public interface AuthenticationService {
      * @param request Request HTTP hiện tại
      * @return true nếu thành công, false nếu thất bại
      */
-    boolean changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request);
+    PasswordChangeResult changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request);
 
     /**
      * Lấy thông tin quyền hạn của người dùng hiện tại

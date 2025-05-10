@@ -1,5 +1,8 @@
 package org.socius.sociuswebbackend.model.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum TargetStatus {
     pending,
     completed,
@@ -12,7 +15,4 @@ public enum TargetStatus {
         this.value = name().toLowerCase();
     }
 
-    public String getValue() {
-        return value;
-    }
 }

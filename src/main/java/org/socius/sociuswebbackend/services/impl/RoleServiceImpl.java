@@ -29,8 +29,10 @@ public class RoleServiceImpl implements RoleService {
     private ApplicationEventPublisher eventPublisher;
 
     @Override
+    @Transactional(readOnly = true)
     public List<RoleResponseDto> findAll() {
-        List<RoleResponseDto> roles = roleRepository.findAll().stream()
+        List<RoleEntity> roleEntities = roleRepository.findAll();
+        List<RoleResponseDto> roles = roleEntities.stream()
                 .map(roleMapper::entityToDto)
                 .toList();
         return roles;

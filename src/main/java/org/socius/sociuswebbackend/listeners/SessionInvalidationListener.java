@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.messages.SessionInvalidationMessage;
 import org.socius.sociuswebbackend.services.RBACRedisService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
-import org.socius.sociuswebbackend.websocket.WebSocketService;
+import org.socius.sociuswebbackend.services.WebSocketService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;

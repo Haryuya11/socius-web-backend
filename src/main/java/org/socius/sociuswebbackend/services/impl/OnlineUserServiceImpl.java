@@ -1,5 +1,7 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
@@ -9,7 +11,6 @@ import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -81,7 +82,19 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     public void markUserOffline(UUID userId, String sessionId) {
         try {
             String redisKey = ONLINE_USERS_PREFIX + userId;
-            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
+            Object value = redisTemplate.opsForValue().get(redisKey);
+
+            OnlineUserStatusDto onlineUserStatusDto;
+            if (value instanceof OnlineUserStatusDto) {
+                onlineUserStatusDto = (OnlineUserStatusDto) value;
+            } else if (value instanceof Map) {
+                // Chuyển đổi từ Map sang DTO thông qua ObjectMapper
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
+                onlineUserStatusDto = mapper.convertValue(value, OnlineUserStatusDto.class);
+            } else {
+                return;
+            }
 
             if (onlineUserStatusDto != null && sessionId.equals(onlineUserStatusDto.getSessionId())) {
                 redisTemplate.delete(redisKey);
@@ -101,8 +114,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
                 List<Object> values = redisTemplate.opsForValue().multiGet(redisKeys);
                 if (values != null) {
                     for (Object value : values) {
-                        if (value instanceof OnlineUserStatusDto) {
-                            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) value;
+                        if (value instanceof OnlineUserStatusDto onlineUserStatusDto) {
                             if (isRecentlyActive(onlineUserStatusDto.getLastSeen())) {
                                 onlineUsers.add(onlineUserStatusDto.toPublicDto());
                             }
@@ -120,8 +132,19 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     public boolean isUserOnline(UUID userId) {
         try {
             String redisKey = ONLINE_USERS_PREFIX + userId;
-            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
+            Object value = redisTemplate.opsForValue().get(redisKey);
 
+            OnlineUserStatusDto onlineUserStatusDto;
+            if (value instanceof OnlineUserStatusDto) {
+                onlineUserStatusDto = (OnlineUserStatusDto) value;
+            } else if (value instanceof Map) {
+                // Chuyển đổi từ Map sang DTO thông qua ObjectMapper
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
+                onlineUserStatusDto = mapper.convertValue(value, OnlineUserStatusDto.class);
+            } else {
+                return false;
+            }
             return onlineUserStatusDto != null && isRecentlyActive(onlineUserStatusDto.getLastSeen());
         } catch (Exception e) {
             logger.error("Lỗi khi kiểm tra trạng thái người dùng: {}", e.getMessage(), e);
@@ -140,21 +163,4 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         return minutesSinceLastSeen < timeoutMinutes;
     }
 
-    @Scheduled(fixedRate = 300000)
-    public void cleanupExpiredOnlineStatus(){
-        try {
-            Set<String> redisKeys = redisTemplate.keys(ONLINE_USERS_PREFIX + "*");
-            if (!redisKeys.isEmpty()) {
-                for (String redisKey : redisKeys) {
-                    OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
-                    if (onlineUserStatusDto != null && !isRecentlyActive(onlineUserStatusDto.getLastSeen())) {
-                        redisTemplate.delete(redisKey);
-                        logger.info("Đã dọn dẹp trạng thái online hết hạn cho người dùng: {}", onlineUserStatusDto.getUserId());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Lỗi khi dọn dẹp trạng thái online hết hạn: {}", e.getMessage(), e);
-        }
-    }
 }

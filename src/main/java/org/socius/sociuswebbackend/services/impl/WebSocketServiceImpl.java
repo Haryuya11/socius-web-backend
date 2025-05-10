@@ -1,4 +1,4 @@
-package org.socius.sociuswebbackend.websocket;
+package org.socius.sociuswebbackend.services.impl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.services.OnlineUserService;
+import org.socius.sociuswebbackend.services.WebSocketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -15,9 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 @Service
-public class WebSocketService {
+public class WebSocketServiceImpl implements WebSocketService {
 
-    private static final Logger logger = LoggerFactory.getLogger(WebSocketService.class);
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketServiceImpl.class);
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -28,6 +29,7 @@ public class WebSocketService {
     /**
      * Gửi thông báo khi người dùng đăng nhập thành công
      */
+    @Override
     public void sendUserLoginNotification(String username) {
         try {
             Map<String, Object> notification = new HashMap<>();
@@ -44,6 +46,7 @@ public class WebSocketService {
     /**
      * Gửi thông báo khi người dùng đăng xuất
      */
+    @Override
     public void sendUserLogoutNotification(String username) {
         try {
             Map<String, Object> notification = new HashMap<>();
@@ -60,6 +63,7 @@ public class WebSocketService {
     /**
      * Gửi thông báo khi phiên làm việc bị hủy
      */
+    @Override
     public void sendSessionInvalidationNotification(String sessionId, String reason, String message) {
         try {
             Map<String, Object> notification = new HashMap<>();
@@ -83,6 +87,7 @@ public class WebSocketService {
     /**
      * Xử lý heartbeat từ client
      */
+    @Override
     public void handleHeartbeat(UUID userId) {
         try {
             onlineUserService.handleUserHeartbeat(userId);
@@ -94,8 +99,9 @@ public class WebSocketService {
     /**
      * Xử lý sự kiện ngắt kết nối tới WebSocket
      */
+    @Override
     @EventListener
-    void handleWebSocketDisconnectEvent(SessionDisconnectEvent event) {
+    public void handleWebSocketDisconnectEvent(SessionDisconnectEvent event) {
         // Lấy thông tin phiên làm việc từ sự kiện
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = headerAccessor.getSessionId();

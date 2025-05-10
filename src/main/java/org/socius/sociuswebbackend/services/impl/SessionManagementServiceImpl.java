@@ -55,14 +55,18 @@ public class SessionManagementServiceImpl implements SessionManagementService {
     @Override
     public boolean invalidateSession(String sessionId) {
         try {
-            Session session = sessionRepository.findById(sessionId);
-            if (session == null) {
-                logger.warn("Không tìm thấy phiên với sessionId: {}", sessionId);
-                return false;
+            try {
+                sessionRepository.deleteById(sessionId);
+            } catch (Exception e) {
+                logger.warn("Không thể xóa phiên từ repository: {}", e.getMessage());
             }
 
-            sessionRepository.deleteById(sessionId);
-            rbacRedisService.deleteUserPermissions(sessionId);
+            try {
+                rbacRedisService.deleteUserPermissions(sessionId);
+            } catch (Exception e) {
+                logger.warn("Không thể xóa quyền người dùng: {}", e.getMessage());
+            }
+
             String sessionPrefix = "spring:session:";
             redisTemplate.delete(sessionPrefix + "sessions:" + sessionId);
             redisTemplate.delete(sessionPrefix + "sessions:expires:" + sessionId);

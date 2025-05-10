@@ -36,6 +36,7 @@ ext {
     jakartaValidationVersion = '3.0.2'
     lombokMapstructBindingVersion = '0.2.0'
     lettuceVersion = '6.3.2.RELEASE'
+    jacksonDatatypeJSR310Version = '2.19.0'
 }
 
 dependencies {
@@ -82,6 +83,8 @@ dependencies {
     annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
     annotationProcessor "org.projectlombok:lombok-mapstruct-binding:${lombokMapstructBindingVersion}"
 
+    // Jackson
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

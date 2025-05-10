@@ -1,5 +1,7 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
@@ -96,18 +98,37 @@ public class RBACRedisServiceImpl implements RBACRedisService {
     public void deleteUserPermissions(String sessionId) {
         try {
             String key = getRbacKeyPrefix() + sessionId;
+            Object value = redisTemplate.opsForValue().get(key);
 
-            // Lấy thông tin quyền của người dùng từ Redis trước khi xóa
-            UserPermissionsDto permissionsDto = (UserPermissionsDto) redisTemplate.opsForValue().get(key);
-            if (permissionsDto != null && permissionsDto.getRoleId() != null) {
-                String roleKey = getRoleUsersPrefix() + permissionsDto.getRoleId();
+            UserPermissionsDto permissionsDto = null;
+            if (value instanceof UserPermissionsDto) {
+                permissionsDto = (UserPermissionsDto) value;
+            } else if (value instanceof Set) {
+                // Chuyển đổi từ Set sang DTO thông qua ObjectMapper
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
+                permissionsDto = mapper.convertValue(value, UserPermissionsDto.class);
+            }
+
+            UUID userId = permissionsDto != null ? permissionsDto.getUserId() : null;
+            String roleName = permissionsDto != null ? permissionsDto.getRoleName() : null;
+            UUID roleId = permissionsDto != null ? permissionsDto.getRoleId() : null;
+
+
+            if (roleId != null) {
+                String roleKey = getRoleUsersPrefix() + roleId;
                 redisTemplate.opsForSet().remove(roleKey, sessionId);
             }
 
             // Xóa thông tin quyền của người dùng khỏi Redis
             redisTemplate.delete(key);
 
-            logger.info("Đã xóa cache quyền hạn cho phiên: {}", sessionId);
+            if (userId != null && roleName != null) {
+                logger.info("Đã xóa cache quyền hạn cho người dùng: {}, với role: {}", userId, roleName);
+            } else {
+                logger.info("Đã xóa cache quyền hạn cho phiên: {}", sessionId);
+            }
+
         } catch (Exception e) {
             logger.error("Lỗi khi xóa quyền hạn từ Redis: {}", e.getMessage(), e);
         }

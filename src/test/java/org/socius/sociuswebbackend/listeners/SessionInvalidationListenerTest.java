@@ -13,7 +13,7 @@ import org.socius.sociuswebbackend.model.enums.InvalidationReason;
 import org.socius.sociuswebbackend.model.messages.SessionInvalidationMessage;
 import org.socius.sociuswebbackend.services.RBACRedisService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
-import org.socius.sociuswebbackend.websocket.WebSocketService;
+import org.socius.sociuswebbackend.services.WebSocketService;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.HashSet;

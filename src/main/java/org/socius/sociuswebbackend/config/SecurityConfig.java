@@ -41,11 +41,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/change-password", "api/auth/session").permitAll()
                         .requestMatchers("/error", "/ws/**").permitAll()
-                        .requestMatchers("/api/session/active-users").permitAll()
+                        .requestMatchers("/api/session/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ACCESS_ADMIN_PAGE")
                         .requestMatchers("/api/auth/logout").authenticated()
                         .requestMatchers("/api/user/**").permitAll()
-                        .requestMatchers("/api/master-data/**").authenticated()
+                        .requestMatchers("/api/master-data/**").hasAuthority("ACCESS_ADMIN_PAGE")
                         .requestMatchers("/api/public/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session

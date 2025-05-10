@@ -26,25 +26,50 @@ public interface RoleMapper extends BaseEntityMapper,
 
     @Override
     @Mapping(target = "permissions", ignore = true)
-    RoleResponseDto entityToDto(RoleEntity entity);
+    default RoleResponseDto entityToDto(RoleEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        RoleResponseDto dto = new RoleResponseDto();
+        dto.setId(entity.getId());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
+        dto.setName(entity.getName());
+        dto.setDescription(entity.getDescription());
+
+        if (entity.getRolePermissions() != null) {
+            PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
+            dto.setPermissions(permissionMapper.rolePermissionsToPermissionDtos(entity.getRolePermissions()));
+        }
+
+        return dto;
+    }
 
     /**
      * Process permissions after entity mapping
      */
+//    @AfterMapping
+//    default void mapPermissions(@MappingTarget RoleResponseDto dto, RoleEntity entity) {
+//        if (entity.getRolePermissions() == null || entity.getRolePermissions().isEmpty()) {
+//            dto.setPermissions(new HashSet<>());
+//            return;
+//        }
+//
+//        PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
+//        Set<PermissionResponseDto> permissions = entity.getRolePermissions().stream()
+//                .filter(rp -> rp != null && rp.getPermission() != null)
+//                .map(rp -> permissionMapper.entityToDto(rp.getPermission()))
+//                .collect(Collectors.toSet());
+//
+//        dto.setPermissions(permissions);
+//    }
     @AfterMapping
     default void mapPermissions(@MappingTarget RoleResponseDto dto, RoleEntity entity) {
-        if (entity.getRolePermissions() == null || entity.getRolePermissions().isEmpty()) {
-            dto.setPermissions(new HashSet<>());
-            return;
+        if (entity != null && entity.getRolePermissions() != null) {
+            PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
+            dto.setPermissions(permissionMapper.rolePermissionsToPermissionDtos(entity.getRolePermissions()));
         }
-
-        PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
-        Set<PermissionResponseDto> permissions = entity.getRolePermissions().stream()
-                .filter(rp -> rp != null && rp.getPermission() != null)
-                .map(rp -> permissionMapper.entityToDto(rp.getPermission()))
-                .collect(Collectors.toSet());
-
-        dto.setPermissions(permissions);
     }
 
     @Override
