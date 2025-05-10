@@ -26,13 +26,14 @@ import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.RoleEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.AccountRepository;
+import org.socius.sociuswebbackend.repositories.RoleRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.*;
 import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
-import org.socius.sociuswebbackend.websocket.WebSocketService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -102,6 +103,9 @@ public class AuthenticationServiceImplTest {
     @Mock
     private OnlineUserService onlineUserService;
 
+    @Mock
+    private RoleRepository roleRepository;
+
     @InjectMocks
     private AuthenticationServiceImpl authenticationService;
 
@@ -168,6 +172,7 @@ public class AuthenticationServiceImplTest {
         when(configService.getInt(anyString(), anyInt())).thenReturn(30);
 
         LoginHistoryResponseDto loginHistoryResponseDto = new LoginHistoryResponseDto();
+        when(roleRepository.findById(any(UUID.class))).thenReturn(Optional.of(adminRole));
         when(loginHistoryService.createLoginHistory(any(LoginHistoryRequestDto.class)))
                 .thenReturn(loginHistoryResponseDto);
 
@@ -189,15 +194,36 @@ public class AuthenticationServiceImplTest {
     @DisplayName("Login phải phẩn hồi thất bại khi thông tin đăng nhập không hợp lệ")
     void loginShouldReturnFailureResponseWhenCredentialsAreInvalid() {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Thông tin đăng nhập không hợp lệ"));
+                .thenThrow(new BadCredentialsException("Bad credentials"));
 
         LoginResponseDto result = authenticationService.login(adminLoginRequest, request, response);
 
         assertNotNull(result, "Phản hồi không được null");
-        assertNotNull(result.isAuthenticated(), "Trạng thái xác thực không được null");
         assertNull(result.getUser(), "Người dùng phải null");
-        assertTrue(result.getMessage().contains("không hợp lệ"),
-                "Thông báo phải chứa thông tin về đăng nhập không hợp lệ");
+        assertEquals("Sai mật khẩu", result.getMessage(),
+                "Thông báo phải là 'Sai mật khẩu' khi BadCredentialsException được ném ra");
+        assertFalse(result.isAuthenticated(),"Trạng thái xác thực phải false");
+
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(loginHistoryService, never()).createLoginHistory(any(LoginHistoryRequestDto.class));
+        verify(rbacRedisService, never()).saveCacheUserPermissions(anyString(), any(UserPermissionsDto.class),
+                anyInt());
+        verify(webSocketService, never()).sendUserLoginNotification(anyString());
+    }
+
+    @Test
+    @DisplayName("Login phải phản hồi lỗi hệ thống khi xảy ra ngoại lệ xác thực khác")
+    void loginShouldReturnSystemErrorResponseWhenOtherAuthenticationExceptionOccurs() {
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new AuthenticationServiceException("Lỗi kết nối cơ sở dữ liệu"));
+
+        LoginResponseDto result = authenticationService.login(adminLoginRequest, request, response);
+
+        assertNotNull(result, "Phản hồi không được null");
+        assertNull(result.getUser(), "Người dùng phải null");
+        assertEquals("Lỗi hệ thống", result.getMessage(),
+                "Thông báo phải là 'Lỗi hệ thống' khi xảy ra ngoại lệ khác");
+        assertFalse(result.isAuthenticated(),"Trạng thái xác thực phải false");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(loginHistoryService, never()).createLoginHistory(any(LoginHistoryRequestDto.class));
@@ -302,6 +328,7 @@ public class AuthenticationServiceImplTest {
         when(configService.getInt(anyString(), anyInt())).thenReturn(30);
 
         LoginHistoryResponseDto loginHistoryResponseDto = new LoginHistoryResponseDto();
+        when(roleRepository.findById(any(UUID.class))).thenReturn(Optional.of(adminRole));
         when(loginHistoryService.createLoginHistory(any(LoginHistoryRequestDto.class)))
                 .thenReturn(loginHistoryResponseDto);
 
