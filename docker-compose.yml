@@ -1,0 +1,57 @@
+version: '4.40.0'
+
+services:
+  #PostgreSQL Service
+  postgres_db:
+    image: postgres:latest
+    container_name: team_postgres_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_vol:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  #Redis Service
+  redis_cache:
+    image: redis:latest
+    container_name: team_redis_cache
+    command: redis-server --aclfile /usr/local/etc/redis/users.acl
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_vol:/data
+      - ./redis_config/users.acl:/usr/local/etc/redis/users.acl
+    restart: unless-stopped
+
+  #RabbitMQ Service
+  rabbitmq_broker:
+    image: rabbitmq:latest
+    container_name: team_rabbitmq_broker
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"  # AMQP port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq_data_vol:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  #Cassandra Service
+  cassandra_db:
+    image: cassandra:latest # Hoặc phiên bản cụ thể
+    container_name: team_cassandra_db
+    ports:
+      - "9042:9042" # CQL port
+    volumes:
+      - cassandra_data_vol:/var/lib/cassandra # Named volume
+    restart: unless-stopped
+
+volumes:
+  postgres_data_vol:
+  redis_data_vol:
+  rabbitmq_data_vol:
+  cassandra_data_vol:
