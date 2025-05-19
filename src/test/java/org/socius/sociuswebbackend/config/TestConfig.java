@@ -12,6 +12,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+
 @TestConfiguration
 public class TestConfig {
 
@@ -46,10 +49,17 @@ public class TestConfig {
         Mockito.when(mockConfigService.getString("rbac.role.users.prefix", "role:users:")).thenReturn("role:users:");
 
         // Cấu hình cho các phương thức mới
-        Mockito.when(mockConfigService.getProperty(Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(mockConfigService.getProperty(anyString(), anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(1));
-        Mockito.when(mockConfigService.getSetting(Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(mockConfigService.getSetting(anyString(), anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(1));
+
+        Mockito.when(mockConfigService.getString(eq("rabbitmq.queue.private"), anyString()))
+                .thenReturn("test.chat.private.queue");
+        Mockito.when(mockConfigService.getString(eq("rabbitmq.queue.group"), anyString()))
+                .thenReturn("test.chat.group.queue");
+        Mockito.when(mockConfigService.getString(eq("rabbitmq.queue.receipt"), anyString()))
+                .thenReturn("test.chat.receipt.queue");
 
         return mockConfigService;
     }
