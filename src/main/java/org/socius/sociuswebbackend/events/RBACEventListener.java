@@ -1,21 +1,19 @@
 package org.socius.sociuswebbackend.events;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.enums.InvalidationReason;
-import org.socius.sociuswebbackend.model.messages.SessionInvalidationMessage;
 import org.socius.sociuswebbackend.services.MessageProducerService;
-import org.socius.sociuswebbackend.services.RBACRedisService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class RBACEventListener {
     private final static Logger logger = LoggerFactory.getLogger(RBACEventListener.class);
 
-    @Autowired
-    private MessageProducerService messageProducerService;
+    final private MessageProducerService messageProducerService;
 
     @EventListener
     public void handleRBACEvent(RBACEvent event) {

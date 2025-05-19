@@ -1,13 +1,12 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.entities.MessageEntity;
 import org.socius.sociuswebbackend.repositories.MessageRepository;
-import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.FileStorageService;
 import org.socius.sociuswebbackend.services.MessageFileCleanupService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,15 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class MessageFileCleanupServiceImpl implements MessageFileCleanupService {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageFileCleanupServiceImpl.class);
 
-    @Autowired
-    private MessageRepository messageRepository;
-
-    @Autowired
-    private FileStorageService fileStorageService;
+    final private MessageRepository messageRepository;
+    final private FileStorageService fileStorageService;
 
     @Override
     @Scheduled(cron = "0 0 0 * * *") // Chạy hàng ngày lúc 00:00
@@ -37,7 +34,7 @@ public class MessageFileCleanupServiceImpl implements MessageFileCleanupService 
         int successCount = 0;
         int failureCount = 0;
 
-        for (MessageEntity message : deletedMessages){
+        for (MessageEntity message : deletedMessages) {
             try {
                 // Xóa file đính kèm
                 if (message.getMediaUrl() != null && !message.getMediaUrl().isEmpty()) {

@@ -3,6 +3,7 @@ package org.socius.sociuswebbackend.services.impl;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.mappers.DepartmentMapper;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
@@ -15,13 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class DepartmentServiceImpl implements DepartmentService {
 
-    @Autowired
-    private DepartmentRepository departmentRepository;
-
-    @Autowired
-    private DepartmentMapper departmentMapper;
+    final private DepartmentRepository departmentRepository;
+    final private DepartmentMapper departmentMapper;
 
     @Override
     public List<DepartmentResponseDto> findAll() {

@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.controllers;
 
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
@@ -24,19 +25,13 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/master-data")
 @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+@RequiredArgsConstructor
 public class MasterDataController {
 
-    @Autowired
-    private DepartmentService departmentService;
-    
-    @Autowired
-    private PositionService positionService;
-    
-    @Autowired
-    private RoleService roleService;
-    
-    @Autowired
-    private TeamService teamService;
+    final private DepartmentService departmentService;
+    final private PositionService positionService;
+    final private RoleService roleService;
+    final private TeamService teamService;
     
     // POSITION ENDPOINTS
 

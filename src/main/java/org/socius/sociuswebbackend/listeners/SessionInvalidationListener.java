@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.listeners;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.messages.SessionInvalidationMessage;
@@ -7,28 +8,19 @@ import org.socius.sociuswebbackend.services.RBACRedisService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
 import org.socius.sociuswebbackend.services.WebSocketService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Component
+@RequiredArgsConstructor
 public class SessionInvalidationListener {
     private static final Logger logger = LoggerFactory.getLogger(SessionInvalidationListener.class);
 
-    @Autowired
-    private SessionManagementService sessionManagementService;
-
-    @Autowired
-    private RBACRedisService rbacRedisService;
-
-    @Autowired
-    private WebSocketService webSocketService;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    final private SessionManagementService sessionManagementService;
+    final private RBACRedisService rbacRedisService;
+    final private WebSocketService webSocketService;
 
     @RabbitListener(queues = "#{sessionInvalidationQueue.name}")
     public void handleSessionInvalidationMessage(SessionInvalidationMessage message) {

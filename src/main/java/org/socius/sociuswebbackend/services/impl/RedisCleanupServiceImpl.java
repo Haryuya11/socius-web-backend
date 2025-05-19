@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
@@ -7,7 +8,6 @@ import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.RedisCleanupService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class RedisCleanupServiceImpl implements RedisCleanupService {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisCleanupServiceImpl.class);
@@ -27,11 +28,9 @@ public class RedisCleanupServiceImpl implements RedisCleanupService {
     private static final String CACHE_PREFIX = "cache:";
 
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    final private RedisTemplate<String, Object> redisTemplate;
 
-    @Autowired
-    private ConfigService configService;
+    final private ConfigService configService;
 
 
     @Override
@@ -61,10 +60,10 @@ public class RedisCleanupServiceImpl implements RedisCleanupService {
             if (!redisKeys.isEmpty()) {
                 int count = 0;
                 for (String redisKey : redisKeys) {
-                    Long ttl = redisTemplate.getExpire(redisKey);
+                    long ttl = redisTemplate.getExpire(redisKey);
 
                     // -1: TTL không xác định, -2: key không tồn tại
-                    if (ttl != null && ttl <= 0 && ttl != -1) {
+                    if (ttl <= 0 && ttl != -1) {
                         UserPermissionsDto userPermissionsDto = (UserPermissionsDto) redisTemplate.opsForValue().get(redisKey);
                         redisTemplate.delete(redisKey);
                         count++;
@@ -117,7 +116,7 @@ public class RedisCleanupServiceImpl implements RedisCleanupService {
             if (!redisKeys.isEmpty()) {
                 int count = 0;
                 for (String redisKey : redisKeys) {
-                    Long ttl = redisTemplate.getExpire(redisKey);
+                    long ttl = redisTemplate.getExpire(redisKey);
                     if (ttl <= 0 && ttl != -1) {
                         redisTemplate.delete(redisKey);
                         count++;

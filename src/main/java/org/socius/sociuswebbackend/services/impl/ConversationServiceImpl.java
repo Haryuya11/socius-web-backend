@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.mappers.ConversationMapper;
 import org.socius.sociuswebbackend.mappers.MessageMapper;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationRequestDto;
@@ -12,7 +13,6 @@ import org.socius.sociuswebbackend.model.enums.MessageType;
 import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.services.ChatMessageProducerService;
 import org.socius.sociuswebbackend.services.ConversationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,31 +22,17 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {
 
-    @Autowired
-    private ConversationRepository conversationRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ConversationMemberRepository conversationMemberRepository;
-
-    @Autowired
-    private UnreadCountRepository unreadCountRepository;
-
-    @Autowired
-    private ConversationMapper conversationMapper;
-
-    @Autowired
-    private MessageRepository messageRepository;
-
-    @Autowired
-    private MessageMapper messageMapper;
-
-    @Autowired
-    private ChatMessageProducerService chatMessageProducerService;
+    final private ConversationRepository conversationRepository;
+    final private UserRepository userRepository;
+    final private ConversationMemberRepository conversationMemberRepository;
+    final private UnreadCountRepository unreadCountRepository;
+    final private ConversationMapper conversationMapper;
+    final private MessageRepository messageRepository;
+    final private MessageMapper messageMapper;
+    final private ChatMessageProducerService chatMessageProducerService;
 
     @Override
     @Transactional

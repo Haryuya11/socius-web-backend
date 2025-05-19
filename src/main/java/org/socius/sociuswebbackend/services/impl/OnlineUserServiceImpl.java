@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.services.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
@@ -10,7 +11,6 @@ import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -20,18 +20,14 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@RequiredArgsConstructor
 public class OnlineUserServiceImpl implements OnlineUserService {
 
     private static final Logger logger = LoggerFactory.getLogger(OnlineUserServiceImpl.class);
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ConfigService configService;
+    final private RedisTemplate<String, Object> redisTemplate;
+    final private UserRepository userRepository;
+    final private ConfigService configService;
 
     @Override
     public void updateUserOnlineStatus(UUID userId, String sessionId) {

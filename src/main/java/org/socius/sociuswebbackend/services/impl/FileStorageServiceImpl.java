@@ -1,10 +1,10 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.FileStorageService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,12 +18,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class FileStorageServiceImpl implements FileStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(FileStorageServiceImpl.class);
 
-    @Autowired
-    private ConfigService configService;
+    final private ConfigService configService;
 
     @Override
     public String storeFile(MultipartFile file, String directory) throws IOException {

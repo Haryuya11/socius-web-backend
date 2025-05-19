@@ -1,7 +1,6 @@
 package org.socius.sociuswebbackend.config;
 
 
-import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -10,15 +9,11 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-
-    @Autowired
-    private ConfigService configService;
 
     // Tạo TopicExchange cho việc quản lý phiên
     @Bean

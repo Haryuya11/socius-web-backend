@@ -1,26 +1,25 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.enums.InvalidationReason;
 import org.socius.sociuswebbackend.model.messages.SessionInvalidationMessage;
-import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.MessageProducerService;
 import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class MessageProducerServiceImpl implements MessageProducerService {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageProducerServiceImpl.class);
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
+    final private RabbitTemplate rabbitTemplate;
 
     @Override
     public void sendSessionInvalidationMessage(UUID roleId, InvalidationReason reason, String message) {

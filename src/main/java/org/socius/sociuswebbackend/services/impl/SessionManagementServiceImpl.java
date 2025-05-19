@@ -1,13 +1,11 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.socius.sociuswebbackend.repositories.UserRepository;
-import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.RBACRedisService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.session.data.redis.RedisIndexedSessionRepository;
 import org.springframework.stereotype.Service;
@@ -17,24 +15,14 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class SessionManagementServiceImpl implements SessionManagementService {
 
     private static final Logger logger = LoggerFactory.getLogger(SessionManagementServiceImpl.class);
 
-    @Autowired
-    private RedisIndexedSessionRepository sessionRepository;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ConfigService configService;
-
-    @Autowired
-    private RBACRedisService rbacRedisService;
+    final private RedisIndexedSessionRepository sessionRepository;
+    final private RedisTemplate<String, Object> redisTemplate;
+    final private RBACRedisService rbacRedisService;
 
     @Override
     public Set<String> getSessionsByRoleId(UUID roleId) {

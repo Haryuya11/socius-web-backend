@@ -2,12 +2,13 @@ package org.socius.sociuswebbackend.websocket;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.services.RBACRedisService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -18,18 +19,16 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class UserOnlineWebSocketHandler implements HandshakeInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(UserOnlineWebSocketHandler.class);
 
-    @Autowired
-    private OnlineUserService onlineUserService;
-
-    @Autowired
-    private RBACRedisService rbacRedisService;
+    final private OnlineUserService onlineUserService;
+    final private RBACRedisService rbacRedisService;
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
+    public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response, @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) {
         if (request instanceof ServletServerHttpRequest) {
             HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
             HttpSession session = servletRequest.getSession(false);
@@ -50,7 +49,7 @@ public class UserOnlineWebSocketHandler implements HandshakeInterceptor {
     }
 
     @Override
-    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
+    public void afterHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response, @NonNull WebSocketHandler wsHandler, Exception exception) {
         if (exception != null) {
             logger.error("Lỗi khi thực hiện bắt tay với WebSocket: {}", exception.getMessage(), exception);
         } else {

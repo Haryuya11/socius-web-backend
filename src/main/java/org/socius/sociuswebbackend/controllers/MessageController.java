@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.message.MessageRequestDto;
@@ -8,10 +9,8 @@ import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.message.ReadReceiptDto;
 import org.socius.sociuswebbackend.model.dtos.message.SyncMessagesRequestDto;
 import org.socius.sociuswebbackend.model.enums.MessageType;
-import org.socius.sociuswebbackend.repositories.UnreadCountRepository;
 import org.socius.sociuswebbackend.services.FileStorageService;
 import org.socius.sociuswebbackend.services.MessageService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -23,22 +22,20 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/messages")
 @PreAuthorize("isAuthenticated()")
+@RequiredArgsConstructor
 public class MessageController {
     private static final Logger logger = LoggerFactory.getLogger(MessageController.class);
 
-    @Autowired
-    private MessageService messageService;
-
-    @Autowired
-    private FileStorageService fileStorageService;
-
-    @Autowired
-    private UnreadCountRepository unreadCountRepository;
+    final private MessageService messageService;
+    final private FileStorageService fileStorageService;
 
     /**
      * Gửi tin nhắn

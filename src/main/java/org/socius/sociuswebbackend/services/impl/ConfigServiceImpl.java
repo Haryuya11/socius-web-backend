@@ -1,13 +1,12 @@
 package org.socius.sociuswebbackend.services.impl;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.entities.AppSettingsEntity;
 import org.socius.sociuswebbackend.repositories.AppSettingsRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
@@ -17,15 +16,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ConfigServiceImpl implements ConfigService {
 
     private final static Logger logger = LoggerFactory.getLogger(ConfigServiceImpl.class);
 
-    @Autowired
-    private AppSettingsRepository appSettingsRepository;
-
-    @Autowired
-    private Environment environment;
+    final private AppSettingsRepository appSettingsRepository;
+    final private Environment environment;
 
     @Override
     @Cacheable(value = "configCache", key = "#key")

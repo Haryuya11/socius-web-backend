@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.controllers;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,14 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    final private UserService userService;
 
     /**
      * Tìm người dùng theo ID
-     * 
+     *
      * @param userId ID của người dùng cần tìm
      * @return Thông tin người dùng hoặc 404 nếu không tìm thấy
      */

@@ -1,29 +1,24 @@
 package org.socius.sociuswebbackend.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginResponseDto;
 import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.SessionInfoDto;
 import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 import org.socius.sociuswebbackend.services.AuthenticationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
-    @Autowired
-    private AuthenticationService authenticationService;
+    final private AuthenticationService authenticationService;
 
     /**
      * Xác thực người dùng và tạo phiên đăng nhập
@@ -43,7 +38,7 @@ public class AuthController {
         LoginResponseDto result = authenticationService.login(loginRequest, request, response);
         if (result.isAuthenticated()) {
             return ResponseEntity.ok(result);
-        } else if(result.getMessage().contains("Không tìm thấy người dùng")){
+        } else if (result.getMessage().contains("Không tìm thấy người dùng")) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result.getMessage());
         } else if (result.getMessage().contains("Sai mật khẩu")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result.getMessage());
