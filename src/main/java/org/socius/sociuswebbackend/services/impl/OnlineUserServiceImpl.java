@@ -9,6 +9,7 @@ import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,6 @@ import java.util.concurrent.TimeUnit;
 public class OnlineUserServiceImpl implements OnlineUserService {
 
     private static final Logger logger = LoggerFactory.getLogger(OnlineUserServiceImpl.class);
-
-    private static final String ONLINE_USERS_PREFIX = "online:users:";
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -49,7 +48,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
                         .lastSeen(LocalDateTime.now())
                         .build();
 
-                String redisKey = ONLINE_USERS_PREFIX + user.getId();
+                String redisKey = RedisKeyBuilder.userOnlineKey(userId);
                 redisTemplate.opsForValue().set(redisKey, onlineUserStatusDto);
                 redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
 
@@ -63,7 +62,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     @Override
     public void handleUserHeartbeat(UUID userId) {
         try {
-            String redisKey = ONLINE_USERS_PREFIX + userId;
+            String redisKey = RedisKeyBuilder.userOnlineKey(userId);
             OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
             if (onlineUserStatusDto != null) {
                 onlineUserStatusDto.setLastSeen(LocalDateTime.now());
@@ -81,7 +80,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     @Override
     public void markUserOffline(UUID userId, String sessionId) {
         try {
-            String redisKey = ONLINE_USERS_PREFIX + userId;
+            String redisKey = RedisKeyBuilder.userOnlineKey(userId);
             Object value = redisTemplate.opsForValue().get(redisKey);
 
             OnlineUserStatusDto onlineUserStatusDto;
@@ -109,7 +108,8 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     public List<OnlineUserStatusDto> getOnlineUsers() {
         List<OnlineUserStatusDto> onlineUsers = new ArrayList<>();
         try {
-            Set<String> redisKeys = redisTemplate.keys(ONLINE_USERS_PREFIX + "*");
+            String pattern = RedisKeyBuilder.getKeyPattern("user:") + ":online";
+            Set<String> redisKeys = redisTemplate.keys(pattern);
             if (!redisKeys.isEmpty()) {
                 List<Object> values = redisTemplate.opsForValue().multiGet(redisKeys);
                 if (values != null) {
@@ -131,7 +131,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     @Override
     public boolean isUserOnline(UUID userId) {
         try {
-            String redisKey = ONLINE_USERS_PREFIX + userId;
+            String redisKey = RedisKeyBuilder.userOnlineKey(userId);
             Object value = redisTemplate.opsForValue().get(redisKey);
 
             OnlineUserStatusDto onlineUserStatusDto;
@@ -152,7 +152,6 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         }
     }
 
-
     private boolean isRecentlyActive(LocalDateTime lastSeen) {
         if (lastSeen == null) return false;
         LocalDateTime now = LocalDateTime.now();
@@ -162,5 +161,4 @@ public class OnlineUserServiceImpl implements OnlineUserService {
 
         return minutesSinceLastSeen < timeoutMinutes;
     }
-
 }

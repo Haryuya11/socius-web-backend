@@ -3,12 +3,13 @@ package org.socius.sociuswebbackend.services.impl;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.socius.sociuswebbackend.config.ChatRabbitMQConfig;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
 import org.socius.sociuswebbackend.services.ChatMessageProducerService;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.PendingMessagesService;
+import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -39,14 +40,14 @@ public class ChatMessageProducerServiceImpl implements ChatMessageProducerServic
     )
     public void sendChatMessage(MessageResponseDto message, ConversationType conversationType, UUID conversationId) {
         try {
-            String exchange = configService.getString("rabbitmq.exchange.chat", ChatRabbitMQConfig.CHAT_EXCHANGE);
+            String exchange = RabbitMQKeyBuilder.getChatExchange();
             String routingKey;
 
             // Xác định routing key dựa trên loại cuộc trò chuyện
             if (conversationType == ConversationType.DIRECT) {
-                routingKey = "chat.message.private." + conversationId;
+                routingKey = RabbitMQKeyBuilder.getPrivateRoutingKeyPattern(conversationId);
             } else {
-                routingKey = "chat.message.group." + conversationId;
+                routingKey = RabbitMQKeyBuilder.getGroupRoutingKeyPattern(conversationId);
             }
 
             logger.info("Gửi tin nhắn đến exchange {}, routing key {}: {}", exchange, routingKey, message);
@@ -78,9 +79,9 @@ public class ChatMessageProducerServiceImpl implements ChatMessageProducerServic
 
         try {
             // Lưu tin nhắn vào Dead Letter Queue (DLQ) hoặc DB để xử lý sau
-            String dlxExchange = configService.getString("rabbitmq.exchange.dlx", "chat.dlx");
+            String dlxExchange = RabbitMQKeyBuilder.getDeadLetterExchange();
 
-            rabbitTemplate.convertAndSend(dlxExchange, "chat.message.failed", message, message1 -> {
+            rabbitTemplate.convertAndSend(dlxExchange, RabbitMQKeyBuilder.getDeadLetterRoutingKey(), message, message1 -> {
                 message1.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
                 message1.getMessageProperties().getHeaders().put("original_conversation_id", conversationId);
                 message1.getMessageProperties().getHeaders().put("original_conversation_type", conversationType.name());
@@ -108,8 +109,7 @@ public class ChatMessageProducerServiceImpl implements ChatMessageProducerServic
     )
     public void sendReadReceipt(UUID userId, UUID conversationId, UUID lastReadMessageId) {
         try {
-            String exchange = configService.getString("rabbitmq.exchange.chat", ChatRabbitMQConfig.CHAT_EXCHANGE);
-            String routingKey = "chat.receipt." + conversationId;
+            String routingKey = RabbitMQKeyBuilder.getReadReceiptRoutingKeyPattern(conversationId);
 
             Map<String, Object> readReceipt = Map.of(
                     "userId", userId,
@@ -120,7 +120,7 @@ public class ChatMessageProducerServiceImpl implements ChatMessageProducerServic
 
             logger.info("Gửi read receipt cho userId {} trong conversationId {}, lastReadMessageId: {}",
                     userId, conversationId, lastReadMessageId);
-            rabbitTemplate.convertAndSend(exchange, routingKey, readReceipt, message -> {
+            rabbitTemplate.convertAndSend(RabbitMQKeyBuilder.getChatExchange(), routingKey, readReceipt, message -> {
                 message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
                 return message;
             });
@@ -137,7 +137,7 @@ public class ChatMessageProducerServiceImpl implements ChatMessageProducerServic
         logger.error("Đã thử gửi read receipt tối đa số lần thử lại: {}", e.getMessage(), e);
         try {
             // Lưu read receipt vào cache/DB để xử lý sau
-            String key = "failed:receipt:" + userId + ":" + conversationId;
+            String key = RedisKeyBuilder.failedReadReceiptKey(userId, conversationId);
             // Implement appropriate storage mechanism
         } catch (Exception storageError) {
             logger.error("Không thể lưu read receipt: {}", storageError.getMessage());

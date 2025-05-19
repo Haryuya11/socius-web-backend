@@ -27,12 +27,6 @@ public class ConfigServiceImpl implements ConfigService {
     @Autowired
     private Environment environment;
 
-    @Value("${app.cookie.name:SOCIUS_SESSION}")
-    private String defaultCookieName;
-
-    @Value("${app.session.attribute.user_id:USER_ID}")
-    private String defaultUserIdAttribute;
-
     @Override
     @Cacheable(value = "configCache", key = "#key")
     public String getString(String key) {

@@ -2,12 +2,13 @@ package org.socius.sociuswebbackend.services.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.RBACRedisService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -16,36 +17,25 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@RequiredArgsConstructor
 public class RBACRedisServiceImpl implements RBACRedisService {
 
     private static final Logger logger = LoggerFactory.getLogger(RBACRedisServiceImpl.class);
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private ConfigService configService;
-
-    private String getRbacKeyPrefix() {
-        return configService.getString("rbac.key.prefix", "rbac:");
-    }
-
-    private String getRoleUsersPrefix() {
-        return configService.getString("rbac.role.users.prefix", "role:users:");
-    }
-
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ConfigService configService;
 
     @Override
     public void saveCacheUserPermissions(String sessionId, UserPermissionsDto permissionsDto, int expiryTimeMinutes) {
         try {
-            String key = getRbacKeyPrefix() + sessionId;
+            String key = RedisKeyBuilder.rbacKey(sessionId);
 
             // Lưu thông tin quyền của người dùng vào Redis
             redisTemplate.opsForValue().set(key, permissionsDto, expiryTimeMinutes, TimeUnit.MINUTES);
 
             // Lưu mapping từ roleId sang sessionId để dễ xóa khi role thay đổi
             if (permissionsDto.getRoleId() != null) {
-                String roleKey = getRoleUsersPrefix() + permissionsDto.getRoleId();
+                String roleKey = RedisKeyBuilder.roleUsersKey(permissionsDto.getRoleId());
                 redisTemplate.opsForSet().add(roleKey, sessionId);
             }
 
@@ -58,7 +48,7 @@ public class RBACRedisServiceImpl implements RBACRedisService {
     @Override
     public UserPermissionsDto getUserPermissions(String sessionId) {
         try {
-            String key = getRbacKeyPrefix() + sessionId;
+            String key = RedisKeyBuilder.rbacKey(sessionId);
 
             // Lấy thông tin quyền của người dùng từ Redis
             return (UserPermissionsDto) redisTemplate.opsForValue().get(key);
@@ -97,7 +87,7 @@ public class RBACRedisServiceImpl implements RBACRedisService {
     @Override
     public void deleteUserPermissions(String sessionId) {
         try {
-            String key = getRbacKeyPrefix() + sessionId;
+            String key = RedisKeyBuilder.rbacKey(sessionId);
             Object value = redisTemplate.opsForValue().get(key);
 
             UserPermissionsDto permissionsDto = null;
@@ -116,7 +106,7 @@ public class RBACRedisServiceImpl implements RBACRedisService {
 
 
             if (roleId != null) {
-                String roleKey = getRoleUsersPrefix() + roleId;
+                String roleKey = RedisKeyBuilder.roleUsersKey(roleId);
                 redisTemplate.opsForSet().remove(roleKey, sessionId);
             }
 
@@ -137,7 +127,7 @@ public class RBACRedisServiceImpl implements RBACRedisService {
     @Override
     public long deleteByRoleId(UUID roleId) {
         try {
-            String roleKey = getRoleUsersPrefix() + roleId;
+            String roleKey = RedisKeyBuilder.roleUsersKey(roleId);
 
             // Lấy danh sách sessionId liên quan đến roleId
             Set<Object> sessionIds = redisTemplate.opsForSet().members(roleKey);
@@ -148,7 +138,7 @@ public class RBACRedisServiceImpl implements RBACRedisService {
             if (sessionIds != null && !sessionIds.isEmpty()) {
                 // Xóa tất cả sessionId liên quan đến roleId
                 for (Object sessionId : sessionIds) {
-                    String key = getRbacKeyPrefix() + sessionId;
+                    String key = RedisKeyBuilder.rbacKey((String) sessionId);
                     boolean deleted = redisTemplate.delete(key);
                     if (deleted) {
                         count++;
@@ -169,7 +159,7 @@ public class RBACRedisServiceImpl implements RBACRedisService {
     @Override
     public boolean extendExpiration(String sessionId, int expiryTimeMinutes) {
         try {
-            String key = getRbacKeyPrefix() + sessionId;
+            String key = RedisKeyBuilder.rbacKey(sessionId);
 
             // Kiểm tra xem key có tồn tại
             boolean exists = redisTemplate.hasKey(key);

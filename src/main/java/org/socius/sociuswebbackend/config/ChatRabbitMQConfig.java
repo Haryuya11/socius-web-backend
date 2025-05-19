@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.config;
 
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -10,6 +11,7 @@ import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
 @RequiredArgsConstructor
@@ -17,27 +19,16 @@ public class ChatRabbitMQConfig {
 
     final private ConfigService configService;
 
-    public static final String CHAT_EXCHANGE = "chat.exchange";
-    public static final String PRIVATE_QUEUE = "chat.private.queue";
-    public static final String GROUP_QUEUE = "chat.group.queue";
-    public static final String READ_RECEIPT_QUEUE = "chat.receipt.queue";
-    public static final String PRIVATE_ROUTING_KEY = "chat.message.private.*";
-    public static final String GROUP_ROUTING_KEY = "chat.message.group.*";
-    public static final String READ_RECEIPT_ROUTING_KEY = "chat.receipt.*";
-    public static final String CHAT_DLX_EXCHANGE = "chat.dlx";
-    public static final String CHAT_DLX_QUEUE = "chat.dlq";
-    public static final String CHAT_DLX_ROUTING_KEY = "chat.message.failed";
-
     @Bean
     public TopicExchange chatExchange() {
-        return ExchangeBuilder.topicExchange(configService.getString("rabbitmq.exchange.chat", CHAT_EXCHANGE))
+        return ExchangeBuilder.topicExchange(RabbitMQKeyBuilder.getChatExchange())
                 .durable(true)
                 .build();
     }
 
     @Bean
     public DirectExchange deadLetterExchange() {
-        return ExchangeBuilder.directExchange(configService.getString("rabbitmq.exchange.dlx", CHAT_DLX_EXCHANGE))
+        return ExchangeBuilder.directExchange(RabbitMQKeyBuilder.getDeadLetterExchange())
                 .durable(true)
                 .build();
     }
@@ -45,34 +36,34 @@ public class ChatRabbitMQConfig {
     @Bean
     public Queue privateMessageQueue() {
         return QueueBuilder
-                .durable(configService.getString("rabbitmq.queue.private", PRIVATE_QUEUE))
-                .withArgument("x-dead-letter-exchange", configService.getString("rabbitmq.exchange.dlx", CHAT_DLX_EXCHANGE))
-                .withArgument("x-dead-letter-routing-key", configService.getString("rabbitmq.routing.dlq", CHAT_DLX_ROUTING_KEY))
+                .durable(RabbitMQKeyBuilder.getPrivateMessageQueue())
+                .withArgument("x-dead-letter-exchange", RabbitMQKeyBuilder.getDeadLetterExchange())
+                .withArgument("x-dead-letter-routing-key", RabbitMQKeyBuilder.getDeadLetterRoutingKey())
                 .build();
     }
 
     @Bean
     public Queue groupMessageQueue() {
         return QueueBuilder
-                .durable(configService.getString("rabbitmq.queue.group", GROUP_QUEUE))
-                .withArgument("x-dead-letter-exchange", configService.getString("rabbitmq.exchange.dlx", CHAT_DLX_EXCHANGE))
-                .withArgument("x-dead-letter-routing-key", configService.getString("rabbitmq.routing.dlq", CHAT_DLX_ROUTING_KEY))
+                .durable(RabbitMQKeyBuilder.getGroupMessageQueue())
+                .withArgument("x-dead-letter-exchange", RabbitMQKeyBuilder.getDeadLetterExchange())
+                .withArgument("x-dead-letter-routing-key", RabbitMQKeyBuilder.getDeadLetterRoutingKey())
                 .build();
     }
 
     @Bean
     public Queue readReceiptQueue() {
         return QueueBuilder
-                .durable(configService.getString("rabbitmq.queue.receipt", READ_RECEIPT_QUEUE))
-                .withArgument("x-dead-letter-exchange", configService.getString("rabbitmq.exchange.dlx", CHAT_DLX_EXCHANGE))
-                .withArgument("x-dead-letter-routing-key", configService.getString("rabbitmq.routing.dlq", CHAT_DLX_ROUTING_KEY))
+                .durable(RabbitMQKeyBuilder.getReadReceiptQueue())
+                .withArgument("x-dead-letter-exchange", RabbitMQKeyBuilder.getDeadLetterExchange())
+                .withArgument("x-dead-letter-routing-key", RabbitMQKeyBuilder.getDeadLetterRoutingKey())
                 .build();
     }
 
     @Bean
     public Queue deadLetterQueue() {
-        return QueueBuilder.durable(configService.getString("rabbitmq.queue.dlq", CHAT_DLX_QUEUE))
-                .withArgument("x-message-ttl", configService.getInt("rabbitmq.dlx.message.ttl", 86400000)) // Mặc định 24h
+        return QueueBuilder.durable(RabbitMQKeyBuilder.getDeadLetterQueue())
+                .withArgument("x-message-ttl", configService.getInt("rabbitmq.dlx.message.ttl", 86400000))
                 .build();
     }
 
@@ -80,7 +71,7 @@ public class ChatRabbitMQConfig {
     public Binding deadLetterBinding() {
         return BindingBuilder.bind(deadLetterQueue())
                 .to(deadLetterExchange())
-                .with(configService.getString("rabbitmq.routing.dlq", CHAT_DLX_ROUTING_KEY));
+                .with(RabbitMQKeyBuilder.getDeadLetterRoutingKey());
     }
 
     @Bean
@@ -88,7 +79,7 @@ public class ChatRabbitMQConfig {
         return BindingBuilder
                 .bind(privateMessageQueue())
                 .to(chatExchange())
-                .with(configService.getString("rabbitmq.routing.private", PRIVATE_ROUTING_KEY));
+                .with(RabbitMQKeyBuilder.getPrivateRoutingKey());
     }
 
     @Bean
@@ -96,7 +87,7 @@ public class ChatRabbitMQConfig {
         return BindingBuilder
                 .bind(groupMessageQueue())
                 .to(chatExchange())
-                .with(configService.getString("rabbitmq.routing.group", GROUP_ROUTING_KEY));
+                .with(RabbitMQKeyBuilder.getGroupRoutingKey());
     }
 
     @Bean
@@ -104,11 +95,12 @@ public class ChatRabbitMQConfig {
         return BindingBuilder
                 .bind(readReceiptQueue())
                 .to(chatExchange())
-                .with(configService.getString("rabbitmq.routing.receipt", READ_RECEIPT_ROUTING_KEY));
+                .with(RabbitMQKeyBuilder.getReadReceiptRoutingKey());
     }
 
 
     @Bean
+    @Profile("!test")
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             ConnectionFactory connectionFactory,
             MessageConverter messageConverter

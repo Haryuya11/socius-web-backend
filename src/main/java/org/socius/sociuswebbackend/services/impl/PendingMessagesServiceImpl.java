@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.PendingMessagesService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +41,7 @@ public class PendingMessagesServiceImpl implements PendingMessagesService {
             // Liên kết buffer với phiên hiện tại
             String sessionId = getCurrentSessionId(userId);
             if (sessionId != null) {
-                redisTemplate.opsForValue().set("pending:session:" + userId, sessionId,
+                redisTemplate.opsForValue().set(RedisKeyBuilder.pendingSessionKey(userId), sessionId,
                         Duration.ofMinutes(expiryMinutes));
             }
         } else {
@@ -94,6 +95,6 @@ public class PendingMessagesServiceImpl implements PendingMessagesService {
      * @param userId ID người dùng
      */
     private String getCurrentSessionId(UUID userId) {
-        return (String) redisTemplate.opsForValue().get("user:session:" + userId);
+        return (String) redisTemplate.opsForValue().get(RedisKeyBuilder.userCurrentSessionKey(userId));
     }
 }

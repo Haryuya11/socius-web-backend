@@ -13,6 +13,7 @@ import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -47,7 +48,7 @@ public class OnlineUserServiceImplTest {
     private UserEntity RegularUser;
     private OnlineUserStatusDto adminStatusDto;
     private OnlineUserStatusDto regularStatusDto;
-    private final String ONLINE_USERS_PREFIX = "online:users:";
+//    private final String ONLINE_USERS_PREFIX = "online:users:";
 
     @BeforeEach
     void setUp() {
@@ -77,7 +78,7 @@ public class OnlineUserServiceImplTest {
     @Test
     @DisplayName("Cập nhật trạng thái người dùng online thành công")
     void updateOnlineUserStatusShouldSucceed() {
-        String key = ONLINE_USERS_PREFIX + adminUser.getId();
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
         when(userRepository.findById(adminUser.getId())).thenReturn(Optional.of(adminUser));
 
         onlineUserService.updateUserOnlineStatus(adminUser.getId(), "sessionId1");
@@ -89,7 +90,7 @@ public class OnlineUserServiceImplTest {
     @Test
     @DisplayName("Xử lý heartbeat thành công khi người dùng đang online")
     void handleUserHeartbeatShouldUpdateLastSeenWhenUserIsOnline() {
-        String key = ONLINE_USERS_PREFIX + adminUser.getId();
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
         when(valueOperations.get(key)).thenReturn(adminStatusDto);
 
         onlineUserService.handleUserHeartbeat(adminUser.getId());
@@ -101,7 +102,7 @@ public class OnlineUserServiceImplTest {
     @Test
     @DisplayName("Xử lý heartbeat không làm gì khi người dùng không online")
     void handleUserHeartbeatShouldDoNothingWhenUserIsNotOnline() {
-        String key = ONLINE_USERS_PREFIX + adminUser.getId();
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
         when(valueOperations.get(key)).thenReturn(null);
 
         onlineUserService.handleUserHeartbeat(adminUser.getId());
@@ -112,7 +113,7 @@ public class OnlineUserServiceImplTest {
     @Test
     @DisplayName("Đánh dấu người dùng offline thành công")
     void markUserOfflineShouldSucceed() {
-        String key = ONLINE_USERS_PREFIX + adminUser.getId();
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
         when(valueOperations.get(key)).thenReturn(adminStatusDto);
 
         onlineUserService.markUserOffline(adminUser.getId(), "sessionId1");
@@ -123,11 +124,13 @@ public class OnlineUserServiceImplTest {
     @Test
     @DisplayName("Lấy trạng thái người dùng online thành công")
     void getUserOnlineStatusShouldSucceed() {
+        String pattern = RedisKeyBuilder.getKeyPattern("user:") + ":online";
+
         Set<String> keys = new HashSet<>(Arrays.asList(
-                ONLINE_USERS_PREFIX + adminUser.getId(),
-                ONLINE_USERS_PREFIX + RegularUser.getId()
+                RedisKeyBuilder.userOnlineKey(adminUser.getId()),
+                RedisKeyBuilder.userOnlineKey(RegularUser.getId())
         ));
-        when(redisTemplate.keys(ONLINE_USERS_PREFIX + "*")).thenReturn(keys);
+        when(redisTemplate.keys(pattern)).thenReturn(keys);
 
         List<Object> onlineUsers = new ArrayList<>();
         onlineUsers.add(adminStatusDto);
@@ -146,7 +149,7 @@ public class OnlineUserServiceImplTest {
     @Test
     @DisplayName("Kiểm tra người dùng đang online thành công")
     void isUserOnlineShouldSucceed() {
-        String key = ONLINE_USERS_PREFIX + adminUser.getId();
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
         when(valueOperations.get(key)).thenReturn(adminStatusDto);
 
         boolean result = onlineUserService.isUserOnline(adminUser.getId());
@@ -158,7 +161,7 @@ public class OnlineUserServiceImplTest {
     @Test
     @DisplayName("Kiểm tra người dùng không online khi không có trong Redis")
     void isUserOnlineShouldReturnFalseWhenNotInRedis() {
-        String key = ONLINE_USERS_PREFIX + adminUser.getId();
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
         when(valueOperations.get(key)).thenReturn(null);
 
         boolean result = onlineUserService.isUserOnline(adminUser.getId());
@@ -170,7 +173,7 @@ public class OnlineUserServiceImplTest {
     @Test
     @DisplayName("Kiểm tra người dùng không online khi lastSeen quá cũ")
     void isUserOnlineShouldReturnFalseWhenLastSeenTooOld() {
-        String key = ONLINE_USERS_PREFIX + adminUser.getId();
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
         OnlineUserStatusDto oldStatusDto = OnlineUserStatusDto.builder()
                 .userId(adminUser.getId())
                 .fullName(adminUser.getFullName())

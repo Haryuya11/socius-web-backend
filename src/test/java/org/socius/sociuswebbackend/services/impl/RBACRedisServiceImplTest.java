@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
 import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
@@ -46,17 +47,13 @@ public class RBACRedisServiceImplTest {
     private RBACRedisServiceImpl rbacRedisService;
 
     private final String sessionId = "test-session-id";
-    private final String rbacPrefix = "rbac:";
-    private final String roleUsersPrefix = "role:users:";
+
     private UserPermissionsDto adminPermissionsDto;
     private final UUID adminRoleId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     @BeforeEach
     void setUp() {
         adminPermissionsDto = AuthTestDataUtil.createAdminPermissionsDto();
-
-        when(configService.getString(eq("rbac.key.prefix"), anyString())).thenReturn(rbacPrefix);
-        when(configService.getString(eq("rbac.role.users.prefix"), anyString())).thenReturn(roleUsersPrefix);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(redisTemplate.opsForSet()).thenReturn(setOperations);
     }
@@ -65,8 +62,8 @@ public class RBACRedisServiceImplTest {
     @DisplayName("Lưu bộ nhớ đệm quyền người dùng phải lưu trữ quyền trong Redis")
     void saveCacheUserPermissionsShouldStorePermissionsInRedis() {
         int expiryTimeMinutes = 30;
-        String key = rbacPrefix + sessionId;
-        String roleKey = roleUsersPrefix + adminRoleId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
 
         rbacRedisService.saveCacheUserPermissions(sessionId, adminPermissionsDto, expiryTimeMinutes);
 
@@ -77,7 +74,7 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Get user permissions should retrieve permissions from Redis")
     void getUserPermissionsShouldRetrievePermissionsFromRedis() {
-        String key = rbacPrefix + sessionId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
 
         when(valueOperations.get(key)).thenReturn(adminPermissionsDto);
 
@@ -91,7 +88,7 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Has permission should return true when user has the permission")
     void hasPermissionShouldReturnTrueWhenUserHasPermission() {
-        String key = rbacPrefix + sessionId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
         when(valueOperations.get(key)).thenReturn(adminPermissionsDto);
         boolean result = rbacRedisService.hasPermission(sessionId, "USER_CREATE");
 
@@ -102,7 +99,7 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Has permission should return false when user doesn't have the permission")
     void hasPermissionShouldReturnFalseWhenUserDoesNotHavePermission() {
-        String key = rbacPrefix + sessionId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
         when(valueOperations.get(key)).thenReturn(adminPermissionsDto);
 
         boolean result = rbacRedisService.hasPermission(sessionId, "NOT_EXISTING_PERMISSION");
@@ -114,7 +111,7 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Has role should return true when user has the role")
     void hasRoleShouldReturnTrueWhenUserHasRole() {
-        String key = rbacPrefix + sessionId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
         when(valueOperations.get(key)).thenReturn(adminPermissionsDto);
 
         boolean result = rbacRedisService.hasRole(sessionId, "ADMIN");
@@ -126,7 +123,7 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Has role should return false when user doesn't have the role")
     void hasRoleShouldReturnFalseWhenUserDoesNotHaveRole() {
-        String key = rbacPrefix + sessionId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
         when(valueOperations.get(key)).thenReturn(adminPermissionsDto);
 
         boolean result = rbacRedisService.hasRole(sessionId, "USER");
@@ -138,8 +135,8 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Delete user permissions should remove permissions from Redis")
     void deleteUserPermissionsShouldRemovePermissionsFromRedis() {
-        String key = rbacPrefix + sessionId;
-        String roleKey = roleUsersPrefix + adminRoleId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
 
         when(valueOperations.get(key)).thenReturn(adminPermissionsDto);
         when(redisTemplate.delete(key)).thenReturn(true);
@@ -153,16 +150,17 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Delete by role ID should remove all user permissions for that role")
     void deleteByRoleIdShouldRemoveAllUserPermissionsForThatRole() {
-        String key = rbacPrefix + sessionId;
-        String roleKey = roleUsersPrefix + adminRoleId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
+        String anotherKey = RedisKeyBuilder.rbacKey("another-session-id");
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
         Set<Object> sessionIds = new HashSet<>();
         sessionIds.add(sessionId);
         sessionIds.add("another-session-id");
 
         when(setOperations.members(roleKey)).thenReturn(sessionIds);
 
-        when(valueOperations.get(rbacPrefix + sessionId)).thenReturn(adminPermissionsDto);
-        when(valueOperations.get(rbacPrefix + "another-session-id")).thenReturn(adminPermissionsDto);
+        when(valueOperations.get(key)).thenReturn(adminPermissionsDto);
+        when(valueOperations.get(anotherKey)).thenReturn(adminPermissionsDto);
 
         when(redisTemplate.delete(anyString())).thenReturn(true);
 
@@ -171,8 +169,8 @@ public class RBACRedisServiceImplTest {
         assertEquals(2, count, "Số lượng phiên không khớp");
         verify(redisTemplate).delete(roleKey);
 
-        verify(redisTemplate).delete(rbacPrefix + sessionId);
-        verify(redisTemplate).delete(rbacPrefix + "another-session-id");
+        verify(redisTemplate).delete(key);
+        verify(redisTemplate).delete(anotherKey);
 
         verify(redisTemplate).delete(roleKey);
     }
@@ -180,7 +178,7 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Delete by role ID should handle empty set gracefully")
     void deleteByRoleIdShouldHandleEmptySetGracefully() {
-        String roleKey = roleUsersPrefix + adminRoleId;
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
         when(setOperations.members(roleKey)).thenReturn(new HashSet<>());
 
         long count = rbacRedisService.deleteByRoleId(adminRoleId);
@@ -192,8 +190,8 @@ public class RBACRedisServiceImplTest {
 
     @Test
     @DisplayName("Delete by role ID should handle exceptions gracefully")
-    void deleteByRoleIdShouldHandleExceptionsGracefully(){
-        String roleKey = roleUsersPrefix + adminRoleId;
+    void deleteByRoleIdShouldHandleExceptionsGracefully() {
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
         when(setOperations.members(roleKey)).thenThrow(new RuntimeException("Test exception"));
 
         long count = rbacRedisService.deleteByRoleId(adminRoleId);
@@ -205,7 +203,7 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Extend expiration should update TTL for cache entry")
     void extendExpirationShouldUpdateTTLForCacheEntry() {
-        String key = rbacPrefix + sessionId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
         int expiryTimeMinutes = 30;
 
         when(redisTemplate.hasKey(key)).thenReturn(true);
@@ -222,7 +220,7 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Extend expiration should return false when key doesn't exist")
     void extendExpirationShouldReturnFalseWhenKeyDoesNotExist() {
-        String key = rbacPrefix + sessionId;
+        String key = RedisKeyBuilder.rbacKey(sessionId);
         int expiryTimeMinutes = 30;
 
         when(redisTemplate.hasKey(key)).thenReturn(false);

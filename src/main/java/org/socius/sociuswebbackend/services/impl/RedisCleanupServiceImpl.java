@@ -6,6 +6,7 @@ import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
 import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.RedisCleanupService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,7 +21,7 @@ public class RedisCleanupServiceImpl implements RedisCleanupService {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisCleanupServiceImpl.class);
 
-    private static final String ONLINE_USERS_PREFIX = "online:users:";
+    private static final String ONLINE_PREFIX = "online:users:";
     private static final String RBAC_PREFIX = "rbac:";
     private static final String SESSION_PREFIX = "spring:session:";
     private static final String CACHE_PREFIX = "cache:";
@@ -37,7 +38,7 @@ public class RedisCleanupServiceImpl implements RedisCleanupService {
     @Scheduled(fixedRateString = "${redis.cleanup.online-status.interval:300000}")
     public void cleanupExpiredOnlineStatus() {
         try {
-            Set<String> redisKeys = redisTemplate.keys(ONLINE_USERS_PREFIX + "*");
+            Set<String> redisKeys = redisTemplate.keys(RedisKeyBuilder.getKeyPattern(ONLINE_PREFIX));
             if (!redisKeys.isEmpty()) {
                 for (String redisKey : redisKeys) {
                     OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
@@ -56,7 +57,7 @@ public class RedisCleanupServiceImpl implements RedisCleanupService {
     @Scheduled(fixedRateString = "${redis.cleanup.user-permissions.interval:1800000}")
     public void cleanupExpiredUserPermissions() {
         try {
-            Set<String> redisKeys = redisTemplate.keys(RBAC_PREFIX + "*");
+            Set<String> redisKeys = redisTemplate.keys(RedisKeyBuilder.getKeyPattern(RBAC_PREFIX));
             if (!redisKeys.isEmpty()) {
                 int count = 0;
                 for (String redisKey : redisKeys) {
@@ -87,7 +88,7 @@ public class RedisCleanupServiceImpl implements RedisCleanupService {
     @Scheduled(fixedRateString = "${redis.cleanup.sessions.interval:3600000}")
     public void cleanupExpiredSession() {
         try {
-            Set<String> redisKeys = redisTemplate.keys(SESSION_PREFIX + "*");
+            Set<String> redisKeys = redisTemplate.keys(RedisKeyBuilder.getKeyPattern(SESSION_PREFIX));
             if (!redisKeys.isEmpty()) {
                 int count = 0;
                 for (String redisKey : redisKeys) {
@@ -112,7 +113,7 @@ public class RedisCleanupServiceImpl implements RedisCleanupService {
     @Scheduled(fixedRateString = "${redis.cleanup.cache.interval:3600000}")
     public void cleanupExpiredCache() {
         try {
-            Set<String> redisKeys = redisTemplate.keys(CACHE_PREFIX + "*");
+            Set<String> redisKeys = redisTemplate.keys(RedisKeyBuilder.getKeyPattern(CACHE_PREFIX));
             if (!redisKeys.isEmpty()) {
                 int count = 0;
                 for (String redisKey : redisKeys) {

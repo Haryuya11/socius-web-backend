@@ -13,7 +13,8 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
-import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.services.PendingMessagesService;
+import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.socius.sociuswebbackend.utils.ChatTestDataUtil;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -23,7 +24,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -32,7 +34,7 @@ public class ChatMessageProducerServiceImplTest {
     private RabbitTemplate rabbitTemplate;
 
     @Mock
-    private ConfigService configService;
+    private PendingMessagesService pendingMessagesService;
 
     @InjectMocks
     private ChatMessageProducerServiceImpl chatMessageProducerService;
@@ -55,14 +57,6 @@ public class ChatMessageProducerServiceImplTest {
         conversationId = UUID.randomUUID();
         messageResponseDto = ChatTestDataUtil.createMessageResponseDto();
         messageResponseDto.setConversationId(conversationId);
-
-        // Mock các giá trị cấu hình
-        when(configService.getString(eq("rabbitmq.exchange.chat"), anyString()))
-                .thenReturn("chat-exchange");
-        when(configService.getString(eq("rabbitmq.direct-chat.routing-key"), anyString()))
-                .thenReturn("direct");
-        when(configService.getString(eq("rabbitmq.group-chat.routing-key"), anyString()))
-                .thenReturn("group");
     }
 
     @Test
@@ -76,12 +70,12 @@ public class ChatMessageProducerServiceImplTest {
                 exchangeCaptor.capture(),
                 routingKeyCaptor.capture(),
                 messageCaptor.capture(),
-                any(MessagePostProcessor.class)  // Chỉ định rõ loại của MessagePostProcessor
+                any(MessagePostProcessor.class)
         );
 
         // Kiểm tra giá trị các tham số
-        assertEquals("chat-exchange", exchangeCaptor.getValue());
-        assertEquals("chat.message.private." + conversationId, routingKeyCaptor.getValue());
+        assertEquals(RabbitMQKeyBuilder.getChatExchange(), exchangeCaptor.getValue());
+        assertEquals(RabbitMQKeyBuilder.getPrivateRoutingKeyPattern(conversationId), routingKeyCaptor.getValue());
         assertEquals(messageResponseDto, messageCaptor.getValue());
     }
 
@@ -100,8 +94,8 @@ public class ChatMessageProducerServiceImplTest {
         );
 
         // Kiểm tra giá trị các tham số
-        assertEquals("chat-exchange", exchangeCaptor.getValue());
-        assertEquals("chat.message.group." + conversationId, routingKeyCaptor.getValue());
+        assertEquals(RabbitMQKeyBuilder.getChatExchange(), exchangeCaptor.getValue());
+        assertEquals(RabbitMQKeyBuilder.getGroupRoutingKeyPattern(conversationId), routingKeyCaptor.getValue());
         assertEquals(messageResponseDto, messageCaptor.getValue());
     }
 
@@ -127,6 +121,11 @@ public class ChatMessageProducerServiceImplTest {
                 any(MessageResponseDto.class),
                 any(MessagePostProcessor.class)
         );
+
+        verify(pendingMessagesService).addPendingMessage(
+                any(UUID.class),
+                eq(messageResponseDto)
+        );
     }
 
     @Test
@@ -135,17 +134,15 @@ public class ChatMessageProducerServiceImplTest {
         UUID userId = UUID.randomUUID();
         UUID lastReadMessageId = UUID.randomUUID();
 
-        when(configService.getString(eq("rabbitmq.exchange.chat"), anyString()))
-                .thenReturn("chat-exchange");
-
         // Thực thi
         chatMessageProducerService.sendReadReceipt(userId, conversationId, lastReadMessageId);
 
-        // Kiểm tra - sử dụng cú pháp verify phù hợp với phương thức thực tế
+        // Kiểm tra
         verify(rabbitTemplate).convertAndSend(
-                eq("chat-exchange"),
+                eq(RabbitMQKeyBuilder.getChatExchange()),
                 anyString(),
-                any(Map.class)
+                any(Map.class),
+                any(MessagePostProcessor.class)
         );
     }
 }

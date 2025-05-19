@@ -1,18 +1,20 @@
 package org.socius.sociuswebbackend.services.impl;
 
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.RBACRedisService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.session.Session;
 import org.springframework.session.data.redis.RedisIndexedSessionRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class SessionManagementServiceImpl implements SessionManagementService {
@@ -38,13 +40,17 @@ public class SessionManagementServiceImpl implements SessionManagementService {
     public Set<String> getSessionsByRoleId(UUID roleId) {
         Set<String> sessionIds = new HashSet<>();
         try {
-            String roleUserPrefix = configService.getString("rbac.role.users.prefix", "role:users:");
-            String roleKey = roleUserPrefix + roleId.toString();
-            sessionIds = (Set<String>) (Set<?>) redisTemplate.opsForSet().members(roleKey);
-            if (sessionIds != null) {
+            Set<?> rawSet = redisTemplate.opsForSet().members(RedisKeyBuilder.roleUsersKey(roleId));
+            if (rawSet != null) {
+                for (Object obj : rawSet) {
+                    if (obj instanceof String) {
+                        sessionIds.add((String) obj);
+                    }
+                }
                 logger.info("Đã tìm thấy {} phiên cho roleId: {}", sessionIds.size(), roleId);
             } else {
                 logger.info("Không tìm thấy phiên nào cho roleId: {}", roleId);
+                sessionIds = new HashSet<>();
             }
         } catch (Exception e) {
             logger.error("Lỗi khi lấy danh sách phiên cho roleId {}: {}", roleId, e.getMessage(), e);
@@ -67,9 +73,8 @@ public class SessionManagementServiceImpl implements SessionManagementService {
                 logger.warn("Không thể xóa quyền người dùng: {}", e.getMessage());
             }
 
-            String sessionPrefix = "spring:session:";
-            redisTemplate.delete(sessionPrefix + "sessions:" + sessionId);
-            redisTemplate.delete(sessionPrefix + "sessions:expires:" + sessionId);
+            redisTemplate.delete(RedisKeyBuilder.springSessionKey(sessionId));
+            redisTemplate.delete(RedisKeyBuilder.springSessionExpiresKey(sessionId));
 
             logger.info("Đã xóa phiên {} khỏi Redis", sessionId);
             return true;

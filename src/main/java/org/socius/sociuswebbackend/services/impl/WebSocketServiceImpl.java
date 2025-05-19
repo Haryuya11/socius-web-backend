@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.message.TypingIndicatorDto;
 import org.socius.sociuswebbackend.services.*;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -80,7 +81,7 @@ public class WebSocketServiceImpl implements WebSocketService {
 
         if (userId != null && sessionId != null) {
             // Đánh dấu người dùng là offline sau 1 thời gian nhất định
-            String disconnectKey = "disconnect:time:" + userId;
+            String disconnectKey = RedisKeyBuilder.wsDisconnectTimeKey(userId);
             redisTemplate.opsForValue().set(
                     disconnectKey,
                     System.currentTimeMillis(),
@@ -131,7 +132,7 @@ public class WebSocketServiceImpl implements WebSocketService {
 
 
             // Kiểm tra nếu đây là kết nối lại trong thời gian cho phép
-            String reconnectKey = "reconnect:" + userId + ":" + sessionId;
+            String reconnectKey = RedisKeyBuilder.wsUserReconnectKey(userId, sessionId);
             if (redisTemplate.hasKey(reconnectKey)) {
                 // Xử lý kết nối lại
                 handleReconnect(userId);
@@ -198,7 +199,7 @@ public class WebSocketServiceImpl implements WebSocketService {
      */
     private void createReconnectStrategy(UUID userId, String sessionId) {
         // Lưu vào redis với TTL
-        String reconnectKey = "reconnect:" + userId + ":" + sessionId;
+        String reconnectKey = RedisKeyBuilder.wsUserReconnectKey(userId, sessionId);
         redisTemplate.opsForValue().set(reconnectKey, System.currentTimeMillis(),
                 Duration.ofMinutes(configService.getInt("websocket.reconnect.expiry.minutes", 30)));
 
@@ -285,6 +286,6 @@ public class WebSocketServiceImpl implements WebSocketService {
      */
     private boolean isValidSession(String sessionId) {
         // Kiểm tra trong Redis xem phiên còn tồn tại không
-        return redisTemplate.hasKey("spring:session:sessions:" + sessionId);
+        return redisTemplate.hasKey(RedisKeyBuilder.springSessionKey(sessionId));
     }
 }
