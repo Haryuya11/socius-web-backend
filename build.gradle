@@ -86,6 +86,9 @@ dependencies {
     // Jackson
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0'
 
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
@@ -117,4 +120,8 @@ tasks.named('test') {
 tasks.named('asciidoctor') {
     inputs.dir snippetsDir
     dependsOn test
+}
+
+test {
+    jvmArgs = ["-javaagent:${classpath.find { it.name.contains('byte-buddy-agent') }.absolutePath}"]
 }

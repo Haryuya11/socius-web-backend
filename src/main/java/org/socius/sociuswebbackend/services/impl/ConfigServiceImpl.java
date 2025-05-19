@@ -86,6 +86,36 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    public double getDouble(String key) {
+        String value = getString(key);
+        if (value == null) {
+            logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0.0", key);
+            return 0.0;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            logger.error("Lỗi chuyển đổi giá trị [{}] thành số thực cho key: {}", value, key, e);
+            return 0.0;
+        }
+    }
+
+    @Override
+    public double getDouble(String key, double defaultValue) {
+        String value = getString(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            logger.error("Lỗi chuyển đổi giá trị [{}] thành số thực cho key: {}, sử dụng giá trị mặc định: {}",
+                    value, key, defaultValue, e);
+            return defaultValue;
+        }
+    }
+
+    @Override
     public boolean getBoolean(String key) {
         String value = getString(key);
         return value != null && Boolean.parseBoolean(value);

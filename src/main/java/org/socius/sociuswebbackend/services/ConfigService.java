@@ -39,6 +39,23 @@ public interface ConfigService {
     int getInt(String key, int defaultValue);
 
     /**
+     * Lấy giá trị cấu hình dạng số thực
+     *
+     * @param key Khóa cấu hình
+     * @return Giá trị cấu hình
+     */
+    double getDouble(String key);
+
+    /**
+     * Lấy giá trị cấu hình dạng số thực với giá trị mặc định
+     *
+     * @param key Khóa cấu hình
+     * @param defaultValue Giá trị mặc định nếu không tìm thấy hoặc không phải số
+     * @return Giá trị cấu hình hoặc giá trị mặc định
+     */
+    double getDouble(String key, double defaultValue);
+
+    /**
      * Lấy giá trị cấu hình dạng boolean
      *
      * @param key Khóa cấu hình
@@ -120,4 +137,5 @@ public interface ConfigService {
      * @return Giá trị từ bảng app_settings hoặc giá trị mặc định
      */
     String getSetting(String key, String defaultValue);
+
 }

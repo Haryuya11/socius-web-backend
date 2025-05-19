@@ -23,37 +23,45 @@ public class EntityMappingUtil {
             entity.setId(id);
             return entity;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create entity instance: " + entityClass.getSimpleName(), e);
+            throw new RuntimeException("Lỗi khi tạo phiên bản entity: " + entityClass.getSimpleName(), e);
         }
     }
-    
+
     public UserEntity mapUserIdToEntity(UUID id) {
         return mapIdToEntity(id, UserEntity.class);
     }
-    
+
     public PositionEntity mapPositionIdToEntity(UUID id) {
         return mapIdToEntity(id, PositionEntity.class);
     }
-    
+
     public DepartmentEntity mapDepartmentIdToEntity(UUID id) {
         return mapIdToEntity(id, DepartmentEntity.class);
     }
-    
+
     public TeamEntity mapTeamIdToEntity(UUID id) {
         return mapIdToEntity(id, TeamEntity.class);
     }
-    
+
     public RoleEntity mapRoleIdToEntity(UUID id) {
         return mapIdToEntity(id, RoleEntity.class);
     }
-    
+
     public PeriodEntity mapPeriodIdToEntity(UUID id) {
         return mapIdToEntity(id, PeriodEntity.class);
     }
-    
+
     public PermissionEntity mapPermissionIdToEntity(UUID id) {
         return mapIdToEntity(id, PermissionEntity.class);
     }
 
-    
+    public ConversationEntity mapConversationIdToEntity(UUID id) {
+        return mapIdToEntity(id, ConversationEntity.class);
+    }
+
+    public MessageEntity mapMessageIdToEntity(UUID id) {
+        return mapIdToEntity(id, MessageEntity.class);
+    }
+
+
 }

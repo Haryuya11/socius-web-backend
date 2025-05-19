@@ -40,18 +40,7 @@ services:
       - rabbitmq_data_vol:/var/lib/rabbitmq
     restart: unless-stopped
 
-  #Cassandra Service
-  cassandra_db:
-    image: cassandra:latest # Hoặc phiên bản cụ thể
-    container_name: team_cassandra_db
-    ports:
-      - "9042:9042" # CQL port
-    volumes:
-      - cassandra_data_vol:/var/lib/cassandra # Named volume
-    restart: unless-stopped
-
 volumes:
   postgres_data_vol:
   redis_data_vol:
   rabbitmq_data_vol:
-  cassandra_data_vol:
