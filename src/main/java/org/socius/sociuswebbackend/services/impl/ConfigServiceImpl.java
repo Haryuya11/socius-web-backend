@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.entities.AppSettingsEntity;
 import org.socius.sociuswebbackend.repositories.AppSettingsRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
@@ -23,6 +24,13 @@ public class ConfigServiceImpl implements ConfigService {
 
     final private AppSettingsRepository appSettingsRepository;
     final private Environment environment;
+
+    private ConfigService self;
+
+    @Autowired
+    public void setSelf(ConfigService self) {
+        this.self = self;
+    }
 
     @Override
     @Cacheable(value = "configCache", key = "#key")
@@ -48,7 +56,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public int getInt(String key) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null) {
             logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0", key);
             return 0;
@@ -63,7 +71,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public int getInt(String key, int defaultValue) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null) {
             return defaultValue;
         }
@@ -78,7 +86,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public double getDouble(String key) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null) {
             logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0.0", key);
             return 0.0;
@@ -93,7 +101,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public double getDouble(String key, double defaultValue) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null) {
             return defaultValue;
         }
@@ -108,7 +116,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public long getLong(String key) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null) {
             logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0", key);
             return 0;
@@ -123,7 +131,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public long getLong(String key, long defaultValue) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null) {
             return defaultValue;
         }
@@ -138,19 +146,19 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public boolean getBoolean(String key) {
-        String value = getString(key);
-        return value != null && Boolean.parseBoolean(value);
+        String value = self.getString(key);
+        return Boolean.parseBoolean(value);
     }
 
     @Override
     public boolean getBoolean(String key, boolean defaultValue) {
-        String value = getString(key);
+        String value = self.getString(key);
         return value != null ? Boolean.parseBoolean(value) : defaultValue;
     }
 
     @Override
     public List<String> getList(String key) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null || value.isEmpty()) {
             return Collections.emptyList();
         }
