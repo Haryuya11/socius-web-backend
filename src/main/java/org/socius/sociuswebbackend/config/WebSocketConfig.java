@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.websocket.UserOnlineWebSocketHandler;
+import org.socius.sociuswebbackend.websocket.WebSocketCsrfInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -34,6 +35,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     final private ConfigService configService;
     final private UserOnlineWebSocketHandler userOnlineWebSocketHandler;
     final private RedisTemplate<String, Object> redisTemplate;
+    final private WebSocketCsrfInterceptor webSocketCsrfInterceptor;
 
     @Bean
     public TaskScheduler webSocketTaskScheduler() {
@@ -54,12 +56,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Điểm kết nối chung
         registry.addEndpoint("/ws")
                 .setAllowedOrigins(allowedOrigins)
+                .addInterceptors(webSocketCsrfInterceptor)
                 .withSockJS();
 
         // Điểm kết nối riêng cho heartbeat
         registry.addEndpoint("/ws-heartbeat")
                 .setAllowedOrigins(allowedOrigins)
-                .addInterceptors(userOnlineWebSocketHandler)
+                .addInterceptors(userOnlineWebSocketHandler, webSocketCsrfInterceptor)
                 .withSockJS();
     }
 
