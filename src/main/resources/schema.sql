@@ -351,16 +351,20 @@ CREATE TABLE conversation_members
 -- Bảng tin nhắn
 CREATE TABLE messages
 (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    conversation_id UUID NOT NULL REFERENCES conversations (id),
-    sender_id       UUID NOT NULL REFERENCES users (id),
-    content         TEXT NOT NULL,
-    message_type    VARCHAR(20)      DEFAULT 'TEXT' CHECK (message_type IN ('TEXT', 'IMAGE', 'FILE', 'AUDIO', 'VIDEO')),
-    media_url       TEXT,
-    created_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
-    is_edited       BOOLEAN          DEFAULT FALSE,
-    is_deleted      BOOLEAN          DEFAULT FALSE
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id    UUID NOT NULL REFERENCES conversations (id),
+    sender_id          UUID NOT NULL REFERENCES users (id),
+    content            TEXT NOT NULL,
+    message_type       VARCHAR(20)      DEFAULT 'TEXT' CHECK (message_type IN ('TEXT', 'IMAGE', 'FILE', 'AUDIO', 'VIDEO')),
+    media_url          TEXT,
+    created_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    is_edited          BOOLEAN          DEFAULT FALSE,
+    is_deleted         BOOLEAN          DEFAULT FALSE,
+    media_cleaned_up   BOOLEAN          DEFAULT FALSE,
+    file_size          BIGINT,
+    file_original_name TEXT,
+    file_content_type  TEXT
 );
 
 -- Bảng trạng thái đọc tin nhắn
@@ -378,7 +382,7 @@ CREATE TABLE unread_counts
 (
     conversation_id      UUID NOT NULL REFERENCES conversations (id),
     user_id              UUID NOT NULL REFERENCES users (id),
-    count                INT DEFAULT 0,
+    unread_count         INT DEFAULT 0,
     last_read_message_id UUID REFERENCES messages (id),
     PRIMARY KEY (conversation_id, user_id)
 );
@@ -441,6 +445,9 @@ VALUES ('rabbitmq.prefetch.count', '10', 'Số lượng tin nhắn được gử
        ('rabbitmq.dlq.retry.window.minutes', '360',
         'Thời gian tối đa để gửi lại tin nhắn trong Dead Letter Queue (phút)'),
        ('websocket.disconnect.grace.seconds', '60', 'Thời gian chờ trước khi ngắt kết nối WebSocket (giây)'),
-       ('session.cookie.max.age', 86400, 'Thời gian sống của cookie phiên (giây)'),
-       ('session.cookie.secure', 'true', 'Đặt cookie phiên là bảo mật (chỉ gửi qua HTTPS)')
+       ('message.file.cleanup.days', '30', 'Thời gian sống của các tệp đính kèm tin nhắn (ngày)'),
+       ('session.cookie.max.age', '86400', 'Thời gian sống của cookie phiên (giây)'),
+       ('session.cookie.secure', 'true', 'Đặt cookie phiên là bảo mật (chỉ gửi qua HTTPS)'),
+       ('file.upload.max.size', '52428800', 'Kích thước tối đa của tệp tải lên (byte)')
+
 ON CONFLICT (setting_key) DO NOTHING;

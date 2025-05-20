@@ -15,7 +15,7 @@ public interface ConfigService {
     /**
      * Lấy giá trị cấu hình dạng chuỗi với giá trị mặc định
      *
-     * @param key Khóa cấu hình
+     * @param key          Khóa cấu hình
      * @param defaultValue Giá trị mặc định nếu không tìm thấy
      * @return Giá trị cấu hình hoặc giá trị mặc định
      */
@@ -32,7 +32,7 @@ public interface ConfigService {
     /**
      * Lấy giá trị cấu hình dạng số nguyên với giá trị mặc định
      *
-     * @param key Khóa cấu hình
+     * @param key          Khóa cấu hình
      * @param defaultValue Giá trị mặc định nếu không tìm thấy hoặc không phải số
      * @return Giá trị cấu hình hoặc giá trị mặc định
      */
@@ -49,11 +49,28 @@ public interface ConfigService {
     /**
      * Lấy giá trị cấu hình dạng số thực với giá trị mặc định
      *
-     * @param key Khóa cấu hình
+     * @param key          Khóa cấu hình
      * @param defaultValue Giá trị mặc định nếu không tìm thấy hoặc không phải số
      * @return Giá trị cấu hình hoặc giá trị mặc định
      */
     double getDouble(String key, double defaultValue);
+
+    /**
+     * Lấy giá trị cấu hình dạng số nguyên dài
+     *
+     * @param key Khóa cấu hình
+     * @return Giá trị cấu hình
+     */
+    long getLong(String key);
+
+    /**
+     * Lấy giá trị cấu hình dạng số nguyên dài với giá trị mặc định
+     *
+     * @param key          Khóa cấu hình
+     * @param defaultValue Giá trị mặc định nếu không tìm thấy hoặc không phải số
+     * @return Giá trị cấu hình hoặc giá trị mặc định
+     */
+    long getLong(String key, long defaultValue);
 
     /**
      * Lấy giá trị cấu hình dạng boolean
@@ -66,7 +83,7 @@ public interface ConfigService {
     /**
      * Lấy giá trị cấu hình dạng boolean với giá trị mặc định
      *
-     * @param key Khóa cấu hình
+     * @param key          Khóa cấu hình
      * @param defaultValue Giá trị mặc định nếu không tìm thấy
      * @return Giá trị cấu hình hoặc giá trị mặc định
      */
@@ -90,7 +107,7 @@ public interface ConfigService {
     /**
      * Cập nhật giá trị cấu hình
      *
-     * @param key Khóa cấu hình
+     * @param key   Khóa cấu hình
      * @param value Giá trị mới
      */
     void setString(String key, String value);
@@ -98,8 +115,8 @@ public interface ConfigService {
     /**
      * Cập nhật giá trị cấu hình với mô tả
      *
-     * @param key Khóa cấu hình
-     * @param value Giá trị mới
+     * @param key         Khóa cấu hình
+     * @param value       Giá trị mới
      * @param description Mô tả
      */
     void setString(String key, String value, String description);
@@ -107,7 +124,7 @@ public interface ConfigService {
     /**
      * Cập nhật giá trị cấu hình số nguyên
      *
-     * @param key Khóa cấu hình
+     * @param key   Khóa cấu hình
      * @param value Giá trị mới
      */
     void setInt(String key, int value);
@@ -115,7 +132,7 @@ public interface ConfigService {
     /**
      * Cập nhật giá trị cấu hình boolean
      *
-     * @param key Khóa cấu hình
+     * @param key   Khóa cấu hình
      * @param value Giá trị mới
      */
     void setBoolean(String key, boolean value);
@@ -123,7 +140,7 @@ public interface ConfigService {
     /**
      * Lấy giá trị cấu hình từ file application.properties
      *
-     * @param key Khóa cấu hình
+     * @param key          Khóa cấu hình
      * @param defaultValue Giá trị mặc định
      * @return Giá trị từ application.properties hoặc giá trị mặc định
      */
@@ -132,7 +149,7 @@ public interface ConfigService {
     /**
      * Lấy giá trị cấu hình từ bảng app_settings
      *
-     * @param key Khóa cấu hình
+     * @param key          Khóa cấu hình
      * @param defaultValue Giá trị mặc định
      * @return Giá trị từ bảng app_settings hoặc giá trị mặc định
      */

@@ -14,6 +14,7 @@ import org.socius.sociuswebbackend.services.MessageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -67,29 +69,60 @@ public class MessageController {
             @RequestParam(value = "content", required = false) String content,
             @RequestParam(value = "type") MessageType type,
             @RequestParam("file") MultipartFile file) {
-
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             UUID senderId = UUID.fromString(auth.getName());
 
-            // Lưu tệp tin
-            String directory = "messages/" + conversationId;
-            String mediaUrl = fileStorageService.storeFile(file, directory);
+            // Xác thực loại tin nhắn
+            if (type == MessageType.TEXT) {
+                String contentType = file.getContentType();
+                if (contentType != null) {
+                    if (contentType.startsWith("image/")) {
+                        type = MessageType.IMAGE;
+                    } else if (contentType.startsWith("video/")) {
+                        type = MessageType.VIDEO;
+                    } else if (contentType.startsWith("audio/")) {
+                        type = MessageType.AUDIO;
+                    } else {
+                        type = MessageType.FILE;
+                    }
+                }
+            }
+
+            // Xác định thư mục dựa trên loại tin nhắn hoặc loại file
+            String directory;
+            if (type == MessageType.IMAGE) {
+                directory = "images";
+            } else if (type == MessageType.VIDEO) {
+                directory = "videos";
+            } else if (type == MessageType.AUDIO) {
+                directory = "audios";
+            } else {
+                directory = "files";
+            }
+
+            String fileUrl = fileStorageService.storeFile(file, directory);
 
             // Tạo DTO tin nhắn
             MessageRequestDto requestDto = MessageRequestDto.builder()
                     .conversationId(conversationId)
                     .content(content == null ? "" : content)
                     .messageType(type)
-                    .mediaUrl(mediaUrl)
+                    .fileUrl(fileUrl)
                     .build();
 
             // Gửi tin nhắn
             MessageResponseDto responseDto = messageService.sendMessage(senderId, requestDto);
             return ResponseEntity.ok(responseDto);
-        } catch (Exception e) {
-            logger.error("Lỗi khi gửi tin nhắn với tệp tin: {}", e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Tham số không hợp lệ khi gửi tin nhắn với tệp tin: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
+        } catch (IOException e) {
+            logger.error("Lỗi I/O khi gửi tin nhắn với tệp tin: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (Exception e) {
+            logger.error("Lỗi không xác định khi gửi tin nhắn với tệp tin: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

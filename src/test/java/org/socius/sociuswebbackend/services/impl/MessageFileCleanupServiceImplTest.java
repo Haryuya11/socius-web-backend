@@ -57,7 +57,7 @@ public class MessageFileCleanupServiceImplTest {
         fileMessage1.setContent("/uploads/files/test1.pdf");
         fileMessage1.setDeleted(true);
         // Đảm bảo phù hợp với điều kiện trong findDeletedMessagesWithMedia
-        fileMessage1.setMediaUrl("/uploads/files/test1.pdf");
+        fileMessage1.setFileUrl("/uploads/files/test1.pdf");
         fileMessage1.setMediaCleanedUp(false);
 
         fileMessage2 = ChatTestDataUtil.createMessageEntity(conversation, sender);
@@ -66,7 +66,7 @@ public class MessageFileCleanupServiceImplTest {
         fileMessage2.setContent("/uploads/images/test2.jpg");
         fileMessage2.setDeleted(true);
         // Đảm bảo phù hợp với điều kiện trong findDeletedMessagesWithMedia
-        fileMessage2.setMediaUrl("/uploads/images/test2.jpg");
+        fileMessage2.setFileUrl("/uploads/images/test2.jpg");
         fileMessage2.setMediaCleanedUp(false);
 
         // Cấu hình mock
@@ -79,14 +79,14 @@ public class MessageFileCleanupServiceImplTest {
         // Mock repository để trả về các tin nhắn đã xóa có file đính kèm
         List<MessageEntity> deletedMessages = Arrays.asList(fileMessage1, fileMessage2);
         // Sửa lại sử dụng phương thức hiện có trong repository
-        when(messageRepository.findDeletedMessagesWithMedia()).thenReturn(deletedMessages);
+        when(messageRepository.findDeletedMessagesForCleanup(anyInt())).thenReturn(deletedMessages);
 
         // Thực thi phương thức cần test
         messageFileCleanupService.cleanupDeletedMessagesFiles();
 
         // Kiểm tra xem FileStorageService có được gọi để xóa các file không
-        verify(fileStorageService).deleteFile(fileMessage1.getMediaUrl()); // Sử dụng mediaUrl thay vì content
-        verify(fileStorageService).deleteFile(fileMessage2.getMediaUrl()); // Sử dụng mediaUrl thay vì content
+        verify(fileStorageService).deleteFile(fileMessage1.getFileUrl()); // Sử dụng fileUrl thay vì content
+        verify(fileStorageService).deleteFile(fileMessage2.getFileUrl()); // Sử dụng fileUrl thay vì content
 
         // Kiểm tra xem nội dung tin nhắn có được cập nhật không
         verify(messageRepository, times(2)).save(any(MessageEntity.class));

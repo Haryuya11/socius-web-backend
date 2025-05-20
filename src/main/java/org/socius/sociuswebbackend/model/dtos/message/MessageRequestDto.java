@@ -24,6 +24,11 @@ public class MessageRequestDto {
     @Builder.Default
     private MessageType messageType = MessageType.TEXT;
 
-    private String mediaUrl;
+    private String fileUrl;
 
+    private String fileOriginalName;
+
+    private String fileContentType;
+
+    private Long fileSize;
 }

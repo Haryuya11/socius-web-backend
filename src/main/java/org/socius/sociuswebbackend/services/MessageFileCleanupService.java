@@ -7,4 +7,10 @@ public interface MessageFileCleanupService {
      * Phương thức này sẽ được gọi định kỳ mỗi 0 giờ mỗi ngày
      */
     void cleanupDeletedMessagesFiles();
+
+    /**
+     * Xóa các file đính kèm mồ côi
+     * Phương thức này sẽ được gọi định kỳ mỗi 1 giờ
+     */
+    void cleanupOrphanedFiles();
 }

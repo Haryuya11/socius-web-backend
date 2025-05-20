@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.entities.MessageEntity;
 import org.socius.sociuswebbackend.repositories.MessageRepository;
+import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.FileStorageService;
 import org.socius.sociuswebbackend.services.MessageFileCleanupService;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +22,7 @@ public class MessageFileCleanupServiceImpl implements MessageFileCleanupService 
 
     final private MessageRepository messageRepository;
     final private FileStorageService fileStorageService;
+    final private ConfigService configService;
 
     @Override
     @Scheduled(cron = "0 0 0 * * *") // Chạy hàng ngày lúc 00:00
@@ -28,8 +30,11 @@ public class MessageFileCleanupServiceImpl implements MessageFileCleanupService 
     public void cleanupDeletedMessagesFiles() {
         logger.info("Bắt đầu quá trình dọn dẹp file của tin nhắn đã xóa");
 
+        // Số ngày dữ lại file sau khi tin nhắn bị xóa
+        int retentionDays = configService.getInt("message.file.cleanup.days", 30);
+
         // Tìm tất cả tin nhắn đã bị xóa có file đính kèm và chưa bị xóa file
-        List<MessageEntity> deletedMessages = messageRepository.findDeletedMessagesWithMedia();
+        List<MessageEntity> deletedMessages = messageRepository.findDeletedMessagesForCleanup(retentionDays);
 
         int successCount = 0;
         int failureCount = 0;
@@ -37,8 +42,8 @@ public class MessageFileCleanupServiceImpl implements MessageFileCleanupService 
         for (MessageEntity message : deletedMessages) {
             try {
                 // Xóa file đính kèm
-                if (message.getMediaUrl() != null && !message.getMediaUrl().isEmpty()) {
-                    fileStorageService.deleteFile(message.getMediaUrl());
+                if (message.getFileUrl() != null && !message.getFileUrl().isEmpty()) {
+                    fileStorageService.deleteFile(message.getFileUrl());
                     message.setMediaCleanedUp(true);
                     messageRepository.save(message);
                     successCount++;
@@ -49,5 +54,29 @@ public class MessageFileCleanupServiceImpl implements MessageFileCleanupService 
             }
         }
         logger.info("Quá trình dọn dẹp file hoàn tất: {} thành công, {} thất bại", successCount, failureCount);
+    }
+
+    @Scheduled(cron = "0 0 1 * * *")
+    @Override
+    public void cleanupOrphanedFiles() {
+        logger.info("Bắt đầu quá trình dọn dẹp file không còn liên kết");
+
+        // Tìm tất cả file không còn liên kết
+        List<String> orphanedFiles = messageRepository.findOrphanedFiles();
+
+        int successCount = 0;
+        int failureCount = 0;
+
+        for (String filePath : orphanedFiles) {
+            try {
+                // Xóa file không còn liên kết
+                fileStorageService.deleteFile(filePath);
+                successCount++;
+            } catch (Exception e) {
+                logger.error("Lỗi khi xóa file không còn liên kết {}: {}", filePath, e.getMessage());
+                failureCount++;
+            }
+        }
+        logger.info("Quá trình dọn dẹp file không còn liên kết hoàn tất: {} thành công, {} thất bại", successCount, failureCount);
     }
 }

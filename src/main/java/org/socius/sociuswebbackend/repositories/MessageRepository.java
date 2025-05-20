@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,7 +44,6 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
      */
     @Query("SELECT m FROM MessageEntity m WHERE m.conversation.id IN :conversationIds AND m.id = " +
             "(SELECT MAX(m2.id) FROM MessageEntity m2 WHERE m2.conversation.id = m.conversation.id)")
-    <T>
     List<MessageEntity> findLatestMessagesForConversations(@Param("conversationIds") List<UUID> conversationIds);
 
     /**
@@ -51,7 +51,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
      *
      * @return Danh sách các tin nhắn cần xóa file
      */
-    @Query("SELECT m FROM MessageEntity m WHERE m.isDeleted = true AND m.mediaUrl IS NOT NULL AND m.mediaUrl != '' AND m.mediaCleanedUp = false")
+    @Query("SELECT m FROM MessageEntity m WHERE m.isDeleted = true AND m.fileUrl IS NOT NULL AND m.fileUrl != '' AND m.mediaCleanedUp = false")
     List<MessageEntity> findDeletedMessagesWithMedia();
 
     /**
@@ -70,4 +70,28 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
             @Param("keyword") String keyword,
             Pageable pageable
     );
+
+    /**
+     * Tìm kiếm các tin nhắn đã bị xóa có file đính kèm và chưa được dọn dẹp
+     *
+     * @param cleanupDate Ngày dọn dẹp
+     * @return Danh sách các tin nhắn cần xóa file
+     */
+    @Query("SELECT m FROM MessageEntity m WHERE m.isDeleted = true AND m.mediaCleanedUp = false " +
+            "AND m.fileUrl IS NOT NULL AND m.updatedAt < :cleanupDate")
+    List<MessageEntity> findDeletedMessagesForCleanup(@Param("cleanupDate") LocalDateTime cleanupDate);
+
+    default List<MessageEntity> findDeletedMessagesForCleanup(int retentionDays) {
+        LocalDateTime cleanupDate = LocalDateTime.now().minusDays(retentionDays);
+        return findDeletedMessagesForCleanup(cleanupDate);
+    }
+
+    /**
+     * Tìm kiếm các file mồ côi (không còn liên kết với bất kỳ tin nhắn nào)
+     *
+     * @return Danh sách các file mồ côi
+     */
+    @Query("SELECT m.fileUrl FROM MessageEntity m WHERE m.fileUrl IS NOT NULL AND m.fileUrl != '' " +
+            "AND m.id NOT IN (SELECT DISTINCT m2.id FROM MessageEntity m2 WHERE m2.fileUrl IS NOT NULL AND m2.fileUrl != '')")
+    List<String> findOrphanedFiles();
 }

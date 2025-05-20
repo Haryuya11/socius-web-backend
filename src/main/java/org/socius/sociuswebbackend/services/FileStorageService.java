@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.services;
 
+import org.socius.sociuswebbackend.model.dtos.file.FileMetadataDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -31,4 +32,13 @@ public interface FileStorageService {
      * @throws IOException nếu có lỗi xảy ra trong quá trình xóa
      */
     void deleteFile(String fileUrl) throws IOException;
+
+    /**
+     * Lấy metadata của tệp tin
+     *
+     * @param fileUrl URL của tệp tin
+     * @return metadata của tệp tin
+     * @throws IOException nếu có lỗi xảy ra trong quá trình lấy metadata
+     */
+    FileMetadataDto getFileMetadata(String fileUrl) throws IOException;
 }

@@ -5,7 +5,6 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.enums.MessageType;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,8 +34,8 @@ public class MessageEntity extends BaseEntity {
     @Builder.Default
     private MessageType messageType = MessageType.TEXT;
 
-    @Column(name = "media_url")
-    private String mediaUrl;
+    @Column(name = "file_url")
+    private String fileUrl;
 
     @Column(name = "is_edited")
     private boolean isEdited;
@@ -47,6 +46,15 @@ public class MessageEntity extends BaseEntity {
     @Column(name = "media_cleaned_up")
     @Builder.Default
     private boolean mediaCleanedUp = false;
+
+    @Column(name = "file_original_name")
+    private String fileOriginalName;
+
+    @Column(name = "file_content_type")
+    private String fileContentType;
+
+    @Column(name = "file_size")
+    private Long fileSize;
 
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
