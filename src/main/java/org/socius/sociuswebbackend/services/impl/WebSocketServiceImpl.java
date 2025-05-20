@@ -104,10 +104,27 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     @Override
     public void sendTypingIndicator(TypingIndicatorDto typingDto) {
-        messagingTemplate.convertAndSend(
-                "/topic/conversations/" + typingDto.getConversationId() + "/typing",
-                typingDto
-        );
+        try {
+
+            if (typingDto.getConversationId() == null || typingDto.getUserId() == null) {
+                logger.warn("Không thể gửi thông báo trạng thái gõ: ID cuộc trò chuyện hoặc ID người dùng không hợp lệ");
+                return;
+            }
+            logger.info("Người dùng {} đang gõ trong cuộc trò chuyện {}", typingDto.getUserName(), typingDto.getConversationId());
+
+            Map<String, Object> typingNotification = new HashMap<>();
+            typingNotification.put("userId", typingDto.getUserId());
+            typingNotification.put("userName", typingDto.getUserName());
+            typingNotification.put("typing", typingDto.isTyping());
+
+            // Gửi thông báo trạng thái gõ tới tất cả người dùng trong cuộc trò chuyện
+            messagingTemplate.convertAndSend(
+                    "/topic/conversations/" + typingDto.getConversationId() + "/typing",
+                    typingNotification
+            );
+        } catch (Exception e) {
+            logger.error("Lỗi khi gửi thông báo trạng thái gõ: {}", e.getMessage(), e);
+        }
     }
 
     @Override

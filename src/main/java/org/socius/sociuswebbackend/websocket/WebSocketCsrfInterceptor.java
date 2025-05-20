@@ -54,8 +54,6 @@ public class WebSocketCsrfInterceptor implements HandshakeInterceptor {
             return false;
         }
 
-        // Nếu CSRF token hợp lệ, thêm nó vào attributes
-        attributes.put(CsrfToken.class.getName(), csrfToken);
         logger.debug("CSRF token xác thực thành công cho kết nối WebSocket");
         return true;
     }

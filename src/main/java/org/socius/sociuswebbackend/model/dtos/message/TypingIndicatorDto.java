@@ -14,5 +14,6 @@ import java.util.UUID;
 public class TypingIndicatorDto {
     private UUID conversationId;
     private UUID userId;
+    private String userName;
     private boolean isTyping;
 }
