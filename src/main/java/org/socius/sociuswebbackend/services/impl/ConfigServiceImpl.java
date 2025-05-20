@@ -10,6 +10,7 @@ import org.socius.sociuswebbackend.services.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +29,7 @@ public class ConfigServiceImpl implements ConfigService {
     private ConfigService self;
 
     @Autowired
-    public void setSelf(ConfigService self) {
+    public void setSelf(@Lazy ConfigService self) {
         this.self = self;
     }
 
