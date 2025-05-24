@@ -38,4 +38,14 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
      * @return true nếu thành viên đã tham gia cuộc trò chuyện, false nếu không
      */
     boolean existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(UUID conversationId, UUID userId);
+
+    /**
+     * Tìm kiếm thành viên theo ID cuộc trò chuyện và ID người dùng
+     *
+     * @param conversationId ID của cuộc trò chuyện
+     * @param userId         ID của người dùng
+     * @return Thông tin thành viên nếu tồn tại, null nếu không tìm thấy
+     */
+    @Query("SELECT cm FROM ConversationMemberEntity cm WHERE cm.id.conversationId = :conversationId AND cm.id.userId = :userId AND cm.leftAt IS NULL")
+    Object findByIdConversationIdAndIdUserId(UUID conversationId, UUID userId);
 }

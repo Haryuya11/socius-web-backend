@@ -420,9 +420,7 @@ VALUES ('session_timeout', '30', 'Thời gian phiên làm việc (phút)'),
 ON CONFLICT (setting_key) DO NOTHING;
 
 INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES ('websocket.reconnect.expiry.minutes', '5', 'Thời gian hết hạn kết nối lại WebSocket (phút)'),
-       ('websocket.pending.messages.expiry.minutes', '60', 'Thời gian hết hạn tin nhắn chờ gửi qua WebSocket (phút)'),
-       ('rabbitmq.message.ttl', '7', 'Thời gian sống của tin nhắn RabbitMQ (ngày)')
+VALUES ('rabbitmq.message.ttl', '7', 'Thời gian sống của tin nhắn RabbitMQ (ngày)')
 ON CONFLICT (setting_key) DO NOTHING;
 
 INSERT INTO app_settings (setting_key, setting_value, description)
@@ -448,6 +446,7 @@ VALUES ('rabbitmq.prefetch.count', '10', 'Số lượng tin nhắn được gử
        ('message.file.cleanup.days', '30', 'Thời gian sống của các tệp đính kèm tin nhắn (ngày)'),
        ('session.cookie.max.age', '86400', 'Thời gian sống của cookie phiên (giây)'),
        ('session.cookie.secure', 'true', 'Đặt cookie phiên là bảo mật (chỉ gửi qua HTTPS)'),
-       ('file.upload.max.size', '52428800', 'Kích thước tối đa của tệp tải lên (byte)')
-
+       ('file.upload.max.size', '52428800', 'Kích thước tối đa của tệp tải lên (byte)'),
+       ('websocket.heartbeat.timeout', '300000', 'Thời gian chờ heartbeat WebSocket (ms)'),
+       ('rabbitmq.max.retries', '3', 'Số lần thử lại tối đa khi gửi tin nhắn RabbitMQ')
 ON CONFLICT (setting_key) DO NOTHING;

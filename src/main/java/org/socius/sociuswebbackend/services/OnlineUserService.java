@@ -43,4 +43,5 @@ public interface OnlineUserService {
      * @return true nếu người dùng đang online, false nếu không
      */
     boolean isUserOnline(UUID userId);
+
 }

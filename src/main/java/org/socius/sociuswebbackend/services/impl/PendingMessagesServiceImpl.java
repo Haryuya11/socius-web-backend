@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.PendingMessagesService;
+import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -23,13 +24,10 @@ public class PendingMessagesServiceImpl implements PendingMessagesService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ConfigService configService;
 
-    private String buildPendingKey(UUID userId) {
-        return "pending:messages:" + userId;
-    }
 
     @Override
     public void initializeBuffer(UUID userId) {
-        String key = buildPendingKey(userId);
+        String key = RabbitMQKeyBuilder.getPendingMessagesKey(userId);
         // Kiểm tra xem buffer đã tồn tại chưa
         if (!redisTemplate.hasKey(key)) {
             redisTemplate.opsForList().rightPushAll(key, new ArrayList<>());
@@ -52,7 +50,7 @@ public class PendingMessagesServiceImpl implements PendingMessagesService {
 
     @Override
     public void addPendingMessage(UUID userId, MessageResponseDto message) {
-        String key = buildPendingKey(userId);
+        String key = RabbitMQKeyBuilder.getPendingMessagesKey(userId);
         // Thêm tin nhắn vào buffer
         redisTemplate.opsForList().rightPush(key, message);
         logger.info("Thêm tin nhắn vào buffer cho người dùng: {}", userId);
@@ -60,7 +58,7 @@ public class PendingMessagesServiceImpl implements PendingMessagesService {
 
     @Override
     public List<MessageResponseDto> getPendingMessages(UUID userId) {
-        String key = buildPendingKey(userId);
+        String key = RabbitMQKeyBuilder.getPendingMessagesKey(userId);
         Long size = redisTemplate.opsForList().size(key);
         if (size == null || size == 0) {
             return new ArrayList<>();
@@ -84,7 +82,7 @@ public class PendingMessagesServiceImpl implements PendingMessagesService {
 
     @Override
     public void clearBuffer(UUID userId) {
-        String key = buildPendingKey(userId);
+        String key = RabbitMQKeyBuilder.getPendingMessagesKey(userId);
         redisTemplate.delete(key);
         logger.info("Xóa buffer cho người dùng: {}", userId);
     }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.socius.sociuswebbackend.websocket.UserOnlineWebSocketHandler;
 import org.socius.sociuswebbackend.websocket.WebSocketCsrfInterceptor;
 import org.springframework.context.annotation.Bean;
@@ -103,7 +104,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     String sessionId = accessor.getSessionId();
 
                     // Kiểm tra tính hợp lệ của phiên
-                    if (!redisTemplate.hasKey("spring:session:sessions:" + sessionId)) {
+                    if (!redisTemplate.hasKey(RedisKeyBuilder.springSessionKey(sessionId))) {
                         // Nếu phiên không hợp lệ, ném ngoại lệ
                         logger.warn("Từ chối kết nối WebSocket do phiên không hợp lệ: {}", sessionId);
                         return null;

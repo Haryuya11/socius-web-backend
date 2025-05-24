@@ -26,6 +26,9 @@ public class RabbitMQKeyBuilder {
     private static final String READ_RECEIPT_ROUTING_KEY = "chat.receipt.*";
     private static final String DEAD_LETTER_ROUTING_KEY = "chat.message.failed";
 
+    // Pending messages key
+    private static final String PENDING_MESSAGES_KEY = "pending:messages:";
+
     // Chat Pattern Builder
     public static String getPrivateRoutingKeyPattern(UUID conversationId) {
         return "chat.message.private." + conversationId;
@@ -93,5 +96,13 @@ public class RabbitMQKeyBuilder {
 
     public static String getDeadLetterRoutingKey() {
         return DEAD_LETTER_ROUTING_KEY;
+    }
+
+    public static String getPendingMessagesKey(UUID userId) {
+        return PENDING_MESSAGES_KEY + userId;
+    }
+
+    public static String getPendingMessagesPattern() {
+        return PENDING_MESSAGES_KEY + "*";
     }
 }

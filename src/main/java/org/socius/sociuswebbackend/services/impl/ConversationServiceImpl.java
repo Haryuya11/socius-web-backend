@@ -378,7 +378,7 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     @Transactional
-    public boolean leaveConversation(UUID userId, UUID conversationId) {
+    public void leaveConversation(UUID userId, UUID conversationId) {
         // Kiểm tra cuộc trò chuyện có tồn tại không
         ConversationEntity conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
@@ -420,7 +420,6 @@ public class ConversationServiceImpl implements ConversationService {
         // Đánh dấu thành viên đã rời đi
         member.setLeftAt(LocalDateTime.now());
         conversationMemberRepository.save(member);
-        return true;
     }
 
     private void createSystemMessage(ConversationEntity conversation, String content) {
@@ -434,5 +433,72 @@ public class ConversationServiceImpl implements ConversationService {
         // Gửi tin nhắn qua RabbitMQ
         MessageResponseDto messageDto = messageMapper.entityToDto(message);
         chatMessageProducerService.sendChatMessage(messageDto, conversation.getType(), conversation.getId());
+    }
+
+    @Override
+    public void addMembers(UUID userId, UUID conversationId, Set<UUID> memberIds) {
+        // Kiểm tra cuộc trò chuyện có tồn tại không
+        ConversationEntity conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
+
+        // Kiểm tra người thêm có phải là admin của cuộc trò chuyện không
+        ConversationMemberEntity userMember = conversationMemberRepository.findById(new ConversationMemberId(conversationId, userId))
+                .orElseThrow(() -> new RuntimeException("Người dùng không phải là thành viên của cuộc trò chuyện"));
+
+        if (userMember.getRole() != MemberRole.ADMIN || userMember.getLeftAt() != null) {
+            throw new RuntimeException("Người dùng không có quyền thêm thành viên");
+        }
+
+        // Kiểm tra nếu là cuộc trò chuyện trực tiếp
+        if (conversation.getType() == ConversationType.DIRECT) {
+            throw new RuntimeException("Không thể thêm thành viên vào cuộc trò chuyện trực tiếp");
+        }
+
+        for (UUID memberId : memberIds) {
+            if (memberId.equals(userId)) continue; // Bỏ qua người tạo vì đã thêm
+
+            // Kiểm tra thành viên cần thêm có tồn tại không
+            UserEntity member = userRepository.findById(memberId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + memberId));
+
+            // Kiểm tra xem thành viên đã trong cuộc trò chuyện chưa
+            Optional<ConversationMemberEntity> existingMember = conversationMemberRepository
+                    .findById(new ConversationMemberId(conversationId, memberId));
+
+            if (existingMember.isPresent()) {
+                // Nếu đã rời đi trước đó, cập nhật lại
+                if (existingMember.get().getLeftAt() != null) {
+                    existingMember.get().setLeftAt(null);
+                    existingMember.get().setJoinedAt(LocalDateTime.now());
+                    conversationMemberRepository.save(existingMember.get());
+                } else {
+                    throw new RuntimeException("Người dùng đã là thành viên của cuộc trò chuyện");
+                }
+            } else {
+                // Thêm thành viên mới
+                ConversationMemberEntity newMember = ConversationMemberEntity.builder()
+                        .id(new ConversationMemberId(conversation.getId(), memberId))
+                        .conversation(conversation)
+                        .user(member)
+                        .role(MemberRole.MEMBER)
+                        .joinedAt(LocalDateTime.now())
+                        .build();
+
+                conversationMemberRepository.save(newMember);
+
+                // Khởi tạo unread count cho thành viên mới
+                UnreadCountEntity unreadCount = UnreadCountEntity.builder()
+                        .id(new UnreadCountId(conversation.getId(), memberId))
+                        .conversation(conversation)
+                        .user(member)
+                        .unreadCount(0)
+                        .build();
+
+                unreadCountRepository.save(unreadCount);
+
+                String content = member.getFirstName() + " " + member.getLastName() + " đã tham gia cuộc trò chuyện";
+                createSystemMessage(conversation, content);
+            }
+        }
     }
 }

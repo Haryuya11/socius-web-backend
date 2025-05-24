@@ -5,7 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.message.TypingIndicatorDto;
-import org.socius.sociuswebbackend.services.*;
+import org.socius.sociuswebbackend.services.OfflineMessageService;
+import org.socius.sociuswebbackend.services.OnlineUserService;
+import org.socius.sociuswebbackend.services.WebSocketService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -15,8 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -25,15 +27,8 @@ public class WebSocketServiceImpl implements WebSocketService {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketServiceImpl.class);
 
     final private SimpMessagingTemplate messagingTemplate;
-
     final private OnlineUserService onlineUserService;
-
     final private RedisTemplate<String, Object> redisTemplate;
-
-    final private ConfigService configService;
-
-    final private PendingMessagesService pendingMessagesService;
-
     final private OfflineMessageService offlineMessageService;
 
 
@@ -80,26 +75,66 @@ public class WebSocketServiceImpl implements WebSocketService {
         UUID userId = (UUID) headerAccessor.getSessionAttributes().get("userId");
 
         if (userId != null && sessionId != null) {
-            // Đánh dấu người dùng là offline sau 1 thời gian nhất định
-            String disconnectKey = RedisKeyBuilder.wsDisconnectTimeKey(userId);
-            redisTemplate.opsForValue().set(
-                    disconnectKey,
-                    System.currentTimeMillis(),
-                    Duration.ofSeconds(configService.getInt("websocket.disconnect.grace.seconds", 30))
-            );
+            // Đánh dấu người dùng là offline
 
-
-            // Tạo chiến lược kết nối lại
-            createReconnectStrategy(userId, sessionId);
-
-            // Lưu các tin nhắn chưa được trong thời gian mất kết nối
-            pendingMessagesService.initializeBuffer(userId);
+            onlineUserService.markUserOffline(userId, sessionId);
 
             // Thông báo cho những người dùng khác về việc người này mất kết nối
             publishUserStatusChange(userId, "USER_OFFLINE");
 
             logger.info("Người dùng {} đã ngắt kết nối với websocket", userId);
         }
+    }
+
+
+    @Override
+    @EventListener
+    public void handleWebSocketConnectEvent(SessionConnectedEvent event) {
+        try {
+            StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+            String sessionId = headerAccessor.getSessionId();
+
+            if (headerAccessor.getSessionAttributes() == null) {
+                logger.warn("Không tìm thấy thông tin phiên làm việc trong header");
+                return;
+            }
+
+            UUID userId = (UUID) headerAccessor.getSessionAttributes().get("userId");
+            if (userId != null) {
+                // Kiểm tra tính hợp lệ của phiên làm việc
+                if (!isValidSession(sessionId)) {
+                    logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
+                    sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED", "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
+                    return;
+                }
+
+                // Đánh dấu người dùng là online
+                onlineUserService.updateUserOnlineStatus(userId, sessionId);
+
+                // Gửi lại các tin nhắn offline nếu có
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        sendOfflineMessages(userId);
+                    } catch (Exception e) {
+                        logger.error("Lỗi khi gửi offline messages cho user {}: {}", userId, e.getMessage(), e);
+                    }
+                });
+
+                logger.info("Người dùng {} đã kết nối với websocket", userId);
+            }
+        } catch (Exception e) {
+            logger.error("Lỗi trong handleWebSocketConnectEvent: {}", e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean validateSessionAndNotify(String sessionId) {
+        if (!isValidSession(sessionId)) {
+            logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
+            sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED", "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -127,101 +162,6 @@ public class WebSocketServiceImpl implements WebSocketService {
         }
     }
 
-    @Override
-    public void handleWebSocketConnectEvent(SessionConnectedEvent event) {
-        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        String sessionId = headerAccessor.getSessionId();
-
-        if (headerAccessor.getSessionAttributes() == null) {
-            logger.warn("Không tìm thấy thông tin phiên làm việc trong header");
-            return;
-        }
-
-        UUID userId = (UUID) headerAccessor.getSessionAttributes().get("userId");
-        if (userId != null) {
-
-            // Kiểm tra tính hợp lệ của phiên làm việc
-            if (isValidSession(sessionId)) {
-                logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
-                sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED", "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
-                return;
-            }
-
-
-            // Kiểm tra nếu đây là kết nối lại trong thời gian cho phép
-            String reconnectKey = RedisKeyBuilder.wsUserReconnectKey(userId, sessionId);
-            if (redisTemplate.hasKey(reconnectKey)) {
-                // Xử lý kết nối lại
-                handleReconnect(userId);
-                redisTemplate.delete(reconnectKey);
-                logger.info("Xử lý kết nối lại cho người dùng: {}", userId);
-            }
-            // Đánh dấu người dùng là online
-            onlineUserService.updateUserOnlineStatus(userId, sessionId);
-
-            // Gửi lại các tin nhắn offline nếu có
-            sendOfflineMessages(userId);
-
-            logger.info("Người dùng {} đã kết nối với websocket", userId);
-        }
-    }
-
-    @Override
-    public boolean validateSessionAndNotify(String sessionId) {
-        if (isValidSession(sessionId)) {
-            logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
-            sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED", "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Tạo xử lý khi người dùng kết nối lại
-     *
-     * @param userId ID của người dùng
-     */
-    private void handleReconnect(UUID userId) {
-        // Xử lý các tin nhắn đã bị mất trong thời gian mất kết nối
-        List<MessageResponseDto> pendingMessages = pendingMessagesService.getPendingMessages(userId);
-        if (pendingMessages != null && !pendingMessages.isEmpty()) {
-            for (MessageResponseDto message : pendingMessages) {
-                messagingTemplate.convertAndSendToUser(
-                        userId.toString(),
-                        "/queue/messages",
-                        message
-                );
-
-                // Giả lập độ trễ giữa các tin nhắn để tránh quá tải
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            // Xóa buffer sau khi đã gửi lại tin nhắn
-            pendingMessagesService.clearBuffer(userId);
-            logger.info("Đã gửi lại {} tin nhắn cho người dùng {}", pendingMessages.size(), userId);
-        }
-
-        // Thông báo cho người dùng khác rằng người này đã kết nối lại
-        publishUserStatusChange(userId, "USER_ONLINE");
-    }
-
-    /**
-     * Tạo chiến lược kết nối lại cho WebSocket
-     *
-     * @param userId    ID của người dùng
-     * @param sessionId ID của phiên làm việc
-     */
-    private void createReconnectStrategy(UUID userId, String sessionId) {
-        // Lưu vào redis với TTL
-        String reconnectKey = RedisKeyBuilder.wsUserReconnectKey(userId, sessionId);
-        redisTemplate.opsForValue().set(reconnectKey, System.currentTimeMillis(),
-                Duration.ofMinutes(configService.getInt("websocket.reconnect.expiry.minutes", 30)));
-
-        logger.info("Đã tạo chiến lược kết nối lại cho người dùng {} với sessionId {}", userId, sessionId);
-    }
 
     private void sendOfflineMessages(UUID userId) {
         try {
@@ -282,6 +222,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             Map<String, Object> notification = new HashMap<>(data);
             notification.put("type", type);
             notification.put("timestamp", System.currentTimeMillis());
+            notification.put("messageId", UUID.randomUUID().toString());
 
             // Gửi cho người dùng cụ thể
             messagingTemplate.convertAndSendToUser(
@@ -302,7 +243,12 @@ public class WebSocketServiceImpl implements WebSocketService {
      * @return true nếu phiên hợp lệ, false nếu đã hết hạn
      */
     private boolean isValidSession(String sessionId) {
-        // Kiểm tra trong Redis xem phiên còn tồn tại không
-        return redisTemplate.hasKey(RedisKeyBuilder.springSessionKey(sessionId));
+        try {
+            String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
+            return redisTemplate.hasKey(sessionKey) && redisTemplate.getExpire(sessionKey) > 0;
+        } catch (Exception e) {
+            logger.error("Lỗi khi kiểm tra tính hợp lệ của phiên: {}", e.getMessage(), e);
+            return false;
+        }
     }
 }

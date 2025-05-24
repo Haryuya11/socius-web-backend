@@ -13,14 +13,13 @@ public class RedisKeyBuilder {
     private static final String ROLE_PREFIX = "role:";
     private static final String WS_PREFIX = "ws:";
     private static final String CHAT_PREFIX = "chat:";
-    private static final String ONLINE_PREFIX = "online:";
     private static final String RBAC_PREFIX = "rbac:";
     private static final String CACHE_PREFIX = "cache:";
     private static final String SPRING_SESSION_PREFIX = "spring:session:";
-    private static final String RECONNECT_PREFIX = "reconnect:";
     private static final String DISCONNECT_PREFIX = "disconnect:";
     private static final String PENDING_PREFIX = "pending:";
     private static final String FAILED_PREFIX = "failed:";
+    private static final String SESSION_ATTRIBUTE_PREFIX = "session:attribute:";
 
 
     // -------------------------------------------------------------------------
@@ -29,6 +28,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho trạng thái online của người dùng
+     *
      * @param userId ID người dùng
      * @return Chuỗi key theo format: user:{userId}:online
      */
@@ -36,8 +36,13 @@ public class RedisKeyBuilder {
         return USER_PREFIX + userId + ":online";
     }
 
+    public static String userOnlinePattern() {
+        return USER_PREFIX + "*:online";
+    }
+
     /**
      * Key cho danh sách session của người dùng
+     *
      * @param userId ID người dùng
      * @return Chuỗi key theo format: user:{userId}:sessions
      */
@@ -47,6 +52,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho session hiện tại của người dùng
+     *
      * @param userId ID người dùng
      * @return Chuỗi key theo format: user:{userId}:sessionid
      */
@@ -56,6 +62,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho heartbeat của người dùng
+     *
      * @param userId ID người dùng
      * @return Chuỗi key theo format: user:{userId}:heartbeat
      */
@@ -69,6 +76,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho thông tin RBAC của một session
+     *
      * @param sessionId ID phiên
      * @return Chuỗi key theo format: session:{sessionId}:rbac
      */
@@ -78,6 +86,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho thông tin user của một session
+     *
      * @param sessionId ID phiên
      * @return Chuỗi key theo format: session:{sessionId}:userid
      */
@@ -87,6 +96,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho session được Spring quản lý
+     *
      * @param sessionId ID phiên
      * @return Chuỗi key theo format: spring:session:sessions:{sessionId}
      */
@@ -94,13 +104,23 @@ public class RedisKeyBuilder {
         return SPRING_SESSION_PREFIX + "sessions:" + sessionId;
     }
 
+    public static String getSpringSessionPattern() {
+        return SPRING_SESSION_PREFIX + "sessions:*";
+    }
+
+
     /**
      * Key cho thời gian hết hạn của session
+     *
      * @param sessionId ID phiên
      * @return Chuỗi key theo format: spring:session:sessions:expires:{sessionId}
      */
     public static String springSessionExpiresKey(String sessionId) {
         return SPRING_SESSION_PREFIX + "sessions:expires:" + sessionId;
+    }
+
+    public static String getSpringSessionExpiresPattern() {
+        return SPRING_SESSION_PREFIX + "sessions:expires:*";
     }
 
     // -------------------------------------------------------------------------
@@ -109,6 +129,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho danh sách session liên quan đến một vai trò
+     *
      * @param roleId ID vai trò
      * @return Chuỗi key theo format: role:{roleId}:sessions
      */
@@ -118,6 +139,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho danh sách người dùng thuộc một vai trò
+     *
      * @param roleId ID vai trò
      * @return Chuỗi key theo format: role:users:{roleId}
      */
@@ -125,37 +147,6 @@ public class RedisKeyBuilder {
         return ROLE_PREFIX + "users:" + roleId;
     }
 
-    // -------------------------------------------------------------------------
-    // WebSocket related keys
-    // -------------------------------------------------------------------------
-
-    /**
-     * Key cho thông tin kết nối lại WebSocket
-     * @param sessionId ID phiên
-     * @return Chuỗi key theo format: ws:session:{sessionId}:reconnect
-     */
-    public static String wsReconnectKey(String sessionId) {
-        return WS_PREFIX + "session:" + sessionId + ":reconnect";
-    }
-
-    /**
-     * Key cho thông tin kết nối lại WebSocket của người dùng cụ thể
-     * @param userId ID người dùng
-     * @param sessionId ID phiên
-     * @return Chuỗi key theo format: reconnect:{userId}:{sessionId}
-     */
-    public static String wsUserReconnectKey(UUID userId, String sessionId) {
-        return RECONNECT_PREFIX + userId + ":" + sessionId;
-    }
-
-    /**
-     * Key cho thời gian ngắt kết nối
-     * @param userId ID người dùng
-     * @return Chuỗi key theo format: disconnect:time:{userId}
-     */
-    public static String wsDisconnectTimeKey(UUID userId) {
-        return DISCONNECT_PREFIX + "time:" + userId;
-    }
 
     // -------------------------------------------------------------------------
     // Chat related keys
@@ -163,6 +154,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho tin nhắn đang chờ gửi
+     *
      * @param userId ID người dùng
      * @return Chuỗi key theo format: chat:user:{userId}:pending
      */
@@ -172,6 +164,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho tin nhắn offline
+     *
      * @param userId ID người dùng
      * @return Chuỗi key theo format: chat:user:{userId}:offline
      */
@@ -181,6 +174,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho thông tin phiên liên kết với tin nhắn chờ
+     *
      * @param userId ID người dùng
      * @return Chuỗi key theo format: pending:session:{userId}
      */
@@ -190,7 +184,8 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho thông tin receipt thất bại
-     * @param userId ID người dùng
+     *
+     * @param userId         ID người dùng
      * @param conversationId ID cuộc trò chuyện
      * @return Chuỗi key theo format: chat:receipt:failed:{userId}:{conversationId}
      */
@@ -204,11 +199,12 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho thông tin RBAC
+     *
      * @param sessionId ID phiên
      * @return Chuỗi key theo format: rbac:{sessionId}
      */
     public static String rbacKey(String sessionId) {
-        return RBAC_PREFIX + sessionId;
+        return RBAC_PREFIX + "session:" + sessionId;
     }
 
     // -------------------------------------------------------------------------
@@ -217,6 +213,7 @@ public class RedisKeyBuilder {
 
     /**
      * Key cho cache cấu hình
+     *
      * @param key Khóa cấu hình
      * @return Chuỗi key theo format: cache:config:{key}
      */
@@ -226,10 +223,62 @@ public class RedisKeyBuilder {
 
     /**
      * Tạo pattern để tìm kiếm key theo prefix
+     *
      * @param prefix Tiền tố cần tìm
      * @return Pattern dạng prefix*
      */
     public static String getKeyPattern(String prefix) {
         return prefix + "*";
+    }
+
+    // -------------------------------------------------------------------------
+    // Session attribute related keys
+    // -------------------------------------------------------------------------
+
+    /**
+     * Key cho các thuộc tính của phiên
+     *
+     * @param attributeName Tên thuộc tính
+     * @return Chuỗi key theo format: session:attribute:{attributeName}
+     */
+    public static String sessionAttributeKey(String attributeName) {
+        return SESSION_ATTRIBUTE_PREFIX + attributeName;
+    }
+
+    /**
+     * Key cho thuộc tính người dùng trong phiên
+     *
+     * @return Chuỗi key theo format: session:attribute:USER_ID
+     */
+    public static String userIdAttributeKey() {
+        return sessionAttributeKey("USER_ID");
+    }
+
+    /**
+     * Key cho thuộc tính nhóm trong phiên
+     *
+     * @return Chuỗi key theo format: session:attribute:TEAM_ID
+     */
+    public static String teamIdAttributeKey() {
+        return sessionAttributeKey("TEAM_ID");
+    }
+
+    /**
+     * Key cho thuộc tính vai trò trong phiên
+     *
+     * @return Chuỗi key theo format: session:attribute:ROLE_ID
+     */
+    public static String roleIdAttributeKey() {
+        return sessionAttributeKey("ROLE_ID");
+    }
+
+
+    public static String extractSessionIdFromExpiresKey(String sessionKey) {
+        if (sessionKey.startsWith(SPRING_SESSION_PREFIX + "sessions:expires:")) {
+            return sessionKey.substring((SPRING_SESSION_PREFIX + "sessions:expires:").length());
+        } else if (sessionKey.startsWith(SPRING_SESSION_PREFIX + "sessions:")) {
+            return sessionKey.substring((SPRING_SESSION_PREFIX + "sessions:").length());
+        }
+        throw new IllegalArgumentException("Invalid session key format: " + sessionKey);
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -34,20 +35,29 @@ public class UserOnlineController {
      */
     @MessageMapping("/heartbeat")
     public void processHeartbeat(SimpMessageHeaderAccessor headerAccessor) {
-        UUID userId = (UUID) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("userId");
-        String sessionId = headerAccessor.getSessionId();
-
-        if (userId != null && sessionId != null) {
-            // Kiểm tra tính hợp lệ của phiên trước khi kiểm tra heartbeat
-            if (redisTemplate.hasKey(RedisKeyBuilder.springSessionKey(sessionId))) {
-                webSocketService.handleHeartbeat(userId);
-            } else {
-                // Nếu phiên không hợp lệ, đánh dấu người dùng offline
-                onlineUserService.markUserOffline(userId, sessionId);
-                webSocketService.sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED",
-                        "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
+        try {
+            Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
+            if (sessionAttributes == null) {
+                logger.warn("Session attributes null trong heartbeat");
+                return;
             }
 
+            UUID userId = (UUID) sessionAttributes.get("userId");
+            String sessionId = headerAccessor.getSessionId();
+
+            if (userId == null || sessionId == null) {
+                logger.warn("UserId hoặc SessionId null trong heartbeat");
+                return;
+            }
+
+            // Kiểm tra session validity
+            if (isValidSession(sessionId)) {
+                webSocketService.handleHeartbeat(userId);
+            } else {
+                handleInvalidSession(userId, sessionId);
+            }
+        } catch (Exception e) {
+            logger.error("Lỗi xử lý heartbeat: {}", e.getMessage(), e);
         }
     }
 
@@ -77,5 +87,28 @@ public class UserOnlineController {
                         "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
             }
         }
+    }
+
+    /**
+     * Kiểm tra tính hợp lệ của phiên làm việc dựa trên sessionId
+     *
+     * @param sessionId ID của phiên làm việc
+     * @return true nếu phiên hợp lệ, false nếu không
+     */
+    private boolean isValidSession(String sessionId) {
+        try {
+            String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
+            return redisTemplate.hasKey(sessionKey) && redisTemplate.getExpire(sessionKey) > 0;
+        } catch (Exception e) {
+            logger.error("Lỗi khi kiểm tra tính hợp lệ của phiên: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    private void handleInvalidSession(UUID userId, String sessionId) {
+        logger.info("Session không hợp lệ, đánh dấu user {} offline", userId);
+        onlineUserService.markUserOffline(userId, sessionId);
+        webSocketService.sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED",
+                "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
     }
 }

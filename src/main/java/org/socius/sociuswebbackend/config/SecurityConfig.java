@@ -63,10 +63,6 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Chỉ tạo session khi cần thiết
                         .maximumSessions(1) // Giới hạn số phiên đăng nhập đồng thời là 1
                         .expiredUrl("/api/auth/session-expired")
-                )
-                .rememberMe(remember -> remember
-                        .key("rememberMeSecretKey")
-                        .tokenValiditySeconds(86400)
                 );
 
         return http.build();

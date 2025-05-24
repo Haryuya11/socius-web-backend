@@ -39,6 +39,7 @@ public class ChatRabbitMQConfig {
                 .durable(RabbitMQKeyBuilder.getPrivateMessageQueue())
                 .withArgument("x-dead-letter-exchange", RabbitMQKeyBuilder.getDeadLetterExchange())
                 .withArgument("x-dead-letter-routing-key", RabbitMQKeyBuilder.getDeadLetterRoutingKey())
+                .withArgument("x-max-retries", configService.getInt("rabbitmq.max.retries", 3))
                 .build();
     }
 
@@ -48,6 +49,7 @@ public class ChatRabbitMQConfig {
                 .durable(RabbitMQKeyBuilder.getGroupMessageQueue())
                 .withArgument("x-dead-letter-exchange", RabbitMQKeyBuilder.getDeadLetterExchange())
                 .withArgument("x-dead-letter-routing-key", RabbitMQKeyBuilder.getDeadLetterRoutingKey())
+                .withArgument("x-max-retries", configService.getInt("rabbitmq.max.retries", 3))
                 .build();
     }
 
@@ -57,6 +59,7 @@ public class ChatRabbitMQConfig {
                 .durable(RabbitMQKeyBuilder.getReadReceiptQueue())
                 .withArgument("x-dead-letter-exchange", RabbitMQKeyBuilder.getDeadLetterExchange())
                 .withArgument("x-dead-letter-routing-key", RabbitMQKeyBuilder.getDeadLetterRoutingKey())
+                .withArgument("x-max-retries", configService.getInt("rabbitmq.max.retries", 3))
                 .build();
     }
 

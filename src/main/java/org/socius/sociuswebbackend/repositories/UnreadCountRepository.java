@@ -41,10 +41,10 @@ public interface UnreadCountRepository extends JpaRepository<UnreadCountEntity, 
      * @param lastReadMessageId ID của tin nhắn cuối cùng đã đọc
      */
     @Modifying
-    @Query(value = "INSERT INTO unread_counts (conversation_id, user_id, count, last_read_message_id) " +
+    @Query(value = "INSERT INTO unread_counts (conversation_id, user_id, unread_count, last_read_message_id) " +
             "VALUES (:conversationId, :userId, :count, :lastReadMessageId) " +
             "ON CONFLICT (conversation_id, user_id) " +
-            "DO UPDATE SET count = :count, last_read_message_id = :lastReadMessageId",
+            "DO UPDATE SET unread_count = :count, last_read_message_id = :lastReadMessageId",
             nativeQuery = true)
     @Transactional
     void updateUnreadCount(
@@ -74,10 +74,10 @@ public interface UnreadCountRepository extends JpaRepository<UnreadCountEntity, 
      * @param userId         ID của người dùng
      */
     @Modifying
-    @Query(value = "INSERT INTO unread_counts (conversation_id, user_id, count) " +
+    @Query(value = "INSERT INTO unread_counts (conversation_id, user_id, unread_count) " +
             "VALUES (:conversationId, :userId, 1) " +
             "ON CONFLICT (conversation_id, user_id) " +
-            "DO UPDATE SET count = unread_counts.count + 1",
+            "DO UPDATE SET unread_count = unread_counts.count + 1",
             nativeQuery = true)
     @Transactional
     void incrementUnreadCount(@Param("conversationId") UUID conversationId, @Param("userId") UUID userId);

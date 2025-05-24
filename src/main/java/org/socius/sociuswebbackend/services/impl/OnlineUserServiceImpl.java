@@ -44,9 +44,9 @@ public class OnlineUserServiceImpl implements OnlineUserService {
                         .lastSeen(LocalDateTime.now())
                         .build();
 
-                String redisKey = RedisKeyBuilder.userOnlineKey(userId);
-                redisTemplate.opsForValue().set(redisKey, onlineUserStatusDto);
-                redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
+                String key = RedisKeyBuilder.userOnlineKey(userId);
+                redisTemplate.opsForValue().set(key, onlineUserStatusDto);
+                redisTemplate.expire(key, 5, TimeUnit.MINUTES);
 
                 logger.info("Cập nhật trạng thái online cho người dùng: {}", userId);
             }
@@ -58,26 +58,29 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     @Override
     public void handleUserHeartbeat(UUID userId) {
         try {
-            String redisKey = RedisKeyBuilder.userOnlineKey(userId);
-            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
+
+            // Nếu tìm thấy online status, cập nhật lastSeen để báo trì trạng thái online
             if (onlineUserStatusDto != null) {
                 onlineUserStatusDto.setLastSeen(LocalDateTime.now());
-                redisTemplate.opsForValue().set(redisKey, onlineUserStatusDto);
-                redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(key, onlineUserStatusDto);
+                redisTemplate.expire(key, 5, TimeUnit.MINUTES);
 
                 logger.info("Cập nhật heartbeat cho người dùng: {}", userId);
+            } else { // Nếu không tìm thấy online status, có thể người dùng đã offline
+                logger.warn("Nguời dùng không có online : {}", userId);
             }
         } catch (Exception e) {
             logger.error("Lỗi khi cập nhật heartbeat: {}", e.getMessage(), e);
         }
-
     }
 
     @Override
     public void markUserOffline(UUID userId, String sessionId) {
         try {
-            String redisKey = RedisKeyBuilder.userOnlineKey(userId);
-            Object value = redisTemplate.opsForValue().get(redisKey);
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+            Object value = redisTemplate.opsForValue().get(key);
 
             OnlineUserStatusDto onlineUserStatusDto;
             if (value instanceof OnlineUserStatusDto) {
@@ -92,7 +95,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             }
 
             if (onlineUserStatusDto != null && sessionId.equals(onlineUserStatusDto.getSessionId())) {
-                redisTemplate.delete(redisKey);
+                redisTemplate.delete(key);
                 logger.info("Đánh dấu người dùng offline: {}", userId);
             }
         } catch (Exception e) {
@@ -105,9 +108,9 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         List<OnlineUserStatusDto> onlineUsers = new ArrayList<>();
         try {
             String pattern = RedisKeyBuilder.getKeyPattern("user:") + ":online";
-            Set<String> redisKeys = redisTemplate.keys(pattern);
-            if (!redisKeys.isEmpty()) {
-                List<Object> values = redisTemplate.opsForValue().multiGet(redisKeys);
+            Set<String> key = redisTemplate.keys(pattern);
+            if (!key.isEmpty()) {
+                List<Object> values = redisTemplate.opsForValue().multiGet(key);
                 if (values != null) {
                     for (Object value : values) {
                         if (value instanceof OnlineUserStatusDto onlineUserStatusDto) {
@@ -127,8 +130,8 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     @Override
     public boolean isUserOnline(UUID userId) {
         try {
-            String redisKey = RedisKeyBuilder.userOnlineKey(userId);
-            Object value = redisTemplate.opsForValue().get(redisKey);
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+            Object value = redisTemplate.opsForValue().get(key);
 
             OnlineUserStatusDto onlineUserStatusDto;
             if (value instanceof OnlineUserStatusDto) {

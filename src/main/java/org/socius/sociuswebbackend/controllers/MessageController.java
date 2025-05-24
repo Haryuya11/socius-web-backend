@@ -8,7 +8,9 @@ import org.socius.sociuswebbackend.model.dtos.message.MessageRequestDto;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.message.ReadReceiptDto;
 import org.socius.sociuswebbackend.model.dtos.message.SyncMessagesRequestDto;
+import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.model.enums.MessageType;
+import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.FileStorageService;
 import org.socius.sociuswebbackend.services.MessageService;
 import org.springframework.data.domain.Page;
@@ -38,6 +40,7 @@ public class MessageController {
 
     final private MessageService messageService;
     final private FileStorageService fileStorageService;
+    final private UserRepository userRepository;
 
     /**
      * Gửi tin nhắn
@@ -48,7 +51,12 @@ public class MessageController {
     @PostMapping
     public ResponseEntity<MessageResponseDto> sendMessage(@Valid @RequestBody MessageRequestDto requestDto) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UUID senderId = UUID.fromString(auth.getName());
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID senderId = user.getId();
 
         MessageResponseDto responseDto = messageService.sendMessage(senderId, requestDto);
         return ResponseEntity.ok(responseDto);
@@ -71,7 +79,12 @@ public class MessageController {
             @RequestParam("file") MultipartFile file) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            UUID senderId = UUID.fromString(auth.getName());
+            String userEmail = auth.getName();
+
+            UserEntity user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+            UUID senderId = user.getId();
 
             // Xác thực loại tin nhắn
             if (type == MessageType.TEXT) {
@@ -138,7 +151,12 @@ public class MessageController {
             @PathVariable UUID conversationId,
             @PageableDefault(size = 20) Pageable pageable) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString(auth.getName());
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
 
         Page<MessageResponseDto> messages = messageService.getMessages(userId, conversationId, pageable);
         return ResponseEntity.ok(messages);
@@ -153,8 +171,12 @@ public class MessageController {
     @PostMapping("/read")
     public ResponseEntity<Integer> markAsRead(@Valid @RequestBody ReadReceiptDto readReceiptDto) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString(auth.getName());
+        String userEmail = auth.getName();
 
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
         int count = messageService.markAsRead(userId, readReceiptDto);
         return ResponseEntity.ok(count);
     }
@@ -169,7 +191,12 @@ public class MessageController {
     public ResponseEntity<Map<UUID, List<MessageResponseDto>>> syncMessages(
             @Valid @RequestBody SyncMessagesRequestDto syncRequest) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString(auth.getName());
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
 
         Map<UUID, List<MessageResponseDto>> syncedMessages = messageService.syncMessages(userId, syncRequest);
         return ResponseEntity.ok(syncedMessages);
@@ -178,7 +205,12 @@ public class MessageController {
     @DeleteMapping("/{messageId}")
     public ResponseEntity<Map<String, Boolean>> deleteMessage(@PathVariable UUID messageId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString(auth.getName());
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
 
         boolean result = messageService.deleteMessage(userId, messageId);
         Map<String, Boolean> response = Collections.singletonMap("success", result);
@@ -191,7 +223,12 @@ public class MessageController {
             @RequestParam String keyword,
             @PageableDefault(size = 20) Pageable pageable) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UUID userId = UUID.fromString(auth.getName());
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
 
         Page<MessageResponseDto> messages = messageService.searchMessages(userId, conversationId, keyword, pageable);
         return ResponseEntity.ok(messages);

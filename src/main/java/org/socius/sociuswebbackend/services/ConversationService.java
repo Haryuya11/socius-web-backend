@@ -5,6 +5,7 @@ import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseD
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Set;
 import java.util.UUID;
 
 public interface ConversationService {
@@ -12,7 +13,7 @@ public interface ConversationService {
     /**
      * Tạo cuộc trò chuyện mới
      *
-     * @param creatorId ID của người tạo
+     * @param creatorId  ID của người tạo
      * @param requestDto Thông tin cuộc trò chuyện
      * @return Cuộc trò chuyện đã được tạo
      */
@@ -21,7 +22,7 @@ public interface ConversationService {
     /**
      * Lấy danh sách cuộc trò chuyện của người dùng với phân trang
      *
-     * @param userId ID của người dùng hiện tại
+     * @param userId   ID của người dùng hiện tại
      * @param pageable Thông tin phân trang
      * @return Trang cuộc trò chuyện
      */
@@ -30,7 +31,7 @@ public interface ConversationService {
     /**
      * Lấy thông tin chi tiết của một cuộc trò chuyện
      *
-     * @param userId ID của người dùng hiện tại
+     * @param userId         ID của người dùng hiện tại
      * @param conversationId ID của cuộc trò chuyện
      * @return Thông tin cuộc trò chuyện
      */
@@ -39,19 +40,28 @@ public interface ConversationService {
     /**
      * Thêm thành viên vào cuộc trò chuyện
      *
-     * @param userId ID của người dùng thực hiện hành động
+     * @param userId         ID của người dùng thực hiện hành động
      * @param conversationId ID của cuộc trò chuyện
-     * @param memberId ID của người dùng được thêm vào
+     * @param memberId       ID của người dùng được thêm vào
      * @return Cuộc trò chuyện đã được cập nhật
      */
     ConversationResponseDto addMember(UUID userId, UUID conversationId, UUID memberId);
 
     /**
+     * Thêm nhiều thành viên vào cuộc trò chuyện
+     *
+     * @param userId         ID của người dùng thực hiện hành động
+     * @param conversationId ID của cuộc trò chuyện
+     * @param memberIds      Tập hợp các ID của người dùng được thêm vào
+     */
+    void addMembers(UUID userId, UUID conversationId, Set<UUID> memberIds);
+
+    /**
      * Xóa thành viên khỏi cuộc trò chuyện
      *
-     * @param userId ID của người dùng thực hiện hành động
+     * @param userId         ID của người dùng thực hiện hành động
      * @param conversationId ID của cuộc trò chuyện
-     * @param memberId ID của thành viên bị xóa
+     * @param memberId       ID của thành viên bị xóa
      * @return Cuộc trò chuyện đã được cập nhật
      */
     ConversationResponseDto removeMember(UUID userId, UUID conversationId, UUID memberId);
@@ -68,9 +78,9 @@ public interface ConversationService {
     /**
      * Cập nhật thông tin cuộc trò chuyện
      *
-     * @param userId ID của người dùng thực hiện hành động
+     * @param userId         ID của người dùng thực hiện hành động
      * @param conversationId ID của cuộc trò chuyện
-     * @param requestDto Thông tin cập nhật
+     * @param requestDto     Thông tin cập nhật
      * @return Cuộc trò chuyện đã được cập nhật
      */
     ConversationResponseDto updateConversation(UUID userId, UUID conversationId, ConversationRequestDto requestDto);
@@ -78,9 +88,8 @@ public interface ConversationService {
     /**
      * Rời khỏi cuộc trò chuyện
      *
-     * @param userId ID của người dùng muốn rời khỏi
+     * @param userId         ID của người dùng muốn rời khỏi
      * @param conversationId ID của cuộc trò chuyện
-     * @return true nếu thành công, false nếu không
      */
-    boolean leaveConversation(UUID userId, UUID conversationId);
+    void leaveConversation(UUID userId, UUID conversationId);
 }

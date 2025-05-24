@@ -38,4 +38,13 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
             @Param("userId1") UUID userId1,
             @Param("userId2") UUID userId2);
 
+    /**
+     * Tìm kiếm các cuộc trò chuyện của người dùng theo ID người dùng
+     *
+     * @param userId   ID của người dùng
+     * @param pageable Thông tin phân trang
+     * @return Danh sách các cuộc trò chuyện của người dùng
+     */
+    @Query("SELECT c FROM ConversationEntity c JOIN c.members m WHERE m.user.id = :userId ORDER BY c.updatedAt DESC")
+    Page<ConversationEntity> findUserConversations(UUID userId, Pageable pageable);
 }

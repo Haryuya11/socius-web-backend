@@ -31,11 +31,11 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
         CookieHttpSessionIdResolver resolver = new CookieHttpSessionIdResolver();
         DefaultCookieSerializer cookieSerializer = new DefaultCookieSerializer();
 
-        cookieSerializer.setCookieName(configService.getString("cookie.name", "SOCIUS_SESSION"));
-        cookieSerializer.setCookiePath(configService.getString("cookie.path", "/"));
+        cookieSerializer.setCookieName("SOCIUS_SESSION");
+        cookieSerializer.setCookiePath("/");
         cookieSerializer.setCookieMaxAge(configService.getInt("session.cookie.max.age", 86400));
-        cookieSerializer.setSameSite(configService.getString("cookie.same.site", "Lax"));
-        cookieSerializer.setUseSecureCookie(configService.getBoolean("session.cookie.secure", true));
+        cookieSerializer.setSameSite("Lax");
+        cookieSerializer.setUseSecureCookie(true);
         cookieSerializer.setUseHttpOnlyCookie(true);
 
         resolver.setCookieSerializer(cookieSerializer);

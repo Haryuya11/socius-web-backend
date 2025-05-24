@@ -3,9 +3,7 @@ package org.socius.sociuswebbackend.security;
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;

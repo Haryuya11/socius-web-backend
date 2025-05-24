@@ -8,11 +8,14 @@ import org.socius.sociuswebbackend.repositories.MessageRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.FileStorageService;
 import org.socius.sociuswebbackend.services.MessageFileCleanupService;
+import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +26,10 @@ public class MessageFileCleanupServiceImpl implements MessageFileCleanupService 
     final private MessageRepository messageRepository;
     final private FileStorageService fileStorageService;
     final private ConfigService configService;
+    final private RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    @Scheduled(cron = "0 0 0 * * *") // Chạy hàng ngày lúc 00:00
+    @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void cleanupDeletedMessagesFiles() {
         logger.info("Bắt đầu quá trình dọn dẹp file của tin nhắn đã xóa");
@@ -58,6 +62,7 @@ public class MessageFileCleanupServiceImpl implements MessageFileCleanupService 
 
     @Scheduled(cron = "0 0 1 * * *")
     @Override
+    @Transactional
     public void cleanupOrphanedFiles() {
         logger.info("Bắt đầu quá trình dọn dẹp file không còn liên kết");
 
@@ -78,5 +83,32 @@ public class MessageFileCleanupServiceImpl implements MessageFileCleanupService 
             }
         }
         logger.info("Quá trình dọn dẹp file không còn liên kết hoàn tất: {} thành công, {} thất bại", successCount, failureCount);
+    }
+
+    @Override
+    @Scheduled(cron = "0 0 * * * *")
+    public void cleanupExpiredPendingMessages() {
+        try {
+            logger.info("Bắt đầu quá trình dọn dẹp tin nhắn đã hết hạn");
+
+            String pattern = RabbitMQKeyBuilder.getPendingMessagesPattern();
+            Set<String> keys = redisTemplate.keys(pattern);
+            int deletedCount = 0;
+            if (!keys.isEmpty()) {
+                for (String key : keys) {
+                    Long ttl = redisTemplate.getExpire(key);
+                    if (ttl <= 0) {
+                        // Nếu TTL <= 0, xóa tin nhắn hết hạn
+                        redisTemplate.delete(key);
+                        deletedCount++;
+                        logger.info("Đã xóa pending messages hết hạn: {}", key);
+                    }
+                }
+            }
+
+            logger.info("Quá trình dọn dẹp tin nhắn đã hết hạn hoàn tất: {} tin nhắn đã bị xóa", deletedCount);
+        } catch (Exception e) {
+            logger.error("Lỗi khi dọn dẹp tin nhắn đã hết hạn: {}", e.getMessage(), e);
+        }
     }
 }

@@ -22,6 +22,7 @@ import org.socius.sociuswebbackend.repositories.RoleRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.*;
 import org.socius.sociuswebbackend.util.ApplicationContextHelper;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -108,9 +109,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
 
             // 7. Lưu thông tin vào session
-            String userKey = configService.getString("session.attribute.user_id", "USER_ID");
-            String teamKey = configService.getString("session.attribute.team_id", "TEAM_ID");
-            String roleKey = configService.getString("session.attribute.role_id", "ROLE_ID");
+            String userKey = RedisKeyBuilder.userIdAttributeKey();
+            String teamKey = RedisKeyBuilder.teamIdAttributeKey();
+            String roleKey = RedisKeyBuilder.roleIdAttributeKey();
 
             session.setAttribute(userKey, user.getId());
             if (user.getEmploymentDetail() != null) {
@@ -210,7 +211,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         HttpSession session = request.getSession(false);
         if (session != null) {
             String sessionId = session.getId();
-            String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+            String userKey = RedisKeyBuilder.userIdAttributeKey();
             UUID userId = (UUID) session.getAttribute(userKey);
             if (userId != null) {
                 onlineUserService.markUserOffline(userId, sessionId);
@@ -242,7 +243,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return null;
         }
 
-        String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
         UUID userId = (UUID) session.getAttribute(userKey);
         if (userId == null) {
             return null;
@@ -278,7 +279,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public boolean isAuthenticated(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
-        String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
 
         return session != null && session.getAttribute(userKey) != null;
     }
@@ -306,7 +307,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
 
             // Lấy thông tin người dùng từ session
-            String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+            String userKey = RedisKeyBuilder.userIdAttributeKey();
             UUID userId = (UUID) session.getAttribute(userKey);
             if (userId == null) {
                 return PasswordChangeResult.NOT_AUTHENTICATED;
@@ -361,7 +362,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // Nếu không có trong Redis, lấy từ database
         if (permissions == null) {
             // Lấy thông tin người dùng
-            String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+            String userKey = RedisKeyBuilder.userIdAttributeKey();
             UUID userId = (UUID) session.getAttribute(userKey);
             if (userId == null) {
                 return null;

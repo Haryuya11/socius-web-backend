@@ -143,38 +143,42 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public int markAsRead(UUID userId, ReadReceiptDto readReceiptDto) {
-        boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(
-                readReceiptDto.getConversationId(), userId);
+        try {
+            boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(
+                    readReceiptDto.getConversationId(), userId);
 
-        if (!isMember) {
-            throw new RuntimeException("Người dùng không phải là thành viên của cuộc trò chuyện");
-        }
+            if (!isMember) {
+                throw new RuntimeException("Người dùng không phải là thành viên của cuộc trò chuyện");
+            }
 
-        // Cập nhật trạng thái tin nhắn đã đọc cho người dùng
-        int markedCount = messageStatusRepository.markMessagesAsRead(
-                readReceiptDto.getConversationId(),
-                userId,
-                readReceiptDto.getLastReadMessageId(),
-                LocalDateTime.now()
-        );
-
-        // Cập nhật unread_count và last_read_message_id
-        if (markedCount > 0) {
-            unreadCountRepository.updateUnreadCount(
+            // Cập nhật trạng thái tin nhắn đã đọc cho người dùng
+            int markedCount = messageStatusRepository.markMessagesAsRead(
                     readReceiptDto.getConversationId(),
                     userId,
-                    0, // Đặt lại số lượng tin nhắn chưa đọc
-                    readReceiptDto.getLastReadMessageId()
+                    readReceiptDto.getLastReadMessageId(),
+                    LocalDateTime.now()
             );
 
-            // Gửi read receipt đến RabbitMQ
-            chatMessageProducerService.sendReadReceipt(
-                    userId,
-                    readReceiptDto.getConversationId(),
-                    readReceiptDto.getLastReadMessageId()
-            );
+            // Cập nhật unread_count và last_read_message_id
+            if (markedCount > 0) {
+                unreadCountRepository.updateUnreadCount(
+                        readReceiptDto.getConversationId(),
+                        userId,
+                        0, // Đặt lại số lượng tin nhắn chưa đọc
+                        readReceiptDto.getLastReadMessageId()
+                );
+
+                // Gửi read receipt đến RabbitMQ
+                chatMessageProducerService.sendReadReceipt(
+                        userId,
+                        readReceiptDto.getConversationId(),
+                        readReceiptDto.getLastReadMessageId()
+                );
+            }
+            return markedCount;
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi đánh dấu tin nhắn là đã đọc: " + e.getMessage(), e);
         }
-        return markedCount;
     }
 
     @Override

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OfflineMessageService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -23,13 +24,9 @@ public class OfflineMessageServiceImpl implements OfflineMessageService {
     final private RedisTemplate<String, Object> redisTemplate;
     final private ConfigService configService;
 
-    private String buildKey(UUID userId) {
-        return "offline:messages:" + userId;
-    }
-
     @Override
     public void storeOfflineMessage(UUID userId, MessageResponseDto message) {
-        String key = buildKey(userId);
+        String key = RedisKeyBuilder.chatOfflineKey(userId);
 
         // Kiểm tra nếu tin nhắn này đã tồn tại trong danh sách tin nhắn offline
         boolean exists = checkIfMessageExists(key, message);
@@ -73,8 +70,7 @@ public class OfflineMessageServiceImpl implements OfflineMessageService {
         List<Object> messages = redisTemplate.opsForList().range(key, 0, -1);
         if (messages != null) {
             for (Object obj : messages) {
-                if (obj instanceof MessageResponseDto) {
-                    MessageResponseDto message = (MessageResponseDto) obj;
+                if (obj instanceof MessageResponseDto message) {
                     if (message.getId().equals(newMessage.getId())) {
                         return true;
                     }
@@ -86,7 +82,7 @@ public class OfflineMessageServiceImpl implements OfflineMessageService {
 
     @Override
     public List<MessageResponseDto> getOfflineMessages(UUID userId) {
-        String key = buildKey(userId);
+        String key = RedisKeyBuilder.chatOfflineKey(userId);
         Long size = redisTemplate.opsForList().size(key);
         if (size == null || size == 0) {
             return new ArrayList<>();
@@ -109,7 +105,7 @@ public class OfflineMessageServiceImpl implements OfflineMessageService {
 
     @Override
     public void clearOfflineMessages(UUID userId) {
-        String key = buildKey(userId);
+        String key = RedisKeyBuilder.chatOfflineKey(userId);
         redisTemplate.delete(key);
         logger.info("Đã xóa tin nhắn offline cho người dùng {}", userId);
     }
