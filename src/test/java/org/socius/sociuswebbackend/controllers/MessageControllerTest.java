@@ -10,12 +10,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.socius.sociuswebbackend.exception.GlobalExceptionHandler;
 import org.socius.sociuswebbackend.model.dtos.message.MessageRequestDto;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.message.ReadReceiptDto;
 import org.socius.sociuswebbackend.model.dtos.message.SyncMessagesRequestDto;
+import org.socius.sociuswebbackend.model.entities.UserEntity;
+import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.FileStorageService;
 import org.socius.sociuswebbackend.services.MessageService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.socius.sociuswebbackend.utils.ChatTestDataUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -51,6 +55,9 @@ public class MessageControllerTest {
     @Mock
     private FileStorageService fileStorageService;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private MessageController messageController;
 
@@ -84,8 +91,18 @@ public class MessageControllerTest {
 
         // Thiết lập RequestContextHolder để có thể lấy userId từ session
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setAttribute("USER_ID", userId);
+        request.setAttribute(RedisKeyBuilder.userIdAttributeKey(), userId);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        // Thiết lập mock cho UserRepository
+        UserEntity user = new UserEntity();
+        user.setId(userId);
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
+
+        mockMvc = MockMvcBuilders.standaloneSetup(messageController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(resolver)
+                .build();
     }
 
     @Test
@@ -292,6 +309,69 @@ public class MessageControllerTest {
                 .andExpect(status().isOk());
 
         SecurityContextHolder.clearContext();
+    }
 
+    @Test
+    @DisplayName("Gửi tin nhắn với nội dung trống phải trả về lỗi")
+    void sendMessageWithEmptyContentShouldFail() throws Exception {
+        // Tạo DTO với content trống
+        messageRequestDto.setContent("");
+
+        // Thiết lập SecurityContext
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userId.toString(), null, Collections.emptyList());
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // Thực thi và kiểm tra
+        mockMvc.perform(post("/api/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(messageRequestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").exists());
+
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    @DisplayName("Phân trang tin nhắn với số lượng lớn")
+    void paginateMessagesWithLargeSize() throws Exception {
+        // Tạo dữ liệu phân trang lớn
+        List<MessageResponseDto> messageList = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            MessageResponseDto message = ChatTestDataUtil.createMessageResponseDto();
+            message.setId(UUID.randomUUID());
+            messageList.add(message);
+        }
+
+        Page<MessageResponseDto> messagePage = new PageImpl<>(
+                messageList.subList(0, 20),
+                PageRequest.of(0, 20),
+                50
+        );
+
+        when(messageService.getMessages(eq(userId), eq(conversationId), any(Pageable.class)))
+                .thenReturn(messagePage);
+
+        // Thiết lập SecurityContext
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userId.toString(), null, Collections.emptyList());
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // Thực thi và kiểm tra
+        mockMvc.perform(get("/api/messages/{conversationId}", conversationId)
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(50))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(20));
+
+        SecurityContextHolder.clearContext();
     }
 }

@@ -60,6 +60,7 @@ public class UserOnlineControllerTest {
         String mockSessionId = "test-session-id";
         when(headerAccessor.getSessionId()).thenReturn(mockSessionId);
         when(redisTemplate.hasKey(RedisKeyBuilder.springSessionKey(mockSessionId))).thenReturn(true);
+        when(redisTemplate.getExpire(RedisKeyBuilder.springSessionKey(mockSessionId))).thenReturn(1L);
 
         userOnlineController.processHeartbeat(headerAccessor);
 

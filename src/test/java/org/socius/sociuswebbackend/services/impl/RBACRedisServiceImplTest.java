@@ -49,7 +49,6 @@ public class RBACRedisServiceImplTest {
     private final String sessionId = "test-session-id";
 
     private UserPermissionsDto adminPermissionsDto;
-    private final UUID adminRoleId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     @BeforeEach
     void setUp() {
@@ -63,7 +62,7 @@ public class RBACRedisServiceImplTest {
     void saveCacheUserPermissionsShouldStorePermissionsInRedis() {
         int expiryTimeMinutes = 30;
         String key = RedisKeyBuilder.rbacKey(sessionId);
-        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminPermissionsDto.getRoleId());
 
         rbacRedisService.saveCacheUserPermissions(sessionId, adminPermissionsDto, expiryTimeMinutes);
 
@@ -136,7 +135,7 @@ public class RBACRedisServiceImplTest {
     @DisplayName("Delete user permissions should remove permissions from Redis")
     void deleteUserPermissionsShouldRemovePermissionsFromRedis() {
         String key = RedisKeyBuilder.rbacKey(sessionId);
-        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminPermissionsDto.getRoleId());
 
         when(valueOperations.get(key)).thenReturn(adminPermissionsDto);
         when(redisTemplate.delete(key)).thenReturn(true);
@@ -152,7 +151,7 @@ public class RBACRedisServiceImplTest {
     void deleteByRoleIdShouldRemoveAllUserPermissionsForThatRole() {
         String key = RedisKeyBuilder.rbacKey(sessionId);
         String anotherKey = RedisKeyBuilder.rbacKey("another-session-id");
-        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminPermissionsDto.getRoleId());
         Set<Object> sessionIds = new HashSet<>();
         sessionIds.add(sessionId);
         sessionIds.add("another-session-id");
@@ -164,7 +163,7 @@ public class RBACRedisServiceImplTest {
 
         when(redisTemplate.delete(anyString())).thenReturn(true);
 
-        long count = rbacRedisService.deleteByRoleId(adminRoleId);
+        long count = rbacRedisService.deleteByRoleId(adminPermissionsDto.getRoleId());
 
         assertEquals(2, count, "Số lượng phiên không khớp");
         verify(redisTemplate).delete(roleKey);
@@ -178,10 +177,10 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Delete by role ID should handle empty set gracefully")
     void deleteByRoleIdShouldHandleEmptySetGracefully() {
-        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminPermissionsDto.getRoleId());
         when(setOperations.members(roleKey)).thenReturn(new HashSet<>());
 
-        long count = rbacRedisService.deleteByRoleId(adminRoleId);
+        long count = rbacRedisService.deleteByRoleId(adminPermissionsDto.getRoleId());
 
         assertEquals(0, count, "Số lượng phiên không khớp");
         verify(setOperations).members(roleKey);
@@ -191,10 +190,10 @@ public class RBACRedisServiceImplTest {
     @Test
     @DisplayName("Delete by role ID should handle exceptions gracefully")
     void deleteByRoleIdShouldHandleExceptionsGracefully() {
-        String roleKey = RedisKeyBuilder.roleUsersKey(adminRoleId);
+        String roleKey = RedisKeyBuilder.roleUsersKey(adminPermissionsDto.getRoleId());
         when(setOperations.members(roleKey)).thenThrow(new RuntimeException("Test exception"));
 
-        long count = rbacRedisService.deleteByRoleId(adminRoleId);
+        long count = rbacRedisService.deleteByRoleId(adminPermissionsDto.getRoleId());
 
         assertEquals(0, count, "Số lượng phiên không khớp");
         verify(setOperations).members(roleKey);

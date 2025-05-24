@@ -19,7 +19,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@TestConfiguration
+@TestConfiguration(proxyBeanMethods = false)
 public class TestConfig {
 
     @Bean
@@ -27,9 +27,9 @@ public class TestConfig {
     public ConfigService configService() {
         ConfigService mockConfigService = mock(ConfigService.class);
 
-        when(mockConfigService.getString("cookie.same.site", "Lax")).thenReturn("Lax");
-        when(mockConfigService.getString("cookie.name", "SOCIUS_SESSION")).thenReturn("SOCIUS_SESSION");
-        when(mockConfigService.getString("cookie.path", "/")).thenReturn("/");
+//        when(mockConfigService.getString("cookie.same.site", "Lax")).thenReturn("Lax");
+//        when(mockConfigService.getString("cookie.name", "SOCIUS_SESSION")).thenReturn("SOCIUS_SESSION");
+//        when(mockConfigService.getString("cookie.path", "/")).thenReturn("/");
 
         // Cấu hình mock cho các phương thức getInt
         when(mockConfigService.getInt("session.duration.minutes", 30)).thenReturn(30);
@@ -41,8 +41,8 @@ public class TestConfig {
                 .thenReturn(List.of("http://localhost:3000"));
 
         // Cấu hình mock cho RBAC settings
-        when(mockConfigService.getString("rbac.key.prefix", "rbac:")).thenReturn("rbac:");
-        when(mockConfigService.getString("rbac.role.users.prefix", "role:users:")).thenReturn("role:users:");
+//        when(mockConfigService.getString("rbac.key.prefix", "rbac:")).thenReturn("rbac:");
+//        when(mockConfigService.getString("rbac.role.users.prefix", "role:users:")).thenReturn("role:users:");
 
         // Cấu hình cho các phương thức mới
         when(mockConfigService.getProperty(anyString(), anyString()))

@@ -34,13 +34,26 @@ public final class AuthTestDataUtil {
         // Private constructor to prevent instantiation
     }
 
+    // Định nghĩa các hằng số UUID
+    private static final UUID adminUserId = UUID.randomUUID();
+    private static final UUID regularUserId = UUID.randomUUID();
+    private static final UUID adminAccountId = UUID.randomUUID();
+    private static final UUID regularAccountId = UUID.randomUUID();
+    private static final UUID adminRoleId = UUID.randomUUID();
+    private static final UUID userRoleId = UUID.randomUUID();
+    private static final UUID adminEmploymentId = UUID.randomUUID();
+    private static final UUID regularEmploymentId = UUID.randomUUID();
+    private static final UUID adminLoginHistoryId = UUID.randomUUID();
+    private static final UUID adminPermissionUserId = UUID.randomUUID();
+    private static final UUID createPermissionId = UUID.randomUUID();
+    private static final UUID readPermissionId = UUID.randomUUID();
+
     /**
      * Tạo một người dùng admin mẫu
      */
     public static UserEntity createTestAdminUser() {
-
         return UserEntity.builder()
-                .id(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                .id(adminUserId)
                 .firstName("Admin")
                 .lastName("User")
                 .email("admin@socius.org")
@@ -56,7 +69,7 @@ public final class AuthTestDataUtil {
      */
     public static UserEntity createTestRegularUser() {
         return UserEntity.builder()
-                .id(UUID.fromString("22222222-2222-2222-2222-222222222222"))
+                .id(regularUserId)
                 .firstName("Regular")
                 .lastName("User")
                 .email("user@socius.org")
@@ -71,9 +84,8 @@ public final class AuthTestDataUtil {
      * Tạo một tài khoản admin mẫu
      */
     public static AccountEntity createTestAdminAccount(UserEntity adminUser) {
-
         return AccountEntity.builder()
-                .id(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+                .id(adminAccountId)
                 .user(adminUser)
                 .password(passwordEncoder.encode("Admin@123"))
                 .isActive(true)
@@ -86,9 +98,8 @@ public final class AuthTestDataUtil {
      * Tạo một tài khoản thường mẫu
      */
     public static AccountEntity createTestRegularAccount(UserEntity regularUser) {
-
         return AccountEntity.builder()
-                .id(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+                .id(regularAccountId)
                 .user(regularUser)
                 .password(passwordEncoder.encode("User@123"))
                 .isActive(true)
@@ -102,7 +113,7 @@ public final class AuthTestDataUtil {
      */
     public static RoleEntity createTestAdminRole() {
         return RoleEntity.builder()
-                .id(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+                .id(adminRoleId)
                 .name("ADMIN")
                 .description("Administrator role with full system access")
                 .build();
@@ -113,7 +124,7 @@ public final class AuthTestDataUtil {
      */
     public static RoleEntity createTestUserRole() {
         return RoleEntity.builder()
-                .id(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+                .id(userRoleId)
                 .name("USER")
                 .description("Regular user with limited access")
                 .build();
@@ -124,7 +135,7 @@ public final class AuthTestDataUtil {
      */
     public static EmploymentDetailEntity createTestAdminEmploymentDetail(UserEntity adminUser, RoleEntity adminRole) {
         return EmploymentDetailEntity.builder()
-                .id(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"))
+                .id(adminEmploymentId)
                 .user(adminUser)
                 .role(adminRole)
                 .startDate(LocalDate.of(2020, 1, 1))
@@ -138,7 +149,7 @@ public final class AuthTestDataUtil {
      */
     public static EmploymentDetailEntity createTestRegularEmploymentDetail(UserEntity regularUser, RoleEntity userRole) {
         return EmploymentDetailEntity.builder()
-                .id(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"))
+                .id(regularEmploymentId)
                 .user(regularUser)
                 .role(userRole)
                 .startDate(LocalDate.of(2021, 5, 5))
@@ -202,8 +213,8 @@ public final class AuthTestDataUtil {
         permissions.add("ADMIN_DASHBOARD");
 
         return UserPermissionsDto.builder()
-                .userId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
-                .roleId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+                .userId(adminUserId)
+                .roleId(adminRoleId)
                 .roleName("ADMIN")
                 .permissions(permissions)
                 .build();
@@ -217,8 +228,8 @@ public final class AuthTestDataUtil {
         permissions.add("USER_READ");
 
         return UserPermissionsDto.builder()
-                .userId(UUID.fromString("22222222-2222-2222-2222-222222222222"))
-                .roleId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+                .userId(regularUserId)
+                .roleId(userRoleId)
                 .roleName("USER")
                 .permissions(permissions)
                 .build();
@@ -229,7 +240,7 @@ public final class AuthTestDataUtil {
      */
     public static LoginHistoryEntity createAdminLoginHistory(UserEntity adminUser) {
         return LoginHistoryEntity.builder()
-                .id(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
+                .id(adminLoginHistoryId)
                 .user(adminUser)
                 .loginTime(LocalDateTime.now())
                 .ipAddress("192.168.1.1")
@@ -242,7 +253,7 @@ public final class AuthTestDataUtil {
      */
     public static LoginHistoryRequestDto createAdminLoginHistoryRequest() {
         return LoginHistoryRequestDto.builder()
-                .userId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                .userId(adminUserId)
                 .ipAddress("192.168.1.1")
                 .deviceInfo("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/96.0.4664.110")
                 .build();
@@ -254,18 +265,18 @@ public final class AuthTestDataUtil {
     public static RoleResponseDto createAdminRoleResponseDto() {
         Set<PermissionResponseDto> permissions = new HashSet<>();
         permissions.add(PermissionResponseDto.builder()
-                .id(UUID.fromString("11111111-0000-0000-0000-000000000000"))
+                .id(createPermissionId)
                 .name("USER_CREATE")
                 .description("Create users")
                 .build());
         permissions.add(PermissionResponseDto.builder()
-                .id(UUID.fromString("22222222-0000-0000-0000-000000000000"))
+                .id(readPermissionId)
                 .name("USER_READ")
                 .description("Read users")
                 .build());
 
         return RoleResponseDto.builder()
-                .id(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+                .id(adminRoleId)
                 .name("ADMIN")
                 .description("Administrator role with full system access")
                 .permissions(permissions)
@@ -278,13 +289,13 @@ public final class AuthTestDataUtil {
     public static RoleResponseDto createUserRoleResponseDto() {
         Set<PermissionResponseDto> permissions = new HashSet<>();
         permissions.add(PermissionResponseDto.builder()
-                .id(UUID.fromString("22222222-0000-0000-0000-000000000000"))
+                .id(readPermissionId)
                 .name("USER_READ")
                 .description("Read users")
                 .build());
 
         return RoleResponseDto.builder()
-                .id(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+                .id(userRoleId)
                 .name("USER")
                 .description("Regular user with limited access")
                 .permissions(permissions)
@@ -296,7 +307,7 @@ public final class AuthTestDataUtil {
      */
     public static UserResponseDto createTestAdminUserResponse() {
         return UserResponseDto.builder()
-                .id(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                .id(adminUserId)
                 .firstName("Admin")
                 .lastName("User")
                 .email("admin@socius.org")
