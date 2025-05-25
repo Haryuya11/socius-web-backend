@@ -11,7 +11,7 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
     
     /**
      * Tìm kiếm thông tin chi của nhân viên
-     * @param user
+     * @param user Đối tượng người dùng
      * @return Optional chứa thông tin chi tiết nếu tìm thấy, empty nếu không tìm thấy
      */
     Optional<EmploymentDetailEntity> findByUser(UserEntity user);

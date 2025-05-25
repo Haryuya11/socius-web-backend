@@ -5,9 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.socius.sociuswebbackend.config.TestConfig;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
@@ -19,11 +16,6 @@ import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -34,8 +26,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
@@ -62,30 +56,34 @@ public class AuthControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        authenticationService = mock(AuthenticationService.class);
-        ReflectionTestUtils.setField(authController, "authenticationService", authenticationService);
+        try {
+            MockitoAnnotations.openMocks(this);
+            authenticationService = mock(AuthenticationService.class);
+            ReflectionTestUtils.setField(authController, "authenticationService", authenticationService);
 
-        UserEntity adminUser = AuthTestDataUtil.createTestAdminUser();
+            UserEntity adminUser = AuthTestDataUtil.createTestAdminUser();
 
-        adminLoginRequest = AuthTestDataUtil.createAdminLoginRequest();
+            adminLoginRequest = AuthTestDataUtil.createAdminLoginRequest();
 
-        // Create successful login response
-        successLoginResponse = new LoginResponseDto();
-        successLoginResponse.setAuthenticated(true);
-        successLoginResponse.setMessage("Đăng nhập thành công");
-        successLoginResponse.setPasswordChangeRequired(false);
+            // Create successful login response
+            successLoginResponse = new LoginResponseDto();
+            successLoginResponse.setAuthenticated(true);
+            successLoginResponse.setMessage("Đăng nhập thành công");
+            successLoginResponse.setPasswordChangeRequired(false);
 
-        // Create failed login response
-        failedLoginResponse = new LoginResponseDto();
-        failedLoginResponse.setAuthenticated(false);
-        failedLoginResponse.setMessage("Đăng nhập không thành công");
+            // Create failed login response
+            failedLoginResponse = new LoginResponseDto();
+            failedLoginResponse.setAuthenticated(false);
+            failedLoginResponse.setMessage("Đăng nhập không thành công");
 
-        // Create session info DTO
-        sessionInfoDto = new SessionInfoDto();
-        sessionInfoDto.setUserId(adminUser.getId());
-        sessionInfoDto.setUsername(adminUser.getEmail());
-        sessionInfoDto.setFullName(adminUser.getFullName());
+            // Create session info DTO
+            sessionInfoDto = new SessionInfoDto();
+            sessionInfoDto.setUserId(adminUser.getId());
+            sessionInfoDto.setUsername(adminUser.getEmail());
+            sessionInfoDto.setFullName(adminUser.getFullName());
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi khởi tạo các mock đối tượng trong AuthControllerIntegrationTest", e);
+        }
     }
 
     @Test

@@ -1,27 +1,24 @@
 package org.socius.sociuswebbackend.controllers;
 
-import java.util.List;
-import java.util.UUID;
-
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/session")
+@RequiredArgsConstructor
 public class SessionController {
 
-    @Autowired
-    private SessionManagementService sessionManagementService;
-
-    @Autowired
-    private OnlineUserService onlineUserService;
+    final private OnlineUserService onlineUserService;
 
     /**
      * Lấy danh sách người dùng đang online
@@ -36,7 +33,7 @@ public class SessionController {
 
     /**
      * Kiểm tra trạng thái hoạt động của một người dùng cụ thể
-     * 
+     *
      * @param userId ID của người dùng cần kiểm tra
      * @return true nếu người dùng đang online, false nếu không
      */

@@ -19,6 +19,11 @@ DROP TABLE IF EXISTS notification_recipients CASCADE;
 DROP TABLE IF EXISTS employee_ranking CASCADE;
 DROP TABLE IF EXISTS login_history CASCADE;
 DROP TABLE IF EXISTS app_settings CASCADE;
+DROP TABLE IF EXISTS conversations CASCADE;
+DROP TABLE IF EXISTS conversation_members CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS message_status CASCADE;
+DROP TABLE IF EXISTS unread_counts CASCADE;
 
 CREATE TABLE
     positions
@@ -88,11 +93,11 @@ CREATE TABLE
 CREATE TABLE
     users
 (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    first_name VARCHAR(100) NOT NULL,
-    last_name  VARCHAR(100) NOT NULL,
-    email      VARCHAR(100) NOT NULL UNIQUE CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-) ,
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    first_name   VARCHAR(100) NOT NULL,
+    last_name    VARCHAR(100) NOT NULL,
+    email        VARCHAR(100) NOT NULL UNIQUE CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        ),
     birth_date   DATE         NOT NULL CHECK (birth_date <= CURRENT_DATE - INTERVAL '18 years'),
     image_url    TEXT,
     gender       VARCHAR(10) CHECK (gender IN ('male', 'female')),
@@ -185,7 +190,7 @@ CREATE TABLE
     status      VARCHAR(10) CHECK (
         status IN ('pending', 'completed', 'failed', 'in_progress')
         )                    NOT NULL,
-    assigned_to UUID NULL,
+    assigned_to UUID         NULL,
     created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assigned_to) REFERENCES users (id) ON DELETE CASCADE
@@ -201,7 +206,7 @@ CREATE TABLE
     status      VARCHAR(10) CHECK (
         status IN ('pending', 'completed', 'failed', 'in_progress')
         )                    NOT NULL,
-    assigned_to UUID NULL,
+    assigned_to UUID         NULL,
     created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assigned_to) REFERENCES users (id) ON DELETE CASCADE
@@ -312,14 +317,75 @@ CREATE TABLE login_history
 
 CREATE TABLE app_settings
 (
-    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    setting_key  VARCHAR(100) NOT NULL UNIQUE,
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    setting_key   VARCHAR(100) NOT NULL UNIQUE,
     setting_value VARCHAR(255) NOT NULL,
-    description  TEXT,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    description   TEXT,
+    created_at    TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Bảng cuộc trò chuyện
+CREATE TABLE conversations
+(
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name       VARCHAR(255),
+    type       VARCHAR(20) NOT NULL CHECK (type IN ('DIRECT', 'GROUP')),
+    image_url  TEXT,
+    created_by UUID        NOT NULL REFERENCES users (id),
+    created_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Bảng thành viên cuộc trò chuyện
+CREATE TABLE conversation_members
+(
+    conversation_id UUID NOT NULL REFERENCES conversations (id),
+    user_id         UUID NOT NULL REFERENCES users (id),
+    joined_at       TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    left_at         TIMESTAMP,
+    role            VARCHAR(20) DEFAULT 'MEMBER' CHECK (role IN ('MEMBER', 'ADMIN')),
+    PRIMARY KEY (conversation_id, user_id)
+);
+
+-- Bảng tin nhắn
+CREATE TABLE messages
+(
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id    UUID NOT NULL REFERENCES conversations (id),
+    sender_id          UUID NOT NULL REFERENCES users (id),
+    content            TEXT NOT NULL,
+    message_type       VARCHAR(20)      DEFAULT 'TEXT' CHECK (message_type IN ('TEXT', 'IMAGE', 'FILE', 'AUDIO', 'VIDEO')),
+    media_url          TEXT,
+    created_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    is_edited          BOOLEAN          DEFAULT FALSE,
+    is_deleted         BOOLEAN          DEFAULT FALSE,
+    media_cleaned_up   BOOLEAN          DEFAULT FALSE,
+    file_size          BIGINT,
+    file_original_name TEXT,
+    file_content_type  TEXT
+);
+
+-- Bảng trạng thái đọc tin nhắn
+CREATE TABLE message_status
+(
+    message_id UUID NOT NULL REFERENCES messages (id),
+    user_id    UUID NOT NULL REFERENCES users (id),
+    is_read    BOOLEAN DEFAULT FALSE,
+    read_at    TIMESTAMP,
+    PRIMARY KEY (message_id, user_id)
+);
+
+-- Bảng theo dõi tin chưa đọc
+CREATE TABLE unread_counts
+(
+    conversation_id      UUID NOT NULL REFERENCES conversations (id),
+    user_id              UUID NOT NULL REFERENCES users (id),
+    unread_count         INT DEFAULT 0,
+    last_read_message_id UUID REFERENCES messages (id),
+    PRIMARY KEY (conversation_id, user_id)
+);
 
 --Constraints
 --Không có hai period trùng name, type, start_date, end_date.
@@ -344,12 +410,43 @@ ALTER TABLE notification_recipients
 
 
 INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES
-    ('session_timeout', '30', 'Thời gian phiên làm việc (phút)'),
-    ('session_extension_threshold', '2', 'Ngưỡng thời gian còn lại để gia hạn phiên (phút)'),
-    ('default_user_password', '1', 'Mật khẩu mặc định cho tài khoản mới'),
-    ('allowed_origins', 'http://localhost:3000,https://app.socius.com', 'Danh sách domain được phép truy cập API'),
-    ('max_login_sessions', '1', 'Số phiên đăng nhập tối đa cho mỗi người dùng'),
-    ('online.status.timeout.minutes', '5', 'Thời gian chờ trạng thái online của người dùng (phút)'),
-    ('websocket.heartbeat.interval', '60000', 'Khoảng thời gian gửi tín hiệu heartbeat của WebSocket (milli giây)')
+VALUES ('session_timeout', '30', 'Thời gian phiên làm việc (phút)'),
+       ('session_extension_threshold', '2', 'Ngưỡng thời gian còn lại để gia hạn phiên (phút)'),
+       ('default_user_password', '1', 'Mật khẩu mặc định cho tài khoản mới'),
+       ('allowed_origins', 'http://localhost:3000,https://app.socius.com', 'Danh sách domain được phép truy cập API'),
+       ('max_login_sessions', '1', 'Số phiên đăng nhập tối đa cho mỗi người dùng'),
+       ('online.status.timeout.minutes', '5', 'Thời gian chờ trạng thái online của người dùng (phút)'),
+       ('websocket.heartbeat.interval', '1', 'Khoảng thời gian gửi tín hiệu heartbeat của WebSocket (phút)')
+ON CONFLICT (setting_key) DO NOTHING;
+
+INSERT INTO app_settings (setting_key, setting_value, description)
+VALUES ('rabbitmq.message.ttl', '7', 'Thời gian sống của tin nhắn RabbitMQ (ngày)')
+ON CONFLICT (setting_key) DO NOTHING;
+
+INSERT INTO app_settings (setting_key, setting_value, description)
+VALUES ('websocket.time.to.first.message', '60000', 'Thời gian tối đa cho tin nhắn đầu tiên qua WebSocket (ms)'),
+       ('websocket.heartbeat.send', '25000', 'Thời gian gửi heartbeat từ server đến client (ms)'),
+       ('websocket.heartbeat.receive', '25000', 'Thời gian server chờ nhận heartbeat từ client (ms)')
+ON CONFLICT (setting_key) DO NOTHING;
+
+INSERT INTO app_settings (setting_key, setting_value, description)
+VALUES ('rabbitmq.prefetch.count', '10', 'Số lượng tin nhắn được gửi đến consumer cùng một lúc'),
+       ('rabbitmq.concurrent.consumers', '3', 'Số lượng consumer đồng thời cho mỗi queue'),
+       ('rabbitmq.max.concurrent.consumers', '10', 'Số lượng consumer tối đa cho mỗi queue'),
+       ('rabbitmq.retry.max.attempts', '3', 'Số lần thử lại tối đa khi gửi tin nhắn'),
+       ('rabbitmq.retry.initial.interval', '1000', 'Thời gian chờ giữa các lần thử lại (ms)'),
+       ('rabbitmq.retry.multiplier', '2', 'Hệ số nhân cho thời gian chờ giữa các lần thử lại'),
+       ('rabbitmq.retry.max.interval', '10000', 'Thời gian chờ tối đa giữa các lần thử lại (ms)'),
+       ('chat.offline.messages.expiry.days', '7', 'Thời gian hết hạn tin nhắn ngoại tuyến (ngày)'),
+       ('chat.offline.messages.max', '100', 'Số lượng tin nhắn ngoại tuyến tối đa cho mỗi người dùng'),
+       ('rabbitmq.dlx.message.ttl', '86400000', 'Thời gian sống của tin nhắn trong Dead Letter Exchange (ms)'),
+       ('rabbitmq.dlq.retry.window.minutes', '360',
+        'Thời gian tối đa để gửi lại tin nhắn trong Dead Letter Queue (phút)'),
+       ('websocket.disconnect.grace.seconds', '60', 'Thời gian chờ trước khi ngắt kết nối WebSocket (giây)'),
+       ('message.file.cleanup.days', '30', 'Thời gian sống của các tệp đính kèm tin nhắn (ngày)'),
+       ('session.cookie.max.age', '86400', 'Thời gian sống của cookie phiên (giây)'),
+       ('session.cookie.secure', 'true', 'Đặt cookie phiên là bảo mật (chỉ gửi qua HTTPS)'),
+       ('file.upload.max.size', '52428800', 'Kích thước tối đa của tệp tải lên (byte)'),
+       ('websocket.heartbeat.timeout', '300000', 'Thời gian chờ heartbeat WebSocket (ms)'),
+       ('rabbitmq.max.retries', '3', 'Số lần thử lại tối đa khi gửi tin nhắn RabbitMQ')
 ON CONFLICT (setting_key) DO NOTHING;

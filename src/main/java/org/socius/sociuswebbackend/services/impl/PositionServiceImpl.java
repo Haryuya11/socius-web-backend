@@ -3,6 +3,7 @@ package org.socius.sociuswebbackend.services.impl;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.mappers.PositionMapper;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
@@ -15,13 +16,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class PositionServiceImpl implements PositionService {
 
-    @Autowired
-    private PositionRepository positionRepository;
+    final private PositionRepository positionRepository;
 
-    @Autowired
-    private PositionMapper positionMapper;
+    final private PositionMapper positionMapper;
 
     @Override
     public List<PositionResponseDto> findAll() {

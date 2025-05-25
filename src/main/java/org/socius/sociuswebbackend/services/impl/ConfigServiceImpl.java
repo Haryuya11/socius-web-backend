@@ -1,15 +1,16 @@
 package org.socius.sociuswebbackend.services.impl;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.entities.AppSettingsEntity;
 import org.socius.sociuswebbackend.repositories.AppSettingsRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -17,21 +18,20 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ConfigServiceImpl implements ConfigService {
 
     private final static Logger logger = LoggerFactory.getLogger(ConfigServiceImpl.class);
 
-    @Autowired
-    private AppSettingsRepository appSettingsRepository;
+    final private AppSettingsRepository appSettingsRepository;
+    final private Environment environment;
+
+    private ConfigService self;
 
     @Autowired
-    private Environment environment;
-
-    @Value("${app.cookie.name:SOCIUS_SESSION}")
-    private String defaultCookieName;
-
-    @Value("${app.session.attribute.user_id:USER_ID}")
-    private String defaultUserIdAttribute;
+    public void setSelf(@Lazy ConfigService self) {
+        this.self = self;
+    }
 
     @Override
     @Cacheable(value = "configCache", key = "#key")
@@ -57,7 +57,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public int getInt(String key) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null) {
             logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0", key);
             return 0;
@@ -72,7 +72,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public int getInt(String key, int defaultValue) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null) {
             return defaultValue;
         }
@@ -86,20 +86,80 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    public double getDouble(String key) {
+        String value = self.getString(key);
+        if (value == null) {
+            logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0.0", key);
+            return 0.0;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            logger.error("Lỗi chuyển đổi giá trị [{}] thành số thực cho key: {}", value, key, e);
+            return 0.0;
+        }
+    }
+
+    @Override
+    public double getDouble(String key, double defaultValue) {
+        String value = self.getString(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            logger.error("Lỗi chuyển đổi giá trị [{}] thành số thực cho key: {}, sử dụng giá trị mặc định: {}",
+                    value, key, defaultValue, e);
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public long getLong(String key) {
+        String value = self.getString(key);
+        if (value == null) {
+            logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0", key);
+            return 0;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            logger.error("Lỗi chuyển đổi giá trị [{}] thành số nguyên dài cho key: {}", value, key, e);
+            return 0;
+        }
+    }
+
+    @Override
+    public long getLong(String key, long defaultValue) {
+        String value = self.getString(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            logger.error("Lỗi chuyển đổi giá trị [{}] thành số nguyên dài cho key: {}, sử dụng giá trị mặc định: {}",
+                    value, key, defaultValue, e);
+            return defaultValue;
+        }
+    }
+
+    @Override
     public boolean getBoolean(String key) {
-        String value = getString(key);
-        return value != null && Boolean.parseBoolean(value);
+        String value = self.getString(key);
+        return Boolean.parseBoolean(value);
     }
 
     @Override
     public boolean getBoolean(String key, boolean defaultValue) {
-        String value = getString(key);
+        String value = self.getString(key);
         return value != null ? Boolean.parseBoolean(value) : defaultValue;
     }
 
     @Override
     public List<String> getList(String key) {
-        String value = getString(key);
+        String value = self.getString(key);
         if (value == null || value.isEmpty()) {
             return Collections.emptyList();
         }

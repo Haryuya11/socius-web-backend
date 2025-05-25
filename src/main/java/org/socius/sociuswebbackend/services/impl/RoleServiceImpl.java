@@ -1,9 +1,6 @@
 package org.socius.sociuswebbackend.services.impl;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.slf4j.Logger;
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.events.RBACEvent;
 import org.socius.sociuswebbackend.mappers.RoleMapper;
 import org.socius.sociuswebbackend.model.dtos.role.RoleRequestDto;
@@ -11,39 +8,35 @@ import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
 import org.socius.sociuswebbackend.model.entities.RoleEntity;
 import org.socius.sociuswebbackend.repositories.RoleRepository;
 import org.socius.sociuswebbackend.services.RoleService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.UUID;
+
 @Service
+@RequiredArgsConstructor
 public class RoleServiceImpl implements RoleService {
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private RoleMapper roleMapper;
-
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    final private RoleRepository roleRepository;
+    final private RoleMapper roleMapper;
+    final private ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
     public List<RoleResponseDto> findAll() {
         List<RoleEntity> roleEntities = roleRepository.findAll();
-        List<RoleResponseDto> roles = roleEntities.stream()
+        return roleEntities.stream()
                 .map(roleMapper::entityToDto)
                 .toList();
-        return roles;
     }
 
     @Override
     public RoleResponseDto findById(UUID id) {
-        RoleResponseDto role = roleRepository.findById(id)
+        return roleRepository.findById(id)
                 .map(roleMapper::entityToDto)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò với ID: " + id));
-        return role;
     }
 
     @Override

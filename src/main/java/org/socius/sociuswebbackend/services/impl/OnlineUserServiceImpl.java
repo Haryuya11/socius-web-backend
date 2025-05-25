@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.services.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
@@ -9,7 +10,7 @@ import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -19,20 +20,14 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@RequiredArgsConstructor
 public class OnlineUserServiceImpl implements OnlineUserService {
 
     private static final Logger logger = LoggerFactory.getLogger(OnlineUserServiceImpl.class);
 
-    private static final String ONLINE_USERS_PREFIX = "online:users:";
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ConfigService configService;
+    final private RedisTemplate<String, Object> redisTemplate;
+    final private UserRepository userRepository;
+    final private ConfigService configService;
 
     @Override
     public void updateUserOnlineStatus(UUID userId, String sessionId) {
@@ -49,9 +44,9 @@ public class OnlineUserServiceImpl implements OnlineUserService {
                         .lastSeen(LocalDateTime.now())
                         .build();
 
-                String redisKey = ONLINE_USERS_PREFIX + user.getId();
-                redisTemplate.opsForValue().set(redisKey, onlineUserStatusDto);
-                redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
+                String key = RedisKeyBuilder.userOnlineKey(userId);
+                redisTemplate.opsForValue().set(key, onlineUserStatusDto);
+                redisTemplate.expire(key, 5, TimeUnit.MINUTES);
 
                 logger.info("Cập nhật trạng thái online cho người dùng: {}", userId);
             }
@@ -63,26 +58,29 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     @Override
     public void handleUserHeartbeat(UUID userId) {
         try {
-            String redisKey = ONLINE_USERS_PREFIX + userId;
-            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(redisKey);
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
+
+            // Nếu tìm thấy online status, cập nhật lastSeen để báo trì trạng thái online
             if (onlineUserStatusDto != null) {
                 onlineUserStatusDto.setLastSeen(LocalDateTime.now());
-                redisTemplate.opsForValue().set(redisKey, onlineUserStatusDto);
-                redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(key, onlineUserStatusDto);
+                redisTemplate.expire(key, 5, TimeUnit.MINUTES);
 
                 logger.info("Cập nhật heartbeat cho người dùng: {}", userId);
+            } else { // Nếu không tìm thấy online status, có thể người dùng đã offline
+                logger.warn("Nguời dùng không có online : {}", userId);
             }
         } catch (Exception e) {
             logger.error("Lỗi khi cập nhật heartbeat: {}", e.getMessage(), e);
         }
-
     }
 
     @Override
     public void markUserOffline(UUID userId, String sessionId) {
         try {
-            String redisKey = ONLINE_USERS_PREFIX + userId;
-            Object value = redisTemplate.opsForValue().get(redisKey);
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+            Object value = redisTemplate.opsForValue().get(key);
 
             OnlineUserStatusDto onlineUserStatusDto;
             if (value instanceof OnlineUserStatusDto) {
@@ -97,7 +95,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             }
 
             if (onlineUserStatusDto != null && sessionId.equals(onlineUserStatusDto.getSessionId())) {
-                redisTemplate.delete(redisKey);
+                redisTemplate.delete(key);
                 logger.info("Đánh dấu người dùng offline: {}", userId);
             }
         } catch (Exception e) {
@@ -109,9 +107,10 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     public List<OnlineUserStatusDto> getOnlineUsers() {
         List<OnlineUserStatusDto> onlineUsers = new ArrayList<>();
         try {
-            Set<String> redisKeys = redisTemplate.keys(ONLINE_USERS_PREFIX + "*");
-            if (!redisKeys.isEmpty()) {
-                List<Object> values = redisTemplate.opsForValue().multiGet(redisKeys);
+            String pattern = RedisKeyBuilder.getKeyPattern("user:") + ":online";
+            Set<String> key = redisTemplate.keys(pattern);
+            if (!key.isEmpty()) {
+                List<Object> values = redisTemplate.opsForValue().multiGet(key);
                 if (values != null) {
                     for (Object value : values) {
                         if (value instanceof OnlineUserStatusDto onlineUserStatusDto) {
@@ -131,8 +130,8 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     @Override
     public boolean isUserOnline(UUID userId) {
         try {
-            String redisKey = ONLINE_USERS_PREFIX + userId;
-            Object value = redisTemplate.opsForValue().get(redisKey);
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+            Object value = redisTemplate.opsForValue().get(key);
 
             OnlineUserStatusDto onlineUserStatusDto;
             if (value instanceof OnlineUserStatusDto) {
@@ -152,7 +151,6 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         }
     }
 
-
     private boolean isRecentlyActive(LocalDateTime lastSeen) {
         if (lastSeen == null) return false;
         LocalDateTime now = LocalDateTime.now();
@@ -162,5 +160,4 @@ public class OnlineUserServiceImpl implements OnlineUserService {
 
         return minutesSinceLastSeen < timeoutMinutes;
     }
-
 }

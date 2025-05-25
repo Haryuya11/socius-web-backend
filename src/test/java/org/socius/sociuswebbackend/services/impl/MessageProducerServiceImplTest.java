@@ -11,7 +11,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.model.enums.InvalidationReason;
 import org.socius.sociuswebbackend.model.messages.SessionInvalidationMessage;
-import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.HashSet;
@@ -28,20 +28,13 @@ public class MessageProducerServiceImplTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
-    @Mock
-    private ConfigService configService;
-
     @InjectMocks
     private MessageProducerServiceImpl messageProducerService;
 
     private final UUID roleId = UUID.randomUUID();
-    private final String exchangeName = "test.exchange";
-    private final String routingKey = "test.routing.key";
 
     @BeforeEach
     void setUp() {
-        when(configService.getString(eq("rabbitmq.exchange.session"), anyString())).thenReturn(exchangeName);
-        when(configService.getString(eq("rabbitmq.routing.invalidate"), anyString())).thenReturn(routingKey);
     }
 
     @Test
@@ -52,7 +45,9 @@ public class MessageProducerServiceImplTest {
 
         messageProducerService.sendSessionInvalidationMessage(roleId, reason, message);
 
-        verify(rabbitTemplate).convertAndSend(eq(exchangeName), eq(routingKey),
+        verify(rabbitTemplate).convertAndSend(
+                eq(RabbitMQKeyBuilder.getSessionManagementExchange()),
+                eq(RabbitMQKeyBuilder.getInvalidateSessionRoutingKey()),
                 (Object) argThat(arg -> {
                     SessionInvalidationMessage msg = (SessionInvalidationMessage) arg;
                     return msg.getRoleId().equals(roleId) &&
@@ -74,7 +69,9 @@ public class MessageProducerServiceImplTest {
 
         messageProducerService.sendSpecificSessionInvalidationMessage(sessiomIds, reason, message);
 
-        verify(rabbitTemplate).convertAndSend(eq(exchangeName), eq(routingKey),
+        verify(rabbitTemplate).convertAndSend(
+                eq(RabbitMQKeyBuilder.getSessionManagementExchange()),
+                eq(RabbitMQKeyBuilder.getInvalidateSessionRoutingKey()),
                 (Object) argThat(arg -> {
                     SessionInvalidationMessage msg = (SessionInvalidationMessage) arg;
                     return msg.getSessionIds().equals(sessiomIds) &&

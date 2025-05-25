@@ -1,19 +1,15 @@
 package org.socius.sociuswebbackend;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.socius.sociuswebbackend.config.TestConfig;
-import org.socius.sociuswebbackend.services.ConfigService;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @Import(TestConfig.class)
+@ActiveProfiles("test")
 class SociusWebBackendApplicationTests {
-
-
 
     @Test
     void contextLoads() {

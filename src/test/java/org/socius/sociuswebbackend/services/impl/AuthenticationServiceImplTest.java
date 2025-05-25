@@ -30,6 +30,7 @@ import org.socius.sociuswebbackend.repositories.RoleRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.*;
 import org.socius.sociuswebbackend.util.ApplicationContextHelper;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -111,7 +112,6 @@ public class AuthenticationServiceImplTest {
 
 
     private final String sessionId = "test-session-id";
-    private final String sessionAttributeUserId = "session.attribute.user_id";
 
 
     private UserEntity adminUser;
@@ -168,7 +168,7 @@ public class AuthenticationServiceImplTest {
         when(request.getSession(anyBoolean())).thenReturn(session);
         when(session.getId()).thenReturn(sessionId);
 
-        when(configService.getString(eq(sessionAttributeUserId), anyString())).thenReturn("USER_ID");
+//        when(configService.getString(eq(sessionAttributeUserId), anyString())).thenReturn("USER_ID");
         when(configService.getInt(anyString(), anyInt())).thenReturn(30);
 
         LoginHistoryResponseDto loginHistoryResponseDto = new LoginHistoryResponseDto();
@@ -183,8 +183,8 @@ public class AuthenticationServiceImplTest {
         assertTrue(result.isAuthenticated(), "Trạng thái xác thực phải true");
         assertEquals(adminUserResponseDto, result.getUser(), "Người dùng phải khớp");
 
-        String userKey = configService.getString(sessionAttributeUserId, "USER_ID");
-        verify(session).setAttribute(eq(userKey), eq(adminUser.getId()));
+//        String userKey = configService.getString(sessionAttributeUserId, "USER_ID");
+        verify(session).setAttribute(eq(RedisKeyBuilder.userIdAttributeKey()), eq(adminUser.getId()));
         verify(rbacRedisService).saveCacheUserPermissions(eq(sessionId), any(UserPermissionsDto.class), eq(30));
         verify(webSocketService).sendUserLoginNotification(anyString());
         verify(onlineUserService).updateUserOnlineStatus(any(UUID.class), anyString());
@@ -202,7 +202,7 @@ public class AuthenticationServiceImplTest {
         assertNull(result.getUser(), "Người dùng phải null");
         assertEquals("Sai mật khẩu", result.getMessage(),
                 "Thông báo phải là 'Sai mật khẩu' khi BadCredentialsException được ném ra");
-        assertFalse(result.isAuthenticated(),"Trạng thái xác thực phải false");
+        assertFalse(result.isAuthenticated(), "Trạng thái xác thực phải false");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(loginHistoryService, never()).createLoginHistory(any(LoginHistoryRequestDto.class));
@@ -223,7 +223,7 @@ public class AuthenticationServiceImplTest {
         assertNull(result.getUser(), "Người dùng phải null");
         assertEquals("Lỗi hệ thống", result.getMessage(),
                 "Thông báo phải là 'Lỗi hệ thống' khi xảy ra ngoại lệ khác");
-        assertFalse(result.isAuthenticated(),"Trạng thái xác thực phải false");
+        assertFalse(result.isAuthenticated(), "Trạng thái xác thực phải false");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(loginHistoryService, never()).createLoginHistory(any(LoginHistoryRequestDto.class));
@@ -236,7 +236,6 @@ public class AuthenticationServiceImplTest {
     @DisplayName("Logout phải làm mất hiêu lực phiên đăng nhập và dọn dẹp redis cache")
     void logoutShouldInvalidateSessionAndCleanUpRedis() {
         when(request.getSession(false)).thenReturn(session);
-        when(configService.getString(eq(sessionAttributeUserId), anyString())).thenReturn("USER_ID");
         when(session.getAttribute(anyString())).thenReturn(UUID.randomUUID());
 
         when(session.getId()).thenReturn(sessionId);
@@ -265,8 +264,7 @@ public class AuthenticationServiceImplTest {
     @DisplayName("Khi phiên và user tồn tại, xác thực thông tin phai trả về true")
     void isAuthenticatedShouldReturnTrueWhenSessionExistsAndUserIsAuthenticated() {
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("USER_ID")).thenReturn(adminUser.getId());
-        when(configService.getString(anyString(), anyString())).thenReturn("USER_ID");
+        when(session.getAttribute(RedisKeyBuilder.userIdAttributeKey())).thenReturn(adminUser.getId());
 
         boolean result = authenticationService.isAuthenticated(request);
 
@@ -324,7 +322,7 @@ public class AuthenticationServiceImplTest {
         when(request.getSession(anyBoolean())).thenReturn(session);
         when(session.getId()).thenReturn(sessionId);
 
-        when(configService.getString(eq(sessionAttributeUserId), anyString())).thenReturn("USER_ID");
+        when(session.getAttribute(RedisKeyBuilder.userIdAttributeKey())).thenReturn(adminUser.getId());
         when(configService.getInt(anyString(), anyInt())).thenReturn(30);
 
         LoginHistoryResponseDto loginHistoryResponseDto = new LoginHistoryResponseDto();
@@ -343,7 +341,6 @@ public class AuthenticationServiceImplTest {
 
         // 4. Additional setup for session info retrieval
         when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(adminUser));
-        when(session.getAttribute("USER_ID")).thenReturn(adminUser.getId());
         when(request.getSession(false)).thenReturn(session);
 
         // 5. Get session info and verify
