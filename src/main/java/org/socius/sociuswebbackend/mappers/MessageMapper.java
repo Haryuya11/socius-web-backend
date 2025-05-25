@@ -14,11 +14,24 @@ public interface MessageMapper extends BaseEntityMapper, GenericMapper<MessageEn
 
     @Override
     @Mapping(source = "conversation.id", target = "conversationId")
-    @Mapping(target = "isRead", ignore = true)
+    @Mapping(source = "fileUrl", target = "fileUrl")
+    @Mapping(source = "fileOriginalName", target = "fileOriginalName")
+    @Mapping(source = "fileContentType", target = "fileContentType")
+    @Mapping(source = "fileSize", target = "fileSize")
     MessageResponseDto entityToDto(MessageEntity entity);
 
 
     @Override
+    @Mapping(target = "conversation", ignore = true)
+    @Mapping(target = "sender", ignore = true)
+    @Mapping(target = "statusList", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(source = "fileUrl", target = "fileUrl")
+    @Mapping(source = "fileOriginalName", target = "fileOriginalName")
+    @Mapping(source = "fileContentType", target = "fileContentType")
+    @Mapping(source = "fileSize", target = "fileSize")
     default MessageEntity requestDtoToEntity(MessageRequestDto dto) {
         if (dto == null) {
             return null;
@@ -31,12 +44,22 @@ public interface MessageMapper extends BaseEntityMapper, GenericMapper<MessageEn
                 .conversation(conversationEntity)
                 .content(dto.getContent())
                 .messageType(dto.getMessageType())
+                .fileOriginalName(dto.getFileOriginalName())
+                .fileContentType(dto.getFileContentType())
+                .fileSize(dto.getFileSize())
+                .fileUrl(dto.getFileUrl())
                 .isEdited(false)
                 .isDeleted(false)
                 .build();
     }
 
     @Override
+    @Mapping(target = "conversation", ignore = true)
+    @Mapping(target = "sender", ignore = true)
+    @Mapping(target = "statusList", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     default void updateEntityFromDto(MessageRequestDto dto, @MappingTarget MessageEntity entity) {
         if (dto == null) {
             return;

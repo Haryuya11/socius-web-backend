@@ -60,5 +60,4 @@ public class MessageEntity extends BaseEntity {
     @Builder.Default
     private Set<MessageStatusEntity> statusList = new HashSet<>();
 
-
 }

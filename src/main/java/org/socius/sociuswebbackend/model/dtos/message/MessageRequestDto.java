@@ -18,17 +18,13 @@ public class MessageRequestDto {
     @NotNull(message = "conversationId không được để trống")
     private UUID conversationId;
 
-    @NotBlank(message = "content không được để trống")
     private String content;
 
     @Builder.Default
     private MessageType messageType = MessageType.TEXT;
 
     private String fileUrl;
-
     private String fileOriginalName;
-
     private String fileContentType;
-
     private Long fileSize;
 }

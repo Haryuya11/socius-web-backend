@@ -7,6 +7,7 @@ import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDt
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationResponseDto;
 import org.socius.sociuswebbackend.services.NotificationService;
 import org.socius.sociuswebbackend.config.RabbitMQConfig;
+import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,8 +44,8 @@ public class NotificationController {
 
         // Gửi thông báo đến RabbitMQ queue để xử lý qua WebSocket
         rabbitTemplate.convertAndSend(
-                RabbitMQConfig.SESSION_MANAGEMENT_EXCHANGE,
-                RabbitMQConfig.INVALIDATE_SESSION_ROUTING_KEY,
+                RabbitMQKeyBuilder.SESSION_MANAGEMENT_EXCHANGE,
+                RabbitMQKeyBuilder.INVALIDATE_SESSION_ROUTING_KEY,
                 responseDto
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);

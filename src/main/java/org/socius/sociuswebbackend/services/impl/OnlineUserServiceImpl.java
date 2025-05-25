@@ -46,7 +46,8 @@ public class OnlineUserServiceImpl implements OnlineUserService {
 
                 String key = RedisKeyBuilder.userOnlineKey(userId);
                 redisTemplate.opsForValue().set(key, onlineUserStatusDto);
-                redisTemplate.expire(key, 5, TimeUnit.MINUTES);
+                int timeoutMinutes = configService.getInt("session_timeout", 60);
+                redisTemplate.expire(key, timeoutMinutes, TimeUnit.MINUTES);
 
                 logger.info("Cập nhật trạng thái online cho người dùng: {}", userId);
             }
@@ -65,7 +66,8 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             if (onlineUserStatusDto != null) {
                 onlineUserStatusDto.setLastSeen(LocalDateTime.now());
                 redisTemplate.opsForValue().set(key, onlineUserStatusDto);
-                redisTemplate.expire(key, 5, TimeUnit.MINUTES);
+                int timeoutMinutes = configService.getInt("session_timeout", 60);
+                redisTemplate.expire(key, timeoutMinutes, TimeUnit.MINUTES);
 
                 logger.info("Cập nhật heartbeat cho người dùng: {}", userId);
             } else { // Nếu không tìm thấy online status, có thể người dùng đã offline

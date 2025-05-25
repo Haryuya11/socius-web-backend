@@ -21,10 +21,11 @@ public class MessageResponseDto extends BaseDto {
     private UserResponseDto sender;
     private String content;
     private MessageType messageType;
-    private String fileUrl;
     private boolean isEdited;
     private boolean isDeleted;
     private boolean isRead;
+
+    private String fileUrl;
     private String fileOriginalName;
     private String fileContentType;
     private Long fileSize;

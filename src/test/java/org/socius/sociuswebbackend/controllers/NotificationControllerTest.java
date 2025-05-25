@@ -17,6 +17,7 @@ import org.socius.sociuswebbackend.model.dtos.notification.NotificationRecipient
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.enums.NotificationType;
 import org.socius.sociuswebbackend.services.NotificationService;
+import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -181,8 +182,8 @@ class NotificationControllerTest {
                 .andExpect(jsonPath("$.recipients[0].isRead").value(false));
 
         verify(rabbitTemplate).convertAndSend(
-                eq(RabbitMQConfig.SESSION_MANAGEMENT_EXCHANGE),
-                eq(RabbitMQConfig.INVALIDATE_SESSION_ROUTING_KEY),
+                eq(RabbitMQKeyBuilder.SESSION_MANAGEMENT_EXCHANGE),
+                eq(RabbitMQKeyBuilder.INVALIDATE_SESSION_ROUTING_KEY),
                 eq(responseDto)
         );
         verify(notificationService).createNotification(any(NotificationRequestDto.class));

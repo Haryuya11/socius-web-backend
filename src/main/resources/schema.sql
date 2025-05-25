@@ -356,7 +356,7 @@ CREATE TABLE messages
     sender_id          UUID NOT NULL REFERENCES users (id),
     content            TEXT NOT NULL,
     message_type       VARCHAR(20)      DEFAULT 'TEXT' CHECK (message_type IN ('TEXT', 'IMAGE', 'FILE', 'AUDIO', 'VIDEO')),
-    media_url          TEXT,
+    file_url          TEXT,
     created_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     is_edited          BOOLEAN          DEFAULT FALSE,

@@ -77,7 +77,7 @@ public interface UnreadCountRepository extends JpaRepository<UnreadCountEntity, 
     @Query(value = "INSERT INTO unread_counts (conversation_id, user_id, unread_count) " +
             "VALUES (:conversationId, :userId, 1) " +
             "ON CONFLICT (conversation_id, user_id) " +
-            "DO UPDATE SET unread_count = unread_counts.count + 1",
+            "DO UPDATE SET unread_count = unread_counts.unread_count + 1",
             nativeQuery = true)
     @Transactional
     void incrementUnreadCount(@Param("conversationId") UUID conversationId, @Param("userId") UUID userId);

@@ -118,11 +118,14 @@ public class MessageController {
 
             // Tạo DTO tin nhắn
             MessageRequestDto requestDto = MessageRequestDto.builder()
-                    .conversationId(conversationId)
-                    .content(content == null ? "" : content)
-                    .messageType(type)
-                    .fileUrl(fileUrl)
-                    .build();
+                .conversationId(conversationId)
+                .content(content == null ? "" : content)
+                .messageType(type)
+                .fileUrl(fileUrl)
+                .fileOriginalName(file.getOriginalFilename())
+                .fileContentType(file.getContentType())
+                .fileSize(file.getSize())
+                .build();
 
             // Gửi tin nhắn
             MessageResponseDto responseDto = messageService.sendMessage(senderId, requestDto);
