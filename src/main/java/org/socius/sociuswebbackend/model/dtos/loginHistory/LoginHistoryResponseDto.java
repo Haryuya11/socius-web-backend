@@ -1,4 +1,4 @@
-package org.socius.sociuswebbackend.model.dtos.login;
+package org.socius.sociuswebbackend.model.dtos.loginHistory;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -10,14 +10,14 @@ import org.socius.sociuswebbackend.util.EntityMappingUtil;
  * Mapper for SalaryHistory entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
-public interface SalaryHistoryMapper extends BaseEntityMapper, 
+public abstract class SalaryHistoryMapper extends BaseEntityMapper implements
         GenericMapper<SalaryHistoryEntity, SalaryHistoryResponseDto, SalaryHistoryRequestDto> {
     
     @Override
-    SalaryHistoryResponseDto entityToDto(SalaryHistoryEntity entity);
+    public abstract SalaryHistoryResponseDto entityToDto(SalaryHistoryEntity entity);
     
     @Override
-    default SalaryHistoryEntity requestDtoToEntity(SalaryHistoryRequestDto dto) {
+    public SalaryHistoryEntity requestDtoToEntity(SalaryHistoryRequestDto dto) {
         if (dto == null) {
             return null;
         }
@@ -34,7 +34,7 @@ public interface SalaryHistoryMapper extends BaseEntityMapper,
     }
     
     @Override
-    default void updateEntityFromDto(SalaryHistoryRequestDto dto, @MappingTarget SalaryHistoryEntity entity) {
+    public void updateEntityFromDto(SalaryHistoryRequestDto dto, @MappingTarget SalaryHistoryEntity entity) {
         if (dto == null) {
             return;
         }

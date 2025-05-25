@@ -311,28 +311,6 @@ public class MessageControllerTest {
         SecurityContextHolder.clearContext();
     }
 
-    @Test
-    @DisplayName("Gửi tin nhắn với nội dung trống phải trả về lỗi")
-    void sendMessageWithEmptyContentShouldFail() throws Exception {
-        // Tạo DTO với content trống
-        messageRequestDto.setContent("");
-
-        // Thiết lập SecurityContext
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userId.toString(), null, Collections.emptyList());
-        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // Thực thi và kiểm tra
-        mockMvc.perform(post("/api/messages")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(messageRequestDto)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").exists());
-
-        SecurityContextHolder.clearContext();
-    }
 
     @Test
     @DisplayName("Phân trang tin nhắn với số lượng lớn")

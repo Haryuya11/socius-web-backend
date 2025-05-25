@@ -17,8 +17,9 @@ import java.util.List;
 /**
  * Mapper for NotificationRecipient entities and DTOs
  */
-@Mapper(componentModel = "spring", uses = { UserMapper.class, NotificationMapper.class })
-public abstract class NotificationRecipientMapper implements BaseEntityMapper {
+@Mapper(componentModel = "spring", uses = {UserMapper.class})
+public abstract class NotificationRecipientMapper extends BaseEntityMapper implements
+        GenericMapper<NotificationRecipientEntity, NotificationRecipientDto, NotificationRecipientRequestDto> {
 
     @Autowired
     private UserRepository userRepository;
@@ -29,6 +30,7 @@ public abstract class NotificationRecipientMapper implements BaseEntityMapper {
     /**
      * Convert NotificationRecipientEntity to NotificationRecipientDto
      */
+    @Override
     @Mapping(source = "id.notificationId", target = "notificationId")
     @Mapping(source = "id.userId", target = "userId")
     @Mapping(source = "user", target = "user")
@@ -39,11 +41,13 @@ public abstract class NotificationRecipientMapper implements BaseEntityMapper {
     /**
      * Convert list of NotificationRecipientEntity to list of NotificationRecipientDto
      */
+    @Override
     public abstract List<NotificationRecipientDto> entitiesToDtos(List<NotificationRecipientEntity> entities);
 
     /**
      * Convert NotificationRecipientRequestDto to NotificationRecipientEntity
      */
+    @Override
     public NotificationRecipientEntity requestDtoToEntity(NotificationRecipientRequestDto dto) {
         if (dto == null) {
             return null;

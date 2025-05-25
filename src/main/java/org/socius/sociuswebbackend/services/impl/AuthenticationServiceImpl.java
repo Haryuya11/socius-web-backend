@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.RoleMapper;
 import org.socius.sociuswebbackend.mappers.UserMapper;
 import org.socius.sociuswebbackend.model.dtos.auth.*;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.AccountEntity;
@@ -172,17 +172,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             onlineUserService.updateUserOnlineStatus(user.getId(), session.getId());
 
             UserResponseDto userDto = userMapper.entityToDto(user);
+            RoleResponseDto roleDto = null;
 
             if (roleId != null && user.getEmploymentDetail() != null && user.getEmploymentDetail().getRole() != null) {
                 RoleEntity fullRoleEntity = roleRepository.findById(roleId).orElse(null);
                 if (fullRoleEntity != null) {
-                    RoleResponseDto completeRoleDto = roleMapper.entityToDto(fullRoleEntity);
-                    userDto.setRole(completeRoleDto);
+                    roleDto = roleMapper.entityToDto(fullRoleEntity);
                 }
             }
 
             // 12. Tạo đối tượng phản hồi
             responseDto.setUser(userDto);
+            responseDto.setRole(roleDto);
             responseDto.setAuthenticated(true);
             responseDto.setSessionId(session.getId());
             responseDto.setMessage("Đăng nhập thành công");

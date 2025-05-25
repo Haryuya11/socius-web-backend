@@ -11,14 +11,16 @@ import org.socius.sociuswebbackend.util.EntityMappingUtil;
  * Mapper for Account entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
-public interface AccountMapper extends BaseEntityMapper, 
+public abstract class AccountMapper extends BaseEntityMapper implements
         GenericMapper<AccountEntity, AccountResponseDto, AccountRequestDto> {
     
     @Override
-    AccountResponseDto entityToDto(AccountEntity entity);
+    @Mapping(source = "isActive", target = "isActive")
+    @Mapping(source = "isDefaultPassword", target = "isDefaultPassword")
+    public abstract AccountResponseDto entityToDto(AccountEntity entity);
     
     @Override
-    default AccountEntity requestDtoToEntity(AccountRequestDto dto) {
+    public AccountEntity requestDtoToEntity(AccountRequestDto dto) {
         if (dto == null) {
             return null;
         }
@@ -34,7 +36,7 @@ public interface AccountMapper extends BaseEntityMapper,
     }
     
     @Override
-    default void updateEntityFromDto(AccountRequestDto dto, @MappingTarget AccountEntity entity) {
+    public void updateEntityFromDto(AccountRequestDto dto, @MappingTarget AccountEntity entity) {
         if (dto == null) {
             return;
         }

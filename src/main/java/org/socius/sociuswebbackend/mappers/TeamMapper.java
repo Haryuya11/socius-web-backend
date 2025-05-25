@@ -12,14 +12,14 @@ import org.socius.sociuswebbackend.util.EntityMappingUtil;
  * Mapper for Team entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
-public interface TeamMapper extends BaseEntityMapper, 
+public abstract class TeamMapper extends BaseEntityMapper implements
         GenericMapper<TeamEntity, TeamResponseDto, TeamRequestDto> {
     
     @Override
-    TeamResponseDto entityToDto(TeamEntity entity);
+    public abstract TeamResponseDto entityToDto(TeamEntity entity);
     
     @Override
-    default TeamEntity requestDtoToEntity(TeamRequestDto dto) {
+    public TeamEntity requestDtoToEntity(TeamRequestDto dto) {
         if (dto == null) {
             return null;
         }
@@ -35,7 +35,7 @@ public interface TeamMapper extends BaseEntityMapper,
     }
     
     @Override
-    default void updateEntityFromDto(TeamRequestDto dto, @MappingTarget TeamEntity entity) {
+    public void updateEntityFromDto(TeamRequestDto dto, @MappingTarget TeamEntity entity) {
         if (dto == null) {
             return;
         }
@@ -60,5 +60,8 @@ public interface TeamMapper extends BaseEntityMapper,
     @Mapping(source = "updatedAt", target = "updatedAt")
     @Mapping(target = "members", ignore = true)
     @Mapping(target = "memberCount", ignore = true)
-    TeamWithMembersDto entityToWithMembersDto(TeamEntity entity);
+    public TeamWithMembersDto entityToWithMembersDto(TeamEntity entity){
+        return null;
+        
+    }
 }

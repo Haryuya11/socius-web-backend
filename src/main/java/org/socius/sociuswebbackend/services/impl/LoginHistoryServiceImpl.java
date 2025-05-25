@@ -5,12 +5,11 @@ import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.mappers.LoginHistoryMapper;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryResponseDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryResponseDto;
 import org.socius.sociuswebbackend.model.entities.LoginHistoryEntity;
 import org.socius.sociuswebbackend.repositories.LoginHistoryRepository;
 import org.socius.sociuswebbackend.services.LoginHistoryService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service

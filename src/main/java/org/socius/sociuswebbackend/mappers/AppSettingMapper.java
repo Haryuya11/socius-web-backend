@@ -8,15 +8,15 @@ import org.socius.sociuswebbackend.model.dtos.config.ConfigDto;
 import org.socius.sociuswebbackend.model.entities.AppSettingsEntity;
 
 @Mapper(componentModel = "spring")
-public interface AppSettingMapper extends BaseEntityMapper,
+public abstract class AppSettingMapper extends BaseEntityMapper implements
         GenericMapper<AppSettingsEntity, ConfigDto, AppSettingUpdateRequestDto> {
 
     @Override
-    ConfigDto entityToDto(AppSettingsEntity entity);
+    public abstract ConfigDto entityToDto(AppSettingsEntity entity);
 
     @Override
-    AppSettingsEntity requestDtoToEntity(AppSettingUpdateRequestDto dto);
+    public abstract AppSettingsEntity requestDtoToEntity(AppSettingUpdateRequestDto dto);
 
     @Override
-    void updateEntityFromDto(AppSettingUpdateRequestDto dto, @MappingTarget AppSettingsEntity entity);
+    public abstract void updateEntityFromDto(AppSettingUpdateRequestDto dto, @MappingTarget AppSettingsEntity entity);
 }

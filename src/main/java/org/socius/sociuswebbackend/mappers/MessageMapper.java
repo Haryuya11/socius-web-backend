@@ -10,15 +10,14 @@ import org.socius.sociuswebbackend.model.entities.MessageEntity;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
-public interface MessageMapper extends BaseEntityMapper, GenericMapper<MessageEntity, MessageResponseDto, MessageRequestDto> {
-
+public abstract class MessageMapper extends BaseEntityMapper implements GenericMapper<MessageEntity, MessageResponseDto, MessageRequestDto> {
     @Override
     @Mapping(source = "conversation.id", target = "conversationId")
     @Mapping(source = "fileUrl", target = "fileUrl")
     @Mapping(source = "fileOriginalName", target = "fileOriginalName")
     @Mapping(source = "fileContentType", target = "fileContentType")
     @Mapping(source = "fileSize", target = "fileSize")
-    MessageResponseDto entityToDto(MessageEntity entity);
+    public abstract MessageResponseDto entityToDto(MessageEntity entity);
 
 
     @Override
@@ -32,7 +31,7 @@ public interface MessageMapper extends BaseEntityMapper, GenericMapper<MessageEn
     @Mapping(source = "fileOriginalName", target = "fileOriginalName")
     @Mapping(source = "fileContentType", target = "fileContentType")
     @Mapping(source = "fileSize", target = "fileSize")
-    default MessageEntity requestDtoToEntity(MessageRequestDto dto) {
+    public MessageEntity requestDtoToEntity(MessageRequestDto dto) {
         if (dto == null) {
             return null;
         }
@@ -60,7 +59,7 @@ public interface MessageMapper extends BaseEntityMapper, GenericMapper<MessageEn
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    default void updateEntityFromDto(MessageRequestDto dto, @MappingTarget MessageEntity entity) {
+    public void updateEntityFromDto(MessageRequestDto dto, @MappingTarget MessageEntity entity) {
         if (dto == null) {
             return;
         }
@@ -74,7 +73,6 @@ public interface MessageMapper extends BaseEntityMapper, GenericMapper<MessageEn
             entity.setMessageType(dto.getMessageType());
         }
     }
-
 
 
 }

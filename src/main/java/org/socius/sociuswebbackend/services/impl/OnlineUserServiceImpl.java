@@ -117,7 +117,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
                     for (Object value : values) {
                         if (value instanceof OnlineUserStatusDto onlineUserStatusDto) {
                             if (isRecentlyActive(onlineUserStatusDto.getLastSeen())) {
-                                onlineUsers.add(onlineUserStatusDto.toPublicDto());
+                                onlineUsers.add(onlineUserStatusDto);
                             }
                         }
                     }

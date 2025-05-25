@@ -13,15 +13,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mapper(componentModel = "spring", uses = {UserMapper.class, MessageMapper.class, ConversationMemberMapper.class})
-public interface ConversationMapper extends BaseEntityMapper, GenericMapper<ConversationEntity, ConversationResponseDto, ConversationRequestDto> {
+public abstract class ConversationMapper extends BaseEntityMapper implements GenericMapper<ConversationEntity, ConversationResponseDto, ConversationRequestDto> {
 
     @Override
     @Mapping(target = "lastMessage", ignore = true)
     @Mapping(target = "unreadCount", ignore = true)
-    ConversationResponseDto entityToDto(ConversationEntity entity);
+    public abstract ConversationResponseDto entityToDto(ConversationEntity entity);
 
     @AfterMapping
-    default void mapLastMessageAndUnreadCount(@MappingTarget ConversationResponseDto dto, ConversationEntity entity) {
+    public void mapLastMessageAndUnreadCount(@MappingTarget ConversationResponseDto dto, ConversationEntity entity) {
         // Tìm kiếm tin nhắn cuối cùng
         Optional<MessageEntity> lastMessage = entity.getMessages().stream()
                 .filter(msg -> !msg.isDeleted())
@@ -37,7 +37,7 @@ public interface ConversationMapper extends BaseEntityMapper, GenericMapper<Conv
     }
 
     @Override
-    default ConversationEntity requestDtoToEntity(ConversationRequestDto dto) {
+    public ConversationEntity requestDtoToEntity(ConversationRequestDto dto) {
         if (dto == null) {
             return null;
         }
@@ -51,7 +51,7 @@ public interface ConversationMapper extends BaseEntityMapper, GenericMapper<Conv
     }
 
     @Override
-    default void updateEntityFromDto(ConversationRequestDto dto, @MappingTarget ConversationEntity entity) {
+    public void updateEntityFromDto(ConversationRequestDto dto, @MappingTarget ConversationEntity entity) {
         if (dto == null) {
             return;
         }

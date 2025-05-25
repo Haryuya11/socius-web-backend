@@ -10,14 +10,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.mappers.LoginHistoryMapper;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryResponseDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryResponseDto;
 import org.socius.sociuswebbackend.model.entities.LoginHistoryEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.LoginHistoryRepository;
 import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;

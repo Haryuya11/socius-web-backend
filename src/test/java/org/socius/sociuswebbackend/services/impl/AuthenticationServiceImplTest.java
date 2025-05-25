@@ -18,8 +18,8 @@ import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginResponseDto;
 import org.socius.sociuswebbackend.model.dtos.auth.SessionInfoDto;
 import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryResponseDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.AccountEntity;
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
@@ -45,6 +45,7 @@ import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -138,9 +139,15 @@ public class AuthenticationServiceImplTest {
 
         adminLoginRequest = AuthTestDataUtil.createAdminLoginRequest();
         adminPermissionsDto = AuthTestDataUtil.createAdminPermissionsDto();
+        adminEmploymentDetail.setRole(adminRole);
+        adminUser.setEmploymentDetail(adminEmploymentDetail);
+
 
         adminUser.setAccount(adminAccount);
         adminUser.setEmploymentDetail(adminEmploymentDetail);
+
+        when(roleRepository.findById(any(UUID.class))).thenReturn(Optional.of(adminRole));
+        when(roleMapper.entityToDto(any(RoleEntity.class))).thenReturn(AuthTestDataUtil.createAdminRoleResponseDto());
 
         try {
             Field contextField = ApplicationContextHelper.class.getDeclaredField("context");
@@ -150,6 +157,8 @@ public class AuthenticationServiceImplTest {
             when(applicationContext.getBean(UserRepository.class)).thenReturn(userRepository);
             when(applicationContext.getBean(ConfigService.class)).thenReturn(configService);
             when(applicationContext.getBean(RoleMapper.class)).thenReturn(roleMapper);
+            when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(adminUser));
+            when(accountRepository.findByUser(any())).thenReturn(Optional.of(adminAccount));
             doNothing().when(onlineUserService).updateUserOnlineStatus(any(UUID.class), anyString());
         } catch (Exception e) {
             fail("Không thể thiết lập ApplicationContext: " + e.getMessage());
@@ -164,6 +173,7 @@ public class AuthenticationServiceImplTest {
         when(userRepository.findByEmail(adminLoginRequest.getEmail())).thenReturn(Optional.of(adminUser));
         when(accountRepository.findByUser(adminUser)).thenReturn(Optional.of(adminAccount));
         when(userMapper.entityToDto(adminUser)).thenReturn(adminUserResponseDto);
+
 
         when(request.getSession(anyBoolean())).thenReturn(session);
         when(session.getId()).thenReturn(sessionId);
@@ -182,6 +192,7 @@ public class AuthenticationServiceImplTest {
         assertNotNull(result, "Phản hồi không được null");
         assertTrue(result.isAuthenticated(), "Trạng thái xác thực phải true");
         assertEquals(adminUserResponseDto, result.getUser(), "Người dùng phải khớp");
+        assertThat(result.getRole()).isNotNull();
 
 //        String userKey = configService.getString(sessionAttributeUserId, "USER_ID");
         verify(session).setAttribute(eq(RedisKeyBuilder.userIdAttributeKey()), eq(adminUser.getId()));

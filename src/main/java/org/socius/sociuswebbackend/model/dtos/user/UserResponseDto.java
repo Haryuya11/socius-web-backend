@@ -28,5 +28,4 @@ public class UserResponseDto extends BaseDto {
     private String phoneNumber;
     private LocalDate hireDate;
     private String address;
-    private RoleResponseDto role;
 }

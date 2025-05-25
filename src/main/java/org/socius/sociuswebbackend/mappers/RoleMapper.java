@@ -21,12 +21,12 @@ import java.util.stream.Collectors;
  * Mapper for Role entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {PermissionMapper.class})
-public interface RoleMapper extends BaseEntityMapper,
+public abstract class RoleMapper extends BaseEntityMapper implements
         GenericMapper<RoleEntity, RoleResponseDto, RoleRequestDto> {
 
     @Override
     @Mapping(target = "permissions", ignore = true)
-    default RoleResponseDto entityToDto(RoleEntity entity) {
+    public RoleResponseDto entityToDto(RoleEntity entity) {
         if (entity == null) {
             return null;
         }
@@ -65,7 +65,7 @@ public interface RoleMapper extends BaseEntityMapper,
 //        dto.setPermissions(permissions);
 //    }
     @AfterMapping
-    default void mapPermissions(@MappingTarget RoleResponseDto dto, RoleEntity entity) {
+    public void mapPermissions(@MappingTarget RoleResponseDto dto, RoleEntity entity) {
         if (entity != null && entity.getRolePermissions() != null) {
             PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
             dto.setPermissions(permissionMapper.rolePermissionsToPermissionDtos(entity.getRolePermissions()));
@@ -74,17 +74,37 @@ public interface RoleMapper extends BaseEntityMapper,
 
     @Override
     @Mapping(target = "rolePermissions", ignore = true)
-    RoleEntity requestDtoToEntity(RoleRequestDto dto);
+    public RoleEntity requestDtoToEntity(RoleRequestDto dto){
+        if (dto == null) {
+            return null;
+        }
+
+        return RoleEntity.builder()
+            .name(dto.getName())
+            .description(dto.getDescription())
+            .build();
+    }
 
     @Override
     @Mapping(target = "rolePermissions", ignore = true)
-    void updateEntityFromDto(RoleRequestDto dto, @MappingTarget RoleEntity entity);
+    public void updateEntityFromDto(RoleRequestDto dto, @MappingTarget RoleEntity entity){
+        if( dto == null) {
+            return;
+        }
+        if (dto.getName() != null) {
+            entity.setName(dto.getName());
+        }
+
+        if (dto.getDescription() != null) {
+            entity.setDescription(dto.getDescription());
+        }
+    }
 
     /**
      * Post-processing after entity update to handle permissions
      */
     @AfterMapping
-    default void updateRolePermissions(RoleRequestDto dto, @MappingTarget RoleEntity entity) {
+    public void updateRolePermissions(RoleRequestDto dto, @MappingTarget RoleEntity entity) {
         if (dto.getPermissionIds() != null) {
             if (entity.getRolePermissions() == null) {
                 entity.setRolePermissions(new HashSet<>());
@@ -114,7 +134,7 @@ public interface RoleMapper extends BaseEntityMapper,
     /**
      * Create RolePermission entities from permission IDs
      */
-    default Set<RolePermissionEntity> createRolePermissions(RoleEntity role, Set<UUID> permissionIds) {
+    public Set<RolePermissionEntity> createRolePermissions(RoleEntity role, Set<UUID> permissionIds) {
         if (permissionIds == null || permissionIds.isEmpty()) {
             return new HashSet<>();
         }

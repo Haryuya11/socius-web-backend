@@ -10,15 +10,15 @@ import org.socius.sociuswebbackend.model.entities.PositionEntity;
  * Mapper for Position entities and DTOs
  */
 @Mapper(componentModel = "spring")
-public interface PositionMapper extends BaseEntityMapper, 
+public abstract class PositionMapper extends BaseEntityMapper implements
         GenericMapper<PositionEntity, PositionResponseDto, PositionRequestDto> {
 
     @Override
-    PositionResponseDto entityToDto(PositionEntity entity);
-    
+    public abstract PositionResponseDto entityToDto(PositionEntity entity);
+
     @Override
-    PositionEntity requestDtoToEntity(PositionRequestDto dto);
-    
+    public abstract PositionEntity requestDtoToEntity(PositionRequestDto dto);
+
     @Override
-    void updateEntityFromDto(PositionRequestDto dto, @MappingTarget PositionEntity entity);
+    public abstract void updateEntityFromDto(PositionRequestDto dto, @MappingTarget PositionEntity entity);
 }

@@ -12,14 +12,14 @@ import org.socius.sociuswebbackend.util.EntityMappingUtil;
  * Mapper for PeerVote entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class, PeriodMapper.class})
-public interface PeerVoteMapper extends BaseEntityMapper, 
+public abstract class PeerVoteMapper extends BaseEntityMapper implements
         GenericMapper<PeerVoteEntity, PeerVoteResponseDto, PeerVoteRequestDto> {
     
     @Override
-    PeerVoteResponseDto entityToDto(PeerVoteEntity entity);
+    public abstract PeerVoteResponseDto entityToDto(PeerVoteEntity entity);
     
     @Override
-    default PeerVoteEntity requestDtoToEntity(PeerVoteRequestDto dto) {
+    public PeerVoteEntity requestDtoToEntity(PeerVoteRequestDto dto) {
         if (dto == null) {
             return null;
         }
@@ -39,7 +39,7 @@ public interface PeerVoteMapper extends BaseEntityMapper,
     }
     
     @Override
-    default void updateEntityFromDto(PeerVoteRequestDto dto, @MappingTarget PeerVoteEntity entity) {
+    public void updateEntityFromDto(PeerVoteRequestDto dto, @MappingTarget PeerVoteEntity entity) {
         if (dto == null) {
             return;
         }

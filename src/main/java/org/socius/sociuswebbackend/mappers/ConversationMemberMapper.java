@@ -7,13 +7,13 @@ import org.socius.sociuswebbackend.model.entities.ConversationMemberEntity;
 import org.socius.sociuswebbackend.model.entities.ConversationMemberId;
 
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
-public interface ConversationMemberMapper extends BaseEntityMapper {
+public abstract class ConversationMemberMapper extends BaseEntityMapper {
 
     @Mapping(source = "id.conversationId", target = "conversationId")
     @Mapping(source = "user", target = "user")
-    ConversationMemberDto entityToDto(ConversationMemberEntity entity);
+    public abstract ConversationMemberDto entityToDto(ConversationMemberEntity entity);
 
-    default ConversationMemberEntity dtoToEntity(ConversationMemberDto dto) {
+    public ConversationMemberEntity dtoToEntity(ConversationMemberDto dto) {
         if (dto == null) {
             return null;
         }

@@ -10,15 +10,15 @@ import org.socius.sociuswebbackend.model.entities.DepartmentEntity;
  * Mapper for Department entities and DTOs
  */
 @Mapper(componentModel = "spring")
-public interface DepartmentMapper extends BaseEntityMapper, 
+public abstract class DepartmentMapper extends BaseEntityMapper implements
         GenericMapper<DepartmentEntity, DepartmentResponseDto, DepartmentRequestDto> {
-    
+
     @Override
-    DepartmentResponseDto entityToDto(DepartmentEntity entity);
-    
+    public abstract DepartmentResponseDto entityToDto(DepartmentEntity entity);
+
     @Override
-    DepartmentEntity requestDtoToEntity(DepartmentRequestDto dto);
-    
+    public abstract DepartmentEntity requestDtoToEntity(DepartmentRequestDto dto);
+
     @Override
-    void updateEntityFromDto(DepartmentRequestDto dto, @MappingTarget DepartmentEntity entity);
+    public abstract void updateEntityFromDto(DepartmentRequestDto dto, @MappingTarget DepartmentEntity entity);
 }

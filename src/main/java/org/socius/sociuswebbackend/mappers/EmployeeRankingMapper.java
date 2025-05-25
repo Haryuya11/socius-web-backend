@@ -10,14 +10,14 @@ import org.socius.sociuswebbackend.util.EntityMappingUtil;
  * Mapper for EmployeeRanking entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class, PeriodMapper.class})
-public interface EmployeeRankingMapper extends BaseEntityMapper, 
+public abstract class EmployeeRankingMapper extends BaseEntityMapper implements
         GenericMapper<EmployeeRankingEntity, EmployeeRankingResponseDto, EmployeeRankingRequestDto> {
     
     @Override
-    EmployeeRankingResponseDto entityToDto(EmployeeRankingEntity entity);
+    public abstract EmployeeRankingResponseDto entityToDto(EmployeeRankingEntity entity);
     
     @Override
-    default EmployeeRankingEntity requestDtoToEntity(EmployeeRankingRequestDto dto) {
+    public EmployeeRankingEntity requestDtoToEntity(EmployeeRankingRequestDto dto) {
         if (dto == null) {
             return null;
         }
@@ -33,7 +33,7 @@ public interface EmployeeRankingMapper extends BaseEntityMapper,
     }
     
     @Override
-    default void updateEntityFromDto(EmployeeRankingRequestDto dto, @MappingTarget EmployeeRankingEntity entity) {
+    public void updateEntityFromDto(EmployeeRankingRequestDto dto, @MappingTarget EmployeeRankingEntity entity) {
         if (dto == null) {
             return;
         }

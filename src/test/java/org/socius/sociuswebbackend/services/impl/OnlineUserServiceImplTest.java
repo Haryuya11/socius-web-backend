@@ -73,6 +73,7 @@ public class OnlineUserServiceImplTest {
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(configService.getInt(eq("online.status.timeout.minutes"), anyInt())).thenReturn(5);
+        when(configService.getInt(eq("session_timeout"), anyInt())).thenReturn(60);
     }
 
     @Test
@@ -84,7 +85,7 @@ public class OnlineUserServiceImplTest {
         onlineUserService.updateUserOnlineStatus(adminUser.getId(), "sessionId1");
 
         verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class));
-        verify(redisTemplate).expire(eq(key), eq(5L), eq(TimeUnit.MINUTES));
+        verify(redisTemplate).expire(eq(key), eq(60L), eq(TimeUnit.MINUTES));
     }
 
     @Test
@@ -96,7 +97,7 @@ public class OnlineUserServiceImplTest {
         onlineUserService.handleUserHeartbeat(adminUser.getId());
 
         verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class));
-        verify(redisTemplate).expire(eq(key), eq(5L), eq(TimeUnit.MINUTES));
+        verify(redisTemplate).expire(eq(key), eq(60L), eq(TimeUnit.MINUTES));
     }
 
     @Test

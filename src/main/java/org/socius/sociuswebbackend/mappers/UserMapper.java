@@ -11,17 +11,15 @@ import org.socius.sociuswebbackend.model.entities.UserEntity;
  * Mapper for User entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {RoleMapper.class})
-public interface UserMapper extends BaseEntityMapper,
+public abstract class UserMapper extends BaseEntityMapper implements
         GenericMapper<UserEntity, UserResponseDto, UserRequestDto> {
 
     @Override
-//    @Mapping(target = "fullName", expression = "java(entity.getFirstName() + \" \" + entity.getLastName())")
-    @Mapping(source = "employmentDetail.role", target = "role")
-    UserResponseDto entityToDto(UserEntity entity);
+    public abstract UserResponseDto entityToDto(UserEntity entity);
 
     @Override
-    UserEntity requestDtoToEntity(UserRequestDto dto);
+    public abstract UserEntity requestDtoToEntity(UserRequestDto dto);
 
     @Override
-    void updateEntityFromDto(UserRequestDto dto, @MappingTarget UserEntity entity);
+    public abstract void updateEntityFromDto(UserRequestDto dto, @MappingTarget UserEntity entity);
 }

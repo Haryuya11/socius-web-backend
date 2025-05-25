@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * Mapper for Notification entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class, NotificationRecipientMapper.class})
-public abstract class NotificationMapper implements BaseEntityMapper,
+public abstract class NotificationMapper extends BaseEntityMapper implements
         GenericMapper<NotificationEntity, NotificationResponseDto, NotificationRequestDto> {
 
     @Autowired
@@ -29,12 +29,19 @@ public abstract class NotificationMapper implements BaseEntityMapper,
     private EntityMappingUtil entityMappingUtil;
 
     @Override
+    @Mapping(target = "recipients", ignore = true)
+    @Mapping(source = "isUrgent", target = "isUrgent")
     public NotificationResponseDto entityToDto(NotificationEntity entity) {
-        NotificationResponseDto dto = entityToDtoGenerated(entity);
-        return dto;
+        if (entity == null) {
+            return null;
+        }
+
+        return entityToDtoGenerated(entity);
     }
 
     // Phương thức do MapStruct sinh, cần khai báo để gọi trong entityToDto
+    @Mapping(source = "isUrgent", target = "isUrgent")
+    @Mapping(target = "recipients", ignore = true)
     protected abstract NotificationResponseDto entityToDtoGenerated(NotificationEntity entity);
 
     /**
@@ -64,7 +71,7 @@ public abstract class NotificationMapper implements BaseEntityMapper,
 
         UserEntity sender = entityMappingUtil.mapUserIdToEntity(dto.getSenderId());
 
-        NotificationEntity notificationEntity = NotificationEntity.builder()
+        return NotificationEntity.builder()
                 .title(dto.getTitle())
                 .sender(sender)
                 .message(dto.getMessage())
@@ -73,8 +80,6 @@ public abstract class NotificationMapper implements BaseEntityMapper,
                 .isUrgent(dto.getIsUrgent())
                 .recipients(new HashSet<>())
                 .build();
-
-        return notificationEntity;
     }
 
     @Override

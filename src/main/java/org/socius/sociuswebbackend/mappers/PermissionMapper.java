@@ -16,23 +16,23 @@ import java.util.stream.Collectors;
  * Mapper for Permission entities and DTOs
  */
 @Mapper(componentModel = "spring")
-public interface PermissionMapper extends BaseEntityMapper, 
+public abstract class PermissionMapper extends BaseEntityMapper implements
         GenericMapper<PermissionEntity, PermissionResponseDto, PermissionRequestDto> {
-    
+
     @Override
-    PermissionResponseDto entityToDto(PermissionEntity entity);
-    
+    public abstract PermissionResponseDto entityToDto(PermissionEntity entity);
+
     @Override
-    PermissionEntity requestDtoToEntity(PermissionRequestDto dto);
-    
+    public abstract PermissionEntity requestDtoToEntity(PermissionRequestDto dto);
+
     @Override
-    void updateEntityFromDto(PermissionRequestDto dto, @MappingTarget PermissionEntity entity);
-    
+    public abstract void updateEntityFromDto(PermissionRequestDto dto, @MappingTarget PermissionEntity entity);
+
     /**
      * Convert set of RolePermissionEntity to set of PermissionResponseDto
      */
     @Named("rolePermissionsToPermissionDtos")
-    default Set<PermissionResponseDto> rolePermissionsToPermissionDtos(Set<RolePermissionEntity> rolePermissions) {
+    public Set<PermissionResponseDto> rolePermissionsToPermissionDtos(Set<RolePermissionEntity> rolePermissions) {
         if (rolePermissions == null) {
             return new HashSet<>();
         }

@@ -3,7 +3,7 @@ package org.socius.sociuswebbackend.utils;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
 import org.socius.sociuswebbackend.model.dtos.permission.PermissionResponseDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
