@@ -1,5 +1,7 @@
 package org.socius.sociuswebbackend.util;
 
+import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.socius.sociuswebbackend.model.entities.*;
 
@@ -11,6 +13,8 @@ import java.util.UUID;
 @Component
 public class EntityMappingUtil {
 
+    @Autowired
+    private UserRepository userRepository;
     /**
      * Generic method to map an ID to an entity
      */
@@ -28,7 +32,11 @@ public class EntityMappingUtil {
     }
     
     public UserEntity mapUserIdToEntity(UUID id) {
-        return mapIdToEntity(id, UserEntity.class);
+        if (id == null) {
+            return null;
+        }
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + id));
     }
     
     public PositionEntity mapPositionIdToEntity(UUID id) {

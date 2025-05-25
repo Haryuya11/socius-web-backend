@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").permitAll()
                         .requestMatchers("/api/master-data/**").hasAuthority("ACCESS_ADMIN_PAGE")
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("api/notification/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .maximumSessions(1) // Giới hạn số phiên đăng nhập đồng thời là 1
