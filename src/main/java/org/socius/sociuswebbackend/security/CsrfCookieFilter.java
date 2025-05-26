@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
@@ -12,13 +13,24 @@ import java.io.IOException;
 
 public class CsrfCookieFilter extends OncePerRequestFilter {
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
         CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
 
-        // Kiểm tra xem token có tồn tại không
         if (csrfToken != null) {
+            // Set thông tin header name và param name
             response.setHeader("X-CSRF-HEADER", csrfToken.getHeaderName());
             response.setHeader("X-CSRF-PARAM", csrfToken.getParameterName());
+
+            // Set token value vào cookie hoặc header
+            response.setHeader("X-CSRF-TOKEN", csrfToken.getToken());
+
+            // Hoặc set vào cookie
+            Cookie csrfCookie = new Cookie("XSRF-TOKEN", csrfToken.getToken());
+            csrfCookie.setHttpOnly(false); // Cho phép JavaScript đọc
+            csrfCookie.setPath("/");
+            response.addCookie(csrfCookie);
         }
         filterChain.doFilter(request, response);
     }
