@@ -203,7 +203,7 @@ CREATE TABLE
     name        VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
     deadline    DATE         NOT NULL CHECK (deadline > CURRENT_DATE),
-    status      VARCHAR(10) CHECK (
+    status      VARCHAR(20) CHECK (
         status IN ('pending', 'completed', 'failed', 'in_progress')
         )                    NOT NULL,
     assigned_to UUID         NULL,
