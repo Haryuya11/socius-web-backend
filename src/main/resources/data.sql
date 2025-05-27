@@ -431,3 +431,26 @@ VALUES
     ('c5b27c4e-3f9d-40da-c653-d62b88ef2b55', 'cc33dd44-ee55-ff66-7788-99001122aa44', 0, 'e7e8f9a0-b1c2-d3e4-f5a6-b7c8d9e0f1a2'),
     ('c5b27c4e-3f9d-40da-c653-d62b88ef2b55', 'dd44ee55-ff66-7788-9900-1122aa44bb55', 0, 'e7e8f9a0-b1c2-d3e4-f5a6-b7c8d9e0f1a2'),
     ('c5b27c4e-3f9d-40da-c653-d62b88ef2b55', 'ee55ff66-7788-9900-1122-aa44bb55cc66', 1, 'd6d7e8f9-a0b1-c2d3-e4f5-a6b7c8d9e0f1');
+
+-- Add tasks to the database
+INSERT INTO tasks (name, description, deadline, status, assigned_to, created_at, updated_at) VALUES
+('Thiết kế UI', 'Thiết kế layout cho trang dashboard quản trị', '2025-06-15', 'in_progress', '00778899-0011-22aa-44bb-55cc66dd77ee', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Tối ưu DB', 'Tối ưu các truy vấn SQL trong module báo cáo', '2025-06-10', 'pending', 'ff667788-9900-1122-aa44-bb55cc66dd77', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Test đăng ký', 'Viết test case cho màn hình đăng ký người dùng mới', '2025-06-08', 'completed', 'a1990011-22aa-44bb-55cc-66dd77ee8899', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Hệ thống TB', 'Tạo WebSocket backend gửi thông báo real-time', '2025-06-12', 'in_progress', 'cc33dd44-ee55-ff66-7788-99001122aa44', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Cập nhật UI', 'Nâng cấp hiển thị danh sách sản phẩm và hiệu ứng hover', '2025-06-20', 'pending', 'ee55ff66-7788-9900-1122-aa44bb55cc66', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Tài liệu SD', 'Soạn thảo tài liệu user manual cho khách hàng', '2025-06-05', 'completed', 'ee55ff66-7788-9900-1122-aa44bb55cc66', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Refactor TT', 'Tối ưu mã nguồn xử lý thanh toán và giảm lỗi timeout', '2025-06-17', 'in_progress', 'cc33dd44-ee55-ff66-7788-99001122aa44', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Triển khai', 'Cấu hình Jenkins pipeline để deploy staging', '2025-06-25', 'pending', 'a1990011-22aa-44bb-55cc-66dd77ee8899', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Fix quyền', 'Sửa lỗi các role không được kiểm tra chính xác', '2025-06-13', 'failed', 'bb22cc33-dd44-ee55-ff66-778899001122', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Lập sprint', 'Chuẩn bị backlog và phân chia công việc cho team', '2025-06-18', 'pending', 'a0889900-1122-aa44-bb55-cc66dd77ee88', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Google Analytic', 'Thêm mã theo dõi Analytics vào trang web', '2025-06-19', 'completed', 'a2001122-aa44-bb55-cc66-dd77ee889900', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Cập nhật TOS', 'Cập nhật nội dung điều khoản theo quy định mới', '2025-06-22', 'pending', 'dd44ee55-ff66-7788-9900-1122aa44bb55', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Tối ưu mobile', 'Cải thiện trải nghiệm trên thiết bị di động', '2025-06-21', 'in_progress', '00778899-0011-22aa-44bb-55cc66dd77ee', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Giới thiệu', 'Tạo nội dung và thiết kế cho trang "About us"', '2025-06-28', 'pending', 'a1990011-22aa-44bb-55cc-66dd77ee8899', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Bảo trì HT', 'Cập nhật bản vá bảo mật và backup dữ liệu', '2025-06-24', 'in_progress', 'cc33dd44-ee55-ff66-7788-99001122aa44', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Khảo sát KH', 'Tạo form khảo sát và gửi email hàng loạt', '2025-06-23', 'pending', 'bb22cc33-dd44-ee55-ff66-778899001122', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Training CRM', 'Tổ chức buổi training cho bộ phận sales', '2025-06-26', 'completed', 'ff667788-9900-1122-aa44-bb55cc66dd77', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Fix IE11', 'Khắc phục lỗi hiển thị layout trên trình duyệt IE11', '2025-06-27', 'failed', 'a0889900-1122-aa44-bb55-cc66dd77ee88', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Doc API', 'Mô tả các endpoint REST cho developer sử dụng', '2025-06-30', 'in_progress', 'ee55ff66-7788-9900-1122-aa44bb55cc66', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Phân quyền HT', 'Phân chia quyền hạn cho từng nhóm người dùng', '2025-07-01', 'pending', 'a2001122-aa44-bb55-cc66-dd77ee889900', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
