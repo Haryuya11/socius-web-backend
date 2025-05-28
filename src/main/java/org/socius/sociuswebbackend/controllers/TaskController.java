@@ -19,7 +19,7 @@ import java.util.UUID;
 public class TaskController {
     private final TaskService taskService;
 
-    @GetMapping("/users/{userId}/tasks")
+    @GetMapping("/user/{userId}/tasks")
     public ResponseEntity<Page<TaskResponseDto>> getTasksByUserId(
             @PathVariable UUID userId,
             Pageable pageable
