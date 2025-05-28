@@ -32,8 +32,7 @@ public class TestConfig {
 //        when(mockConfigService.getString("cookie.path", "/")).thenReturn("/");
 
         // Cấu hình mock cho các phương thức getInt
-        when(mockConfigService.getInt("session.duration.minutes", 30)).thenReturn(30);
-        when(mockConfigService.getInt("session_timeout", 30)).thenReturn(30);
+        when(mockConfigService.getInt("session_timeout", 60)).thenReturn(60);
         when(mockConfigService.getInt("session_extension_threshold", 2)).thenReturn(2);
 
         // Cấu hình mock cho các phương thức getList
