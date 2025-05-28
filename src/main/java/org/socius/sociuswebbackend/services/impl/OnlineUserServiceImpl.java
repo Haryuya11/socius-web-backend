@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -32,27 +31,34 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     @Override
     public void updateUserOnlineStatus(UUID userId, String sessionId) {
         try {
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+
+            // Lấy thông tin user
             Optional<UserEntity> userOpt = userRepository.findById(userId);
-            if (userOpt.isPresent()) {
-                UserEntity user = userOpt.get();
-
-                OnlineUserStatusDto onlineUserStatusDto = OnlineUserStatusDto.builder()
-                        .userId(userId)
-                        .fullName(user.getFullName())
-                        .imageUrl(user.getImageUrl())
-                        .sessionId(sessionId)
-                        .lastSeen(LocalDateTime.now())
-                        .build();
-
-                String key = RedisKeyBuilder.userOnlineKey(userId);
-                redisTemplate.opsForValue().set(key, onlineUserStatusDto);
-                int timeoutMinutes = configService.getInt("session_timeout", 60);
-                redisTemplate.expire(key, timeoutMinutes, TimeUnit.MINUTES);
-
-                logger.info("Cập nhật trạng thái online cho người dùng: {}", userId);
+            if (userOpt.isEmpty()) {
+                logger.warn("User not found: {}", userId);
+                return;
             }
+
+            UserEntity user = userOpt.get();
+            OnlineUserStatusDto statusDto = OnlineUserStatusDto.builder()
+                    .userId(userId)
+                    .fullName(user.getFullName())
+                    .imageUrl(user.getImageUrl())
+                    .sessionId(sessionId)
+                    .lastSeen(LocalDateTime.now())
+                    .isOnline(true)
+                    .build();
+
+            int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 5);
+
+            redisTemplate.opsForValue().set(key, statusDto);
+            redisTemplate.expire(key, Duration.ofMinutes(onlineStatusTimeout));
+
+            logger.debug("Cập nhật online status cho user: {} với session: {}", userId, sessionId);
+
         } catch (Exception e) {
-            logger.error("Lỗi khi cập nhật trạng thái online: {}", e.getMessage(), e);
+            logger.error("Lỗi khi cập nhật online status: {}", e.getMessage(), e);
         }
     }
 
@@ -60,21 +66,28 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     public void handleUserHeartbeat(UUID userId) {
         try {
             String key = RedisKeyBuilder.userOnlineKey(userId);
-            OnlineUserStatusDto onlineUserStatusDto = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
+            OnlineUserStatusDto currentStatus = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
 
-            // Nếu tìm thấy online status, cập nhật lastSeen để báo trì trạng thái online
-            if (onlineUserStatusDto != null) {
-                onlineUserStatusDto.setLastSeen(LocalDateTime.now());
-                redisTemplate.opsForValue().set(key, onlineUserStatusDto);
-                int timeoutMinutes = configService.getInt("session_timeout", 60);
-                redisTemplate.expire(key, timeoutMinutes, TimeUnit.MINUTES);
+            if (currentStatus != null) {
+                // Chỉ cập nhật lastSeen, GIỮ NGUYÊN TTL
+                currentStatus.setLastSeen(LocalDateTime.now());
+                currentStatus.setOnline(true);
 
-                logger.info("Cập nhật heartbeat cho người dùng: {}", userId);
-            } else { // Nếu không tìm thấy online status, có thể người dùng đã offline
-                logger.warn("Nguời dùng không có online : {}", userId);
+                // Kiểm tra session còn hợp lệ không
+                if (isSessionValid(currentStatus.getSessionId())) {
+                    // Session còn hợp lệ -> cập nhật heartbeat
+                    redisTemplate.opsForValue().set(key, currentStatus);
+                    logger.debug("Updated heartbeat for user: {}", userId);
+                } else {
+                    // Session đã hết hạn -> xóa online status
+                    redisTemplate.delete(key);
+                    logger.info("Removed online status for user {} due to expired session", userId);
+                }
+            } else {
+                logger.debug("No online status found for user: {} during heartbeat", userId);
             }
         } catch (Exception e) {
-            logger.error("Lỗi khi cập nhật heartbeat: {}", e.getMessage(), e);
+            logger.error("Lỗi khi xử lý heartbeat: {}", e.getMessage(), e);
         }
     }
 
@@ -84,24 +97,19 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             String key = RedisKeyBuilder.userOnlineKey(userId);
             Object value = redisTemplate.opsForValue().get(key);
 
-            OnlineUserStatusDto onlineUserStatusDto;
-            if (value instanceof OnlineUserStatusDto) {
-                onlineUserStatusDto = (OnlineUserStatusDto) value;
-            } else if (value instanceof Map) {
-                // Chuyển đổi từ Map sang DTO thông qua ObjectMapper
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.registerModule(new JavaTimeModule());
-                onlineUserStatusDto = mapper.convertValue(value, OnlineUserStatusDto.class);
-            } else {
-                return;
-            }
+            if (value != null) {
+                OnlineUserStatusDto currentStatus = convertToDto(value);
 
-            if (onlineUserStatusDto != null && sessionId.equals(onlineUserStatusDto.getSessionId())) {
-                redisTemplate.delete(key);
-                logger.info("Đánh dấu người dùng offline: {}", userId);
+                // CHỈ xóa online status nếu sessionId khớp
+                if (currentStatus != null && sessionId.equals(currentStatus.getSessionId())) {
+                    redisTemplate.delete(key);
+                    logger.info("Đánh dấu user {} offline (session: {})", userId, sessionId);
+                } else {
+                    logger.debug("Không xóa online status - sessionId không khớp cho user: {}", userId);
+                }
             }
         } catch (Exception e) {
-            logger.error("Lỗi khi đánh dấu người dùng offline: {}", e.getMessage(), e);
+            logger.error("Lỗi khi đánh dấu user offline: {}", e.getMessage(), e);
         }
     }
 
@@ -161,5 +169,34 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         int timeoutMinutes = configService.getInt("online.status.timeout.minutes", 5);
 
         return minutesSinceLastSeen < timeoutMinutes;
+    }
+
+    private OnlineUserStatusDto convertToDto(Object value) {
+        if (value instanceof OnlineUserStatusDto) {
+            return (OnlineUserStatusDto) value;
+        } else if (value instanceof Map) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
+                return mapper.convertValue(value, OnlineUserStatusDto.class);
+            } catch (Exception e) {
+                logger.error("Lỗi chuyển đổi Map sang DTO: {}", e.getMessage());
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private boolean isSessionValid(String sessionId) {
+        try {
+            String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
+            Boolean exists = redisTemplate.hasKey(sessionKey);
+            Long expireTime = redisTemplate.getExpire(sessionKey);
+
+            return exists && expireTime > 0;
+        } catch (Exception e) {
+            logger.error("Lỗi khi kiểm tra session validity: {}", e.getMessage(), e);
+            return false;
+        }
     }
 }

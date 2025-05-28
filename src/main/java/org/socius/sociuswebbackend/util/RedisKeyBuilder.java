@@ -281,4 +281,8 @@ public class RedisKeyBuilder {
         }
         throw new IllegalArgumentException("Invalid session key format: " + sessionKey);
     }
+
+    public static String springSessionPattern() {
+        return SESSION_PREFIX + "session:session:*";
+    }
 }

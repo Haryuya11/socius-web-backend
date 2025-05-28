@@ -55,10 +55,19 @@ public class SessionDestroyedListener {
         rbacRedisService.deleteUserPermissions(event.getSessionId());
 
         // Xóa dữ liệu liên quan đến phiên làm việc trong Redis
-        redisTemplate.delete(RedisKeyBuilder.springSessionKey(event.getSessionId()));
-        redisTemplate.delete(RedisKeyBuilder.springSessionExpiresKey(event.getSessionId()));
-        redisTemplate.delete(userIdKey);
+        cleanupSessionData(sessionId);
+    }
 
-        logger.info("Đã dọn dẹp dữ liệu Redis cho session: {}", event.getSessionId());
+    private void cleanupSessionData(String sessionId) {
+        try {
+            // Xóa các key liên quan đến session
+            redisTemplate.delete(RedisKeyBuilder.springSessionKey(sessionId));
+            redisTemplate.delete(RedisKeyBuilder.springSessionExpiresKey(sessionId));
+            redisTemplate.delete(RedisKeyBuilder.sessionUserKey(sessionId));
+
+            logger.debug("Đã dọn dẹp dữ liệu session: {}", sessionId);
+        } catch (Exception e) {
+            logger.error("Lỗi khi dọn dẹp session data: {}", e.getMessage(), e);
+        }
     }
 }

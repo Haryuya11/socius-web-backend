@@ -30,6 +30,7 @@ public class WebSocketServiceImpl implements WebSocketService {
     final private OnlineUserService onlineUserService;
     final private RedisTemplate<String, Object> redisTemplate;
     final private OfflineMessageService offlineMessageService;
+    final private SimpMessagingTemplate simpMessagingTemplate;
 
 
     @Override
@@ -68,19 +69,24 @@ public class WebSocketServiceImpl implements WebSocketService {
         String sessionId = headerAccessor.getSessionId();
 
         if (headerAccessor.getSessionAttributes() == null) {
-            logger.warn("Không tìm thấy thông tin phiên làm việc trong header");
+            logger.warn("Không tìm thấy session attributes trong disconnect event");
             return;
         }
 
         UUID userId = (UUID) headerAccessor.getSessionAttributes().get("userId");
 
         if (userId != null && sessionId != null) {
-            // Đánh dấu người dùng là offline
+            logger.info("WebSocket disconnect - user: {}, session: {}", userId, sessionId);
 
             onlineUserService.markUserOffline(userId, sessionId);
 
             // Thông báo cho những người dùng khác về việc người này mất kết nối
-            publishUserStatusChange(userId, "USER_OFFLINE");
+            simpMessagingTemplate.convertAndSend("/topic/user-status",
+                    Map.of(
+                            "userId", userId,
+                            "isOnline", false,
+                            "event", "disconnect"
+                    ));
 
             logger.info("Người dùng {} đã ngắt kết nối với websocket", userId);
         }
@@ -245,9 +251,12 @@ public class WebSocketServiceImpl implements WebSocketService {
     private boolean isValidSession(String sessionId) {
         try {
             String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
-            return redisTemplate.hasKey(sessionKey) && redisTemplate.getExpire(sessionKey) > 0;
+            Boolean exists = redisTemplate.hasKey(sessionKey);
+            Long expireTime = redisTemplate.getExpire(sessionKey);
+
+            return exists != null && exists && expireTime != null && expireTime > 0;
         } catch (Exception e) {
-            logger.error("Lỗi khi kiểm tra tính hợp lệ của phiên: {}", e.getMessage(), e);
+            logger.error("Lỗi kiểm tra session validity: {}", e.getMessage(), e);
             return false;
         }
     }

@@ -60,6 +60,6 @@ public class SessionConfig extends AbstractHttpSessionApplicationInitializer {
 
     @Bean
     public int springSessionDefaultTimeout() {
-        return configService.getInt("session_timeout", 30) * 60; // Thời gian timeout mặc định là 30 phút
+        return configService.getInt("session_timeout", 60) * 60; // Thời gian của phiên làm việc là 60 phút
     }
 }

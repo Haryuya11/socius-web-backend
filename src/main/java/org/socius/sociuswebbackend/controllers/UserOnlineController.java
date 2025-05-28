@@ -50,11 +50,20 @@ public class UserOnlineController {
                 return;
             }
 
-            // Kiểm tra session validity
+            // Kiểm tra session validity - QUAN TRỌNG
             if (isValidSession(sessionId)) {
+                // Session hợp lệ -> cập nhật heartbeat
+                onlineUserService.handleUserHeartbeat(userId);
                 webSocketService.handleHeartbeat(userId);
+                logger.debug("Heartbeat thành công cho user: {}", userId);
             } else {
-                handleInvalidSession(userId, sessionId);
+                // Session không hợp lệ -> chỉ xóa online status, KHÔNG làm gì với session
+                logger.info("Session {} không hợp lệ, chỉ xóa online status cho user {}", sessionId, userId);
+                onlineUserService.markUserOffline(userId, sessionId);
+
+                // Thông báo session hết hạn
+                webSocketService.sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED",
+                        "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
             }
         } catch (Exception e) {
             logger.error("Lỗi xử lý heartbeat: {}", e.getMessage(), e);
@@ -98,9 +107,16 @@ public class UserOnlineController {
     private boolean isValidSession(String sessionId) {
         try {
             String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
-            return redisTemplate.hasKey(sessionKey) && redisTemplate.getExpire(sessionKey) > 0;
+            Boolean exists = redisTemplate.hasKey(sessionKey);
+            Long expireTime = redisTemplate.getExpire(sessionKey);
+
+            boolean isValid = exists != null && exists && expireTime != null && expireTime > 0;
+            logger.debug("Session {} validation: exists={}, expireTime={}, valid={}",
+                    sessionId, exists, expireTime, isValid);
+
+            return isValid;
         } catch (Exception e) {
-            logger.error("Lỗi khi kiểm tra tính hợp lệ của phiên: {}", e.getMessage(), e);
+            logger.error("Lỗi khi kiểm tra tính hợp lệ của session: {}", e.getMessage(), e);
             return false;
         }
     }

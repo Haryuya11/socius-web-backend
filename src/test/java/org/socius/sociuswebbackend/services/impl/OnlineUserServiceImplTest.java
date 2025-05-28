@@ -18,6 +18,7 @@ import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -85,19 +86,23 @@ public class OnlineUserServiceImplTest {
         onlineUserService.updateUserOnlineStatus(adminUser.getId(), "sessionId1");
 
         verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class));
-        verify(redisTemplate).expire(eq(key), eq(60L), eq(TimeUnit.MINUTES));
+        verify(redisTemplate).expire(eq(key), eq(Duration.ofMinutes(5)));
     }
 
     @Test
     @DisplayName("Xử lý heartbeat thành công khi người dùng đang online")
     void handleUserHeartbeatShouldUpdateLastSeenWhenUserIsOnline() {
         String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
+        String sessionKey = RedisKeyBuilder.springSessionKey(adminStatusDto.getSessionId());
+
+
         when(valueOperations.get(key)).thenReturn(adminStatusDto);
+        when(redisTemplate.hasKey(sessionKey)).thenReturn(true);
+        when(redisTemplate.getExpire(sessionKey)).thenReturn(1800L);
 
         onlineUserService.handleUserHeartbeat(adminUser.getId());
 
         verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class));
-        verify(redisTemplate).expire(eq(key), eq(60L), eq(TimeUnit.MINUTES));
     }
 
     @Test

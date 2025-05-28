@@ -410,7 +410,7 @@ ALTER TABLE notification_recipients
 
 
 INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES ('session_timeout', '30', 'Thời gian phiên làm việc (phút)'),
+VALUES ('session_timeout', '60', 'Thời gian phiên làm việc (phút)'),
        ('session_extension_threshold', '2', 'Ngưỡng thời gian còn lại để gia hạn phiên (phút)'),
        ('default_user_password', '1', 'Mật khẩu mặc định cho tài khoản mới'),
        ('allowed_origins', 'http://localhost:3000,https://app.socius.com', 'Danh sách domain được phép truy cập API'),
@@ -448,5 +448,6 @@ VALUES ('rabbitmq.prefetch.count', '10', 'Số lượng tin nhắn được gử
        ('session.cookie.secure', 'true', 'Đặt cookie phiên là bảo mật (chỉ gửi qua HTTPS)'),
        ('file.upload.max.size', '52428800', 'Kích thước tối đa của tệp tải lên (byte)'),
        ('websocket.heartbeat.timeout', '300000', 'Thời gian chờ heartbeat WebSocket (ms)'),
-       ('rabbitmq.max.retries', '3', 'Số lần thử lại tối đa khi gửi tin nhắn RabbitMQ')
+       ('rabbitmq.max.retries', '3', 'Số lần thử lại tối đa khi gửi tin nhắn RabbitMQ'),
+       ('user.online.timeout.minutes', '10', 'Thời gian chờ để xác định trạng thái online của người dùng (phút)')
 ON CONFLICT (setting_key) DO NOTHING;
