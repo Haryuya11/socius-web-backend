@@ -10,8 +10,11 @@ import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
+import org.socius.sociuswebbackend.services.SessionValidationService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -27,6 +30,7 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     final private RedisTemplate<String, Object> redisTemplate;
     final private UserRepository userRepository;
     final private ConfigService configService;
+    final private SessionValidationService sessionValidationService;
 
     @Override
     public void updateUserOnlineStatus(UUID userId, String sessionId) {
@@ -187,15 +191,38 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         return null;
     }
 
+
+    @Override
+public boolean isUserSessionValid(UUID userId) {
+    // Delegate to SessionValidationService
+    return sessionValidationService.hasValidSession(userId);
+}
+
+@Override
+public String getUserSessionId(UUID userId) {
+    // Delegate to SessionValidationService
+    return sessionValidationService.getUserSessionId(userId);
+}
+
+    /**
+     * Kiểm tra tính hợp lệ của session trong Redis
+     *
+     * @param sessionId ID của session cần kiểm tra
+     * @return true nếu session hợp lệ, false nếu không
+     */
     private boolean isSessionValid(String sessionId) {
         try {
             String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
             Boolean exists = redisTemplate.hasKey(sessionKey);
             Long expireTime = redisTemplate.getExpire(sessionKey);
 
-            return exists && expireTime > 0;
+            boolean isValid = exists != null && exists && expireTime != null && expireTime > 0;
+            logger.debug("Session {} validation: exists={}, expireTime={}, valid={}", 
+                    sessionId, exists, expireTime, isValid);
+
+            return isValid;
         } catch (Exception e) {
-            logger.error("Lỗi khi kiểm tra session validity: {}", e.getMessage(), e);
+            logger.error("Lỗi khi kiểm tra session {}: {}", sessionId, e.getMessage(), e);
             return false;
         }
     }

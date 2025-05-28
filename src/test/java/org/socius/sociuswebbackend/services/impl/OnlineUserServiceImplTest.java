@@ -106,6 +106,38 @@ public class OnlineUserServiceImplTest {
     }
 
     @Test
+    @DisplayName("Xử lý heartbeat khi session còn hợp lệ")
+    void handleUserHeartbeatShouldUpdateWhenSessionValid() {
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
+        String sessionKey = RedisKeyBuilder.springSessionKey(adminStatusDto.getSessionId());
+
+        when(valueOperations.get(key)).thenReturn(adminStatusDto);
+        when(redisTemplate.hasKey(sessionKey)).thenReturn(true);
+        when(redisTemplate.getExpire(sessionKey)).thenReturn(1800L);
+
+        onlineUserService.handleUserHeartbeat(adminUser.getId());
+
+        verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class));
+        verify(redisTemplate, never()).delete(key);
+    }
+
+    @Test
+    @DisplayName("Xử lý heartbeat khi session đã hết hạn")
+    void handleUserHeartbeatShouldRemoveWhenSessionExpired() {
+        String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
+        String sessionKey = RedisKeyBuilder.springSessionKey(adminStatusDto.getSessionId());
+
+        when(valueOperations.get(key)).thenReturn(adminStatusDto);
+        when(redisTemplate.hasKey(sessionKey)).thenReturn(false); // Session hết hạn
+        when(redisTemplate.getExpire(sessionKey)).thenReturn(-2L);
+
+        onlineUserService.handleUserHeartbeat(adminUser.getId());
+
+        verify(valueOperations, never()).set(eq(key), any(OnlineUserStatusDto.class));
+        verify(redisTemplate).delete(key);
+    }
+
+    @Test
     @DisplayName("Xử lý heartbeat không làm gì khi người dùng không online")
     void handleUserHeartbeatShouldDoNothingWhenUserIsNotOnline() {
         String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());

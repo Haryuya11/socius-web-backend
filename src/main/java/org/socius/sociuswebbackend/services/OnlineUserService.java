@@ -44,4 +44,22 @@ public interface OnlineUserService {
      */
     boolean isUserOnline(UUID userId);
 
+
+
+    /**
+     * Lấy ID phiên của người dùng
+     *
+     * @param userId ID của người dùng
+     * @return ID phiên của người dùng, hoặc null nếu không tìm thấy
+     */
+    String getUserSessionId(UUID userId);
+
+    /**
+     * Kiểm tra session của người dùng có hợp lệ không
+     *
+     * @param userId ID của người dùng
+     * @return true nếu session hợp lệ, false nếu không
+     */
+    boolean isUserSessionValid(UUID userId);
+
 }

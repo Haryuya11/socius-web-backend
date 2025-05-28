@@ -120,11 +120,4 @@ public class UserOnlineController {
             return false;
         }
     }
-
-    private void handleInvalidSession(UUID userId, String sessionId) {
-        logger.info("Session không hợp lệ, đánh dấu user {} offline", userId);
-        onlineUserService.markUserOffline(userId, sessionId);
-        webSocketService.sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED",
-                "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
-    }
 }
