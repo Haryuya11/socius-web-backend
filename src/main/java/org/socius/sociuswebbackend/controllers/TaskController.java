@@ -10,17 +10,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/tasks")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class TaskController {
     private final TaskService taskService;
 
-    @GetMapping
+    @GetMapping("/users/{userId}/tasks")
     public ResponseEntity<Page<TaskResponseDto>> getTasksByUserId(
-            @RequestParam(required = false) UUID userId,
+            @PathVariable UUID userId,
             Pageable pageable
     ) {
         return ResponseEntity.ok(taskService.getTasksByUserId(userId, pageable));
@@ -32,4 +33,15 @@ public class TaskController {
     ) {
         return ResponseEntity.ok(taskService.createTask(dto));
     }*/
+
+    @GetMapping("/team/{teamId}/tasks")
+    public ResponseEntity<Map<String, Object>> getTeamTasks(
+            @PathVariable UUID teamId,
+            Pageable pageable
+    ) {
+        if (teamId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(taskService.getTeamTasks(teamId, pageable));
+    }
 }
