@@ -23,4 +23,5 @@ public class OnlineUserStatusDto implements Serializable {
     private String imageUrl;
     private String sessionId;
     private LocalDateTime lastSeen;
+    private boolean isOnline;
 }

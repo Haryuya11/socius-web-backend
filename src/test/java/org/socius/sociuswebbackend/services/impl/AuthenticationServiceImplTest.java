@@ -296,17 +296,17 @@ public class AuthenticationServiceImplTest {
     @DisplayName("Khi phiên tồn tại thì gia hạn phiên phải trả về true")
     void extendSessionShouldReturnTrueWhenSessionExists() {
         when(request.getSession(false)).thenReturn(session);
-        when(configService.getInt(eq("session.duration.minutes"), anyInt())).thenReturn(30);
+        when(configService.getInt(eq("session_timeout"), anyInt())).thenReturn(60);
 
         when(session.getId()).thenReturn(sessionId);
 
-        when(rbacRedisService.extendExpiration(eq(sessionId), eq(30))).thenReturn(true);
+        when(rbacRedisService.extendExpiration(eq(sessionId), eq(60))).thenReturn(true);
 
         boolean result = authenticationService.extendSession(request);
 
         assertTrue(result, "Phiên đăng nhập phải được gia hạn");
-        verify(session).setMaxInactiveInterval(1800);
-        verify(rbacRedisService).extendExpiration(eq(sessionId), eq(30));
+        verify(session).setMaxInactiveInterval(3600);
+        verify(rbacRedisService).extendExpiration(eq(sessionId), eq(60));
     }
 
     @Test

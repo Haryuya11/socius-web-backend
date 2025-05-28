@@ -149,7 +149,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .roleName(roleName)
                     .permissions(permissions)
                     .build();
-            int sessionDurationMinutes = configService.getInt("session.duration.minutes", 30);
+            int sessionDurationMinutes = configService.getInt("session_timeout", 60); // Th
             rbacRedisService.saveCacheUserPermissions(sessionId, permissionsDto, sessionDurationMinutes);
 
             // 10. Lưu thông tin lịch sử đăng nhập
@@ -389,7 +389,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             permissions.setPermissions(permissionsSet);
 
             // Lưu thông tin quyền vào Redis
-            int sessionDurationMinutes = configService.getInt("session.duration.minutes", 30);
+            int sessionDurationMinutes = configService.getInt("session_timeout", 60);
             rbacRedisService.saveCacheUserPermissions(session.getId(), permissions, sessionDurationMinutes);
         }
         return permissions;
@@ -423,7 +423,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         // Gia hạn thời gian hết hạn của phiên
-        int sessionDurationMinutes = configService.getInt("session.duration.minutes", 30);
+        int sessionDurationMinutes = configService.getInt("session_timeout", 60);
         boolean result = rbacRedisService.extendExpiration(session.getId(), sessionDurationMinutes);
         if (result) {
             session.setMaxInactiveInterval(sessionDurationMinutes * 60);

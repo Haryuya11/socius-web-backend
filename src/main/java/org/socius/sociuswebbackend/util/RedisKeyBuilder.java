@@ -272,6 +272,16 @@ public class RedisKeyBuilder {
         return sessionAttributeKey("ROLE_ID");
     }
 
+    /**
+     * Pattern để tìm tất cả RBAC keys
+     *
+     * @return Pattern cho RBAC keys
+     */
+    public static String rbacPattern() {
+        return "rbac:session:*";
+    }
+    
+    
 
     public static String extractSessionIdFromExpiresKey(String sessionKey) {
         if (sessionKey.startsWith(SPRING_SESSION_PREFIX + "sessions:expires:")) {
@@ -280,5 +290,9 @@ public class RedisKeyBuilder {
             return sessionKey.substring((SPRING_SESSION_PREFIX + "sessions:").length());
         }
         throw new IllegalArgumentException("Invalid session key format: " + sessionKey);
+    }
+
+    public static String springSessionPattern() {
+        return SESSION_PREFIX + "session:session:*";
     }
 }
