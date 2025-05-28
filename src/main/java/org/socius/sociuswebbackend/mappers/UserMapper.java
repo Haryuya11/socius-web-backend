@@ -1,8 +1,10 @@
 package org.socius.sociuswebbackend.mappers;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import org.socius.sociuswebbackend.model.dtos.user.UserRequestDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
@@ -16,6 +18,22 @@ public abstract class UserMapper extends BaseEntityMapper implements
 
     @Override
     public abstract UserResponseDto entityToDto(UserEntity entity);
+
+    @Named("toLimitedDto")
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "firstName", source = "firstName")
+    @Mapping(target = "lastName", source = "lastName")
+    @Mapping(target = "email", ignore = true)
+    @Mapping(target = "birthDate", ignore = true)
+    @Mapping(target = "imageUrl", ignore = true)
+    @Mapping(target = "gender", ignore = true)
+    @Mapping(target = "nationality", ignore = true)
+    @Mapping(target = "phoneNumber", ignore = true)
+    @Mapping(target = "hireDate", ignore = true)
+    @Mapping(target = "address", ignore = true)
+    public abstract UserResponseDto toLimitedDto(UserEntity entity);
 
     @Override
     public abstract UserEntity requestDtoToEntity(UserRequestDto dto);

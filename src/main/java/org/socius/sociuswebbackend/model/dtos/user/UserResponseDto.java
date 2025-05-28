@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.model.dtos.user;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.socius.sociuswebbackend.model.dtos.BaseDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
 import org.socius.sociuswebbackend.model.enums.Gender;
@@ -17,6 +18,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponseDto extends BaseDto {
     private String firstName;
     private String lastName;
