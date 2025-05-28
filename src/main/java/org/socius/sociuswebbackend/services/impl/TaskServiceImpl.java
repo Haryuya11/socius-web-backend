@@ -3,12 +3,15 @@ package org.socius.sociuswebbackend.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.mappers.TaskMapper;
+import org.socius.sociuswebbackend.mappers.TeamMapper;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.entities.TaskEntity;
+import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.enums.NotificationType;
 import org.socius.sociuswebbackend.repositories.TaskRepository;
+import org.socius.sociuswebbackend.repositories.TeamRepository;
 import org.socius.sociuswebbackend.services.NotificationService;
 import org.socius.sociuswebbackend.services.TaskService;
 import org.springframework.data.domain.Page;
@@ -16,10 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +28,9 @@ public class TaskServiceImpl implements TaskService {
     private final TaskMapper taskMapper;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final TeamRepository teamRepository;
+    private final TeamMapper teamMapper;
+
 
     @Override
     public Page<TaskResponseDto> getTasksByUserId(UUID userId, Pageable pageable) {
@@ -64,4 +67,11 @@ public class TaskServiceImpl implements TaskService {
 
         return taskMapper.entityToDto(entity);
     }*/
+
+    @Override
+    public Map<String, Object> getTeamTasks(UUID teamId, Pageable pageable) {
+        TeamEntity team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new IllegalArgumentException("Team not found with ID: " + teamId));
+        return teamMapper.entityToTeamWithTasks(team, pageable);
+    }
 }
