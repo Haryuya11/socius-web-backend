@@ -1,7 +1,9 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
 import org.socius.sociuswebbackend.model.entities.DepartmentEntity;
@@ -15,6 +17,11 @@ public abstract class DepartmentMapper extends BaseEntityMapper implements
 
     @Override
     public abstract DepartmentResponseDto entityToDto(DepartmentEntity entity);
+
+    @Named("entityToLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract DepartmentResponseDto entityToLimitedDto(DepartmentEntity entity);
 
     @Override
     public abstract DepartmentEntity requestDtoToEntity(DepartmentRequestDto dto);

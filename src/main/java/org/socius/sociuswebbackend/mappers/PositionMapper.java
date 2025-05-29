@@ -1,7 +1,9 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
 import org.socius.sociuswebbackend.model.entities.PositionEntity;
@@ -15,6 +17,11 @@ public abstract class PositionMapper extends BaseEntityMapper implements
 
     @Override
     public abstract PositionResponseDto entityToDto(PositionEntity entity);
+
+    @Named("entityToLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract PositionResponseDto entityToLimitedDto(PositionEntity entity);
 
     @Override
     public abstract PositionEntity requestDtoToEntity(PositionRequestDto dto);

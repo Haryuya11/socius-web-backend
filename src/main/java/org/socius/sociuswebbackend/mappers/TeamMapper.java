@@ -37,7 +37,13 @@ public abstract class TeamMapper extends BaseEntityMapper implements
 
     @Override
     public abstract TeamResponseDto entityToDto(TeamEntity entity);
-    
+
+    @Named("entityToLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "leader", ignore = true)
+    public abstract TeamResponseDto entityToLimitedDto(TeamEntity entity);
+
     @Override
     public TeamEntity requestDtoToEntity(TeamRequestDto dto) {
         if (dto == null) {
