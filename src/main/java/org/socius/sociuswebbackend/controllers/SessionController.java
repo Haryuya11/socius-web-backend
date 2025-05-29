@@ -1,16 +1,21 @@
 package org.socius.sociuswebbackend.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
+import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.services.SessionValidationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -18,8 +23,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SessionController {
 
+    private static final Logger logger = LoggerFactory.getLogger(SessionController.class);
     final private OnlineUserService onlineUserService;
     final private SessionValidationService sessionValidationService;
+    final private ConfigService configService;
 
 
     /**
@@ -57,7 +64,7 @@ public class SessionController {
         boolean isValid = sessionValidationService.hasValidSession(userId);
         return ResponseEntity.ok(isValid);
     }
-    
+
     /**
      * Kiểm tra session theo sessionId (dựa trên RBAC key trong Redis)
      */
@@ -66,7 +73,7 @@ public class SessionController {
         boolean isValid = sessionValidationService.isSessionValid(sessionId);
         return ResponseEntity.ok(isValid);
     }
-    
+
     /**
      * Lấy sessionId của user (nếu có session hợp lệ)
      */

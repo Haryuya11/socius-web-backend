@@ -50,23 +50,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
 
-        // Lấy danh sách các origin được phép từ ConfigService
-        String[] allowedOrigins = configService.getList("cors.allowed.origins")
-                .toArray(new String[0]);
-
         // Điểm kết nối chung
         registry.addEndpoint("/ws-heartbeat")
-                .setAllowedOrigins(allowedOrigins)
-                .addInterceptors(webSocketCsrfInterceptor)
+                .setAllowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000")
+                .addInterceptors(userOnlineWebSocketHandler) // Bỏ webSocketCsrfInterceptor tạm thời
                 .withSockJS()
                 .setSessionCookieNeeded(true)
+                .setSuppressCors(false)
                 .setClientLibraryUrl("//cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js");
-
-        // Điểm kết nối riêng cho heartbeat
-        registry.addEndpoint("/ws-heartbeat")
-                .setAllowedOrigins(allowedOrigins)
-                .addInterceptors(userOnlineWebSocketHandler, webSocketCsrfInterceptor)
-                .withSockJS();
     }
 
     @Override
@@ -121,6 +112,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         logger.info("Người dùng đăng ký nhận tin nhắn từ: {}", destination);
                     }
                 }
+
                 return message;
             }
         });

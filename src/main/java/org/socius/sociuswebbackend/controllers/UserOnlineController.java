@@ -45,23 +45,21 @@ public class UserOnlineController {
             UUID userId = (UUID) sessionAttributes.get("userId");
             String sessionId = headerAccessor.getSessionId();
 
+            logger.debug("Processing heartbeat - userId: {}, sessionId: {}", userId, sessionId);
+
             if (userId == null || sessionId == null) {
-                logger.warn("UserId hoặc SessionId null trong heartbeat");
+                logger.warn("UserId hoặc SessionId null trong heartbeat - userId: {}, sessionId: {}", userId, sessionId);
                 return;
             }
 
-            // Kiểm tra session validity - QUAN TRỌNG
+            // Kiểm tra session validity
             if (isValidSession(sessionId)) {
-                // Session hợp lệ -> cập nhật heartbeat
                 onlineUserService.handleUserHeartbeat(userId);
                 webSocketService.handleHeartbeat(userId);
-                logger.debug("Heartbeat thành công cho user: {}", userId);
+                logger.debug("Heartbeat processed successfully for user: {}", userId);
             } else {
-                // Session không hợp lệ -> chỉ xóa online status, KHÔNG làm gì với session
-                logger.info("Session {} không hợp lệ, chỉ xóa online status cho user {}", sessionId, userId);
+                logger.info("Session {} không hợp lệ, đánh dấu user {} offline", sessionId, userId);
                 onlineUserService.markUserOffline(userId, sessionId);
-
-                // Thông báo session hết hạn
                 webSocketService.sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED",
                         "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
             }
@@ -110,7 +108,7 @@ public class UserOnlineController {
             Boolean exists = redisTemplate.hasKey(sessionKey);
             Long expireTime = redisTemplate.getExpire(sessionKey);
 
-            boolean isValid = exists != null && exists && expireTime != null && expireTime > 0;
+            boolean isValid = exists && expireTime > 0;
             logger.debug("Session {} validation: exists={}, expireTime={}, valid={}",
                     sessionId, exists, expireTime, isValid);
 

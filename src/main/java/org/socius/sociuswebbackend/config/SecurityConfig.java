@@ -41,13 +41,26 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+        requestHandler.setCsrfRequestAttributeName("_csrf");
+
+
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository())
-                        .ignoringRequestMatchers("/api/auth/login", "/api/auth/logout")
+                        .ignoringRequestMatchers(
+                                "/ws-heartbeat/**",        // Cho phép WebSocket
+                                "/ws-heartbeat/info",      // SockJS info endpoint
+                                "/ws-heartbeat/websocket", // WebSocket upgrade
+                                "/api/auth/login",         // Login endpoint
+                                "/api/auth/logout",        // Logout endpoint
+                                "/api/csrf/token"          // CSRF token endpoint
+                        )
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                 )
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/change-password", "api/auth/session").permitAll()
                         .requestMatchers("/error", "/ws/**").permitAll()
@@ -59,12 +72,15 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("api/notification/**").permitAll()
                         .requestMatchers("/ws-heartbeat/**").permitAll()
+                        .requestMatchers("/ws-heartbeat/info/**").permitAll()
                         .requestMatchers("/app/**", "/topic/**", "/user/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Chỉ tạo session khi cần thiết
-                        .maximumSessions(1) // Giới hạn số phiên đăng nhập đồng thời là 1
-                        .expiredUrl("/api/auth/session-expired")
+                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Chỉ tạo session khi cần thiết
+                                .maximumSessions(1) // Giới hạn số phiên đăng nhập đồng thời là 1
+//                        .maxSessionsPreventsLogin(false) // Cho phép đăng nhập mới nếu đã có phiên khác
+//                        .sessionRegistry(new org.springframework.security.core.session.SessionRegistryImpl())
+                                .expiredUrl("/api/auth/session-expired")
                 );
 
         return http.build();
@@ -74,10 +90,23 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(configService.getList("allowed_origins"));
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "X-CSRF-TOKEN"));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "X-CSRF-TOKEN",
+                "Cache-Control",
+                "Accept",
+                "Origin"
+        ));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
