@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -94,19 +96,24 @@ public class AuthController {
             @Valid @RequestBody PasswordChangeRequestDto requestDto,
             HttpServletRequest request) {
         if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
-            return ResponseEntity.badRequest().body("Password vầ Confirm password không khớp");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Mật khẩu mới và xác nhận không khớp"));
         }
 
         PasswordChangeResult result = authenticationService.changePassword(requestDto, request);
 
         return switch (result) {
-            case SUCCESS -> ResponseEntity.ok("Đổi mật khẩu thành công");
-            case NOT_AUTHENTICATED -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
-            case USER_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Người dùng không tồn tại");
-            case ACCOUNT_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tài khoản không tồn tại");
-            case INCORRECT_PASSWORD ->
-                    ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Mật khẩu hiện tại không đúng");
-            default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống");
+            case SUCCESS -> ResponseEntity.ok(Map.of("success", true, "message", "Đổi mật khẩu thành công"));
+            case NOT_AUTHENTICATED -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Người dùng chưa đăng nhập"));
+            case USER_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Người dùng không tồn tại"));
+            case ACCOUNT_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Tài khoản không tồn tại"));
+            case INCORRECT_PASSWORD -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Mật khẩu hiện tại không đúng"));
+            default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi hệ thống"));
         };
     }
 }
