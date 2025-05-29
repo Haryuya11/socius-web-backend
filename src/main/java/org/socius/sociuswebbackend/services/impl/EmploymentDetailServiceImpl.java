@@ -1,0 +1,41 @@
+package org.socius.sociuswebbackend.services.impl;
+
+
+import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.mappers.EmploymentDetailMapper;
+import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
+import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
+import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
+import org.socius.sociuswebbackend.services.EmploymentDetailService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class EmploymentDetailServiceImpl implements EmploymentDetailService {
+    private final EmploymentDetailRepository employmentDetailRepository;
+    private final EmploymentDetailMapper employmentDetailMapper;
+
+    @Override
+    public Map<String, Object> getAllEmployees(Pageable pageable) {
+        Page<EmploymentDetailEntity> employeePage = employmentDetailRepository.findAll(pageable);
+
+        List<EmploymentDetailResponseDto> employees = employeePage.getContent().stream()
+                .map(employmentDetailMapper::entityToLimitedDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("employees", employees);
+        result.put("employeeCount", employees.size());
+        result.put("totalPages", employeePage.getTotalPages());
+        result.put("totalElements", employeePage.getTotalElements());
+
+        return result;
+    }
+}
