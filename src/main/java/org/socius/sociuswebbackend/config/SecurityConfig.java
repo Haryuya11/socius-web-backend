@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/master-data/**").hasAuthority("ACCESS_ADMIN_PAGE")
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("api/notification/**").permitAll()
+                        .requestMatchers("/ws-heartbeat/**").permitAll()
+                        .requestMatchers("/app/**", "/topic/**", "/user/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Chỉ tạo session khi cần thiết
