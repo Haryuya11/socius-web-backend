@@ -94,4 +94,11 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
     @Query("SELECT m.fileUrl FROM MessageEntity m WHERE m.fileUrl IS NOT NULL AND m.fileUrl != '' " +
             "AND m.id NOT IN (SELECT DISTINCT m2.id FROM MessageEntity m2 WHERE m2.fileUrl IS NOT NULL AND m2.fileUrl != '')")
     List<String> findOrphanedFiles();
+
+    /**
+     * Xóa tất cả các tin nhắn trong một cuộc trò chuyện theo ID của cuộc trò chuyện.
+     *
+     * @param conversationId ID của cuộc trò chuyện
+     */
+    void deleteByConversation_Id(UUID conversationId);
 }

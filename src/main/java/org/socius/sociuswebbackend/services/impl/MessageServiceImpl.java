@@ -44,6 +44,10 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public MessageResponseDto sendMessage(UUID senderId, MessageRequestDto requestDto) {
+
+        if (!isUserMemberOfConversation(senderId, requestDto.getConversationId())) {
+            throw new RuntimeException("Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này");
+        }
         // Kiểm tra người gửi có tồn tại không
         UserEntity sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + senderId));
@@ -51,12 +55,6 @@ public class MessageServiceImpl implements MessageService {
         // Kiểm tra cuộc trò chuyện có tồn tại không
         ConversationEntity conversation = conversationRepository.findById(requestDto.getConversationId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + requestDto.getConversationId()));
-
-        // Kiểm tra người gửi có phải là thành viên của cuộc trò chuyện không
-        boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(conversation.getId(), senderId);
-        if (!isMember) {
-            throw new RuntimeException("Người gửi không phải là thành viên của cuộc trò chuyện");
-        }
 
         // Tạo tin nhắn mới
         MessageEntity message = messageMapper.requestDtoToEntity(requestDto);
@@ -118,10 +116,9 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public Page<MessageResponseDto> getMessages(UUID userId, UUID conversationId, Pageable pageable) {
-        // Kiểm tra người dùng có quyền truy cập cuộc trò chuyện không
-        boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(conversationId, userId);
-        if (!isMember) {
-            throw new RuntimeException("Người dùng không phải là thành viên của cuộc trò chuyện");
+
+        if (!isUserMemberOfConversation(userId, conversationId)) {
+            throw new RuntimeException("Bạn không có quyền xem cuộc trò chuyện này");
         }
 
         // Lấy danh sách tin nhắn trong cuộc trò chuyện
@@ -144,11 +141,10 @@ public class MessageServiceImpl implements MessageService {
     @Transactional
     public int markAsRead(UUID userId, ReadReceiptDto readReceiptDto) {
         try {
-            boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(
-                    readReceiptDto.getConversationId(), userId);
 
-            if (!isMember) {
-                throw new RuntimeException("Người dùng không phải là thành viên của cuộc trò chuyện");
+            // Kiểm tra người dùng có quyền truy cập cuộc trò chuyện không
+            if (!isUserMemberOfConversation(userId, readReceiptDto.getConversationId())) {
+                throw new RuntimeException("Bạn không có quyền đánh dấu tin nhắn là đã đọc trong cuộc trò chuyện này");
             }
 
             // Cập nhật trạng thái tin nhắn đã đọc cho người dùng
@@ -296,5 +292,11 @@ public class MessageServiceImpl implements MessageService {
         Page<MessageEntity> messages = messageRepository.searchMessages(conversationId, keyword, pageable);
 
         return messages.map(messageMapper::entityToDto);
+    }
+
+    private boolean isUserMemberOfConversation(UUID userId, UUID conversationId) {
+        return conversationMemberRepository
+                .findActiveMember(conversationId, userId)
+                .isPresent();
     }
 }

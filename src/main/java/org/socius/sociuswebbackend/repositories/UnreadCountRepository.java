@@ -81,4 +81,6 @@ public interface UnreadCountRepository extends JpaRepository<UnreadCountEntity, 
             nativeQuery = true)
     @Transactional
     void incrementUnreadCount(@Param("conversationId") UUID conversationId, @Param("userId") UUID userId);
+
+    void deleteByConversation_Id(UUID conversationId);
 }

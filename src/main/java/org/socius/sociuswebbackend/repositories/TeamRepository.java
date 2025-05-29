@@ -2,17 +2,17 @@ package org.socius.sociuswebbackend.repositories;
 
 import java.util.UUID;
 
+import io.lettuce.core.dynamic.annotation.Param;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 public interface TeamRepository extends JpaRepository<TeamEntity, UUID> {
     /**
      * Kiểm tra xem nhóm có tồn tại hay không
-     * 
+     *
      * @param name Tên nhóm cần kiểm tra
      * @return true nếu nhóm tồn tại, false nếu không tồn tại
      */
@@ -20,5 +20,4 @@ public interface TeamRepository extends JpaRepository<TeamEntity, UUID> {
 
     @Query("SELECT t FROM TeamEntity t JOIN FETCH t.employmentDetailEntities e WHERE t.id = :teamId")
     Page<TeamEntity> findTeamWithMembers(@Param("teamId") UUID teamId, Pageable pageable);
-    
 }

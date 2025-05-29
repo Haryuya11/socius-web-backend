@@ -19,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -32,7 +33,7 @@ public class MasterDataController {
     final private PositionService positionService;
     final private RoleService roleService;
     final private TeamService teamService;
-    
+
     // POSITION ENDPOINTS
 
     /**
@@ -65,12 +66,39 @@ public class MasterDataController {
      * @return Thông tin vị trí đã được tạo
      */
     @PostMapping("/positions")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<PositionResponseDto> createPosition(@Valid @RequestBody PositionRequestDto requestDto) {
         PositionResponseDto createdPosition = positionService.create(requestDto);
         return ResponseEntity.ok(createdPosition);
     }
-    
+
+    /**
+     * Xóa một vị trí theo ID
+     *
+     * @param positionId ID của vị trí cần xóa
+     * @return ResponseEntity với mã trạng thái 204 No Content nếu xóa thành công
+     */
+    @DeleteMapping("/positions/{positionId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<PositionResponseDto> deletePosition(@PathVariable UUID positionId) {
+        positionService.delete(positionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Cập nhật thông tin một vị trí
+     *
+     * @param positionId ID của vị trí cần cập nhật
+     * @param requestDto Thông tin yêu cầu cập nhật vị trí
+     * @return Thông tin vị trí đã được cập nhật
+     */
+    @PutMapping("/positions/{positionId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<PositionResponseDto> updatePosition(@PathVariable UUID positionId, @Valid @RequestBody PositionRequestDto requestDto) {
+        PositionResponseDto updatedPosition = positionService.update(positionId, requestDto);
+        return ResponseEntity.ok(updatedPosition);
+    }
+
     // DEPARTMENT ENDPOINTS
 
     /**
@@ -103,12 +131,68 @@ public class MasterDataController {
      * @return Thông tin phòng ban đã được tạo
      */
     @PostMapping("/departments")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<DepartmentResponseDto> createDepartment(@Valid @RequestBody DepartmentRequestDto requestDto) {
         DepartmentResponseDto createdDepartment = departmentService.create(requestDto);
         return ResponseEntity.ok(createdDepartment);
     }
-    
+
+    /**
+     * Xóa một phòng ban theo ID
+     *
+     * @param departmentId ID của phòng ban cần xóa
+     * @return ResponseEntity với mã trạng thái 204 No Content nếu xóa thành công
+     */
+    @DeleteMapping("/departments/{departmentId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<DepartmentResponseDto> deleteDepartment(@PathVariable UUID departmentId) {
+        departmentService.delete(departmentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Cập nhật thông tin một phòng ban
+     *
+     * @param departmentId ID của phòng ban cần cập nhật
+     * @param requestDto   Thông tin yêu cầu cập nhật phòng ban
+     * @return Thông tin phòng ban đã được cập nhật
+     */
+    @PutMapping("/departments/{departmentId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<DepartmentResponseDto> updateDepartment(@PathVariable UUID departmentId, @Valid @RequestBody DepartmentRequestDto requestDto) {
+        DepartmentResponseDto updatedDepartment = departmentService.update(departmentId, requestDto);
+        return ResponseEntity.ok(updatedDepartment);
+    }
+
+    /**
+     * Thêm một nhân viên vào phòng ban
+     *
+     * @param departmentId ID của phòng ban
+     * @param employeeId   ID của nhân viên cần thêm vào phòng ban
+     * @return Thông tin phòng ban đã được cập nhật
+     */
+    @PostMapping("/departments/{departmentId}/employees/{employeeId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<DepartmentResponseDto> addEmployeeToDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
+        DepartmentResponseDto updatedDepartment = departmentService.addEmployee(departmentId, employeeId);
+        return ResponseEntity.ok(updatedDepartment);
+    }
+
+    /**
+     * Xóa một nhân viên khỏi phòng ban
+     *
+     * @param departmentId ID của phòng ban
+     * @param employeeId   ID của nhân viên cần xóa khỏi phòng ban
+     * @return Thông tin phòng ban đã được cập nhật
+     */
+    @DeleteMapping("/departments/{departmentId}/employees/{employeeId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<DepartmentResponseDto> removeEmployeeFromDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
+        DepartmentResponseDto updatedDepartment = departmentService.removeEmployee(departmentId, employeeId);
+        return ResponseEntity.ok(updatedDepartment);
+    }
+
+
     // TEAM ENDPOINTS
 
     /**
@@ -141,12 +225,67 @@ public class MasterDataController {
      * @return Thông tin team đã được tạo
      */
     @PostMapping("/teams")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<TeamResponseDto> createTeam(@Valid @RequestBody TeamRequestDto requestDto) {
         TeamResponseDto createdTeam = teamService.create(requestDto);
         return ResponseEntity.ok(createdTeam);
     }
-    
+
+    /**
+     * Xóa một team theo ID
+     *
+     * @param teamId ID của team cần xóa
+     * @return ResponseEntity với mã trạng thái 204 No Content nếu xóa thành công
+     */
+    @DeleteMapping("/teams/{teamId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<TeamResponseDto> deleteTeam(@PathVariable UUID teamId) {
+        teamService.delete(teamId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Cập nhật thông tin một team
+     *
+     * @param teamId     ID của team cần cập nhật
+     * @param requestDto Thông tin yêu cầu cập nhật team
+     * @return Thông tin team đã được cập nhật
+     */
+    @PutMapping("/teams/{teamId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<TeamResponseDto> updateTeam(@PathVariable UUID teamId, @Valid @RequestBody TeamRequestDto requestDto) {
+        TeamResponseDto updatedTeam = teamService.update(teamId, requestDto);
+        return ResponseEntity.ok(updatedTeam);
+    }
+
+    /**
+     * Thêm một nhân viên vào team
+     *
+     * @param teamId     ID của team
+     * @param employeeId ID của nhân viên cần thêm vào team
+     * @return Thông tin team đã được cập nhật
+     */
+    @PostMapping("/teams/{teamId}/employees/{employeeId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<TeamResponseDto> addEmployeeToTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
+        TeamResponseDto updatedTeam = teamService.addEmployee(teamId, employeeId);
+        return ResponseEntity.ok(updatedTeam);
+    }
+
+    /**
+     * Xóa một nhân viên khỏi team
+     *
+     * @param teamId     ID của team
+     * @param employeeId ID của nhân viên cần xóa khỏi team
+     * @return Thông tin team đã được cập nhật
+     */
+    @DeleteMapping("/teams/{teamId}/employees/{employeeId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<TeamResponseDto> removeEmployeeFromTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
+        TeamResponseDto updatedTeam = teamService.removeEmployee(teamId, employeeId);
+        return ResponseEntity.ok(updatedTeam);
+    }
+
     // ROLE ENDPOINTS
 
     /**
@@ -179,7 +318,7 @@ public class MasterDataController {
      * @return Thông tin vai trò đã được tạo
      */
     @PostMapping("/roles")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<RoleResponseDto> createRole(@Valid @RequestBody RoleRequestDto requestDto) {
         RoleResponseDto createdRole = roleService.create(requestDto);
         return ResponseEntity.ok(createdRole);
