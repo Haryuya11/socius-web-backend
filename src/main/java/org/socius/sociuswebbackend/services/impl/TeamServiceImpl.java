@@ -8,18 +8,17 @@ import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.EmploymentHistoryEntity;
-import org.socius.sociuswebbackend.model.dtos.team.TeamWithMembersDto;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
-import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
 import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
+import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
 import org.socius.sociuswebbackend.repositories.TeamRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.TeamService;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -124,12 +123,6 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public TeamResponseDto addEmployee(UUID teamId, UUID employeeId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
-
-        UserEntity admin = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
-
         // Tìm team
         TeamEntity team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + teamId));
@@ -175,12 +168,6 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public TeamResponseDto removeEmployee(UUID teamId, UUID employeeId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
-
-        UserEntity admin = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
-
         // Tìm team
         TeamEntity team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + teamId));
