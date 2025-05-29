@@ -6,6 +6,7 @@ import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamWithMembersDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.TaskRepository;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -108,6 +110,54 @@ public abstract class TeamMapper extends BaseEntityMapper implements
                     memberData.put("tasks", tasks);
                     return memberData;
                 })
+                .collect(Collectors.toList());
+
+        result.put("members", members);
+        result.put("memberCount", members.size());
+
+        return result;
+    }
+
+    public Map<String, Object> entityToMemberWithTasks(TeamEntity entity, UUID memberId, org.springframework.data.domain.Pageable pageable) {
+        if (entity == null || entity.getEmploymentDetailEntities() == null) {
+            return Map.of();
+        }
+
+        EmploymentDetailEntity employmentDetail = entity.getEmploymentDetailEntities().stream()
+                .filter(detail -> detail.getUser() != null && detail.getUser().getId().equals(memberId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Member not found in team or invalid member ID: " + memberId));
+
+        UserEntity user = employmentDetail.getUser();
+        UserResponseDto userDto = userMapper.entityToDto(user);
+        List<TaskResponseDto> tasks = taskRepository.findByAssignedToId(user.getId(), pageable)
+                .getContent()
+                .stream()
+                .map(taskMapper::entityToDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("member", userDto);
+        result.put("tasks", tasks);
+
+        return result;
+    }
+
+    public Map<String, Object> entityToTeamWithMembers(TeamEntity entity, org.springframework.data.domain.Pageable pageable) {
+        if (entity == null) {
+            return Map.of();
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("id", entity.getId());
+        result.put("name", entity.getName());
+        result.put("leader", entity.getLeader() != null ? userMapper.entityToDto(entity.getLeader()) : null);
+        result.put("createdAt", entity.getCreatedAt());
+        result.put("updatedAt", entity.getUpdatedAt());
+
+        List<UserResponseDto> members = entity.getEmploymentDetailEntities().stream()
+                .filter(detail -> detail.getUser() != null)
+                .map(detail -> userMapper.toLimitedDto(detail.getUser()))
                 .collect(Collectors.toList());
 
         result.put("members", members);
