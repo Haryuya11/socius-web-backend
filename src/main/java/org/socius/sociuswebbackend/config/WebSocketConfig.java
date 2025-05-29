@@ -55,10 +55,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .toArray(new String[0]);
 
         // Điểm kết nối chung
-        registry.addEndpoint("/ws")
+        registry.addEndpoint("/ws-heartbeat")
                 .setAllowedOrigins(allowedOrigins)
                 .addInterceptors(webSocketCsrfInterceptor)
-                .withSockJS();
+                .withSockJS()
+                .setSessionCookieNeeded(true)
+                .setClientLibraryUrl("//cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js");
 
         // Điểm kết nối riêng cho heartbeat
         registry.addEndpoint("/ws-heartbeat")
