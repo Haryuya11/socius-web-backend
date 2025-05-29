@@ -2,8 +2,11 @@ package org.socius.sociuswebbackend.services;
 
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
+import org.springframework.data.domain.Pageable;
+import org.socius.sociuswebbackend.model.dtos.team.TeamWithMembersDto;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface TeamService {
@@ -83,4 +86,12 @@ public interface TeamService {
      */
     List<TeamResponseDto> removeEmployees(UUID teamId, List<UUID> employeeIds);
 
+    /**
+     * Lấy thông tin team cùng với các thành viên của nó (không bao gồm task)
+     *
+     * @param teamId ID của team cần lấy thông tin
+     * @param pageable Thông tin phân trang
+     * @return Map chứa thông tin team và danh sách thành viên
+     */
+    Map<String, Object> getTeamWithMembers(UUID teamId, Pageable pageable);
 }

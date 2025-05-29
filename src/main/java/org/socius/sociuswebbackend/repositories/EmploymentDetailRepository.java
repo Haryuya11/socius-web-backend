@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EmploymentDetailRepository extends JpaRepository<EmploymentDetailEntity, UUID> {
@@ -41,4 +43,11 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      */
     long countByPositionId(UUID positionId);
 
+
+    /**
+     * Lấy tất cả thông tin chi tiết của nhân viên với phân trang
+     * @param pageable Thông tin phân trang
+     * @return Page chứa danh sách EmploymentDetailEntity
+     */
+    Page<EmploymentDetailEntity> findAll(Pageable pageable);
 }

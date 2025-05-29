@@ -8,6 +8,7 @@ import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.EmploymentHistoryEntity;
+import org.socius.sociuswebbackend.model.dtos.team.TeamWithMembersDto;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
@@ -18,12 +19,14 @@ import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.TeamService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -223,4 +226,13 @@ public class TeamServiceImpl implements TeamService {
         return teamMapper.entityToDto(team);
     }
 
+    @Override
+    public Map<String, Object> getTeamWithMembers(UUID teamId, Pageable pageable) {
+        TeamEntity team = teamRepository.findTeamWithMembers(teamId, pageable)
+                .getContent()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Team not found with ID: " + teamId));
+        return teamMapper.entityToTeamWithMembers(team, pageable);
+    }
 }

@@ -15,6 +15,7 @@ public abstract class TaskMapper extends BaseEntityMapper implements
         GenericMapper<TaskEntity, TaskResponseDto, TaskRequestDto> {
 
     @Override
+    @Mapping(target = "assignedTo", source = "assignedTo", qualifiedByName = "toLimitedDto")
     public abstract TaskResponseDto entityToDto(TaskEntity entity);
 
     @Override

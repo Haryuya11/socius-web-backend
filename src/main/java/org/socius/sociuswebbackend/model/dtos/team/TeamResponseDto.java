@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.team;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,6 +14,7 @@ import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TeamResponseDto extends BaseDto {
     private String name;
     private UserResponseDto leader;
