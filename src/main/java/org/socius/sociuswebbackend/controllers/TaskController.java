@@ -27,12 +27,12 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTasksByUserId(userId, pageable));
     }
 
-    /*@PostMapping
+    @PostMapping("/task/create")
     public ResponseEntity<TaskResponseDto> createTask(
             @Valid @RequestBody TaskRequestDto dto
     ) {
         return ResponseEntity.ok(taskService.createTask(dto));
-    }*/
+    }
 
     @GetMapping("/team/{teamId}/tasks")
     public ResponseEntity<Map<String, Object>> getTeamTasks(

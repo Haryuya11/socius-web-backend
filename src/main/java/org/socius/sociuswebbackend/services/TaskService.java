@@ -11,7 +11,7 @@ import java.util.Map;
 public interface TaskService {
     Page<TaskResponseDto> getTasksByUserId(UUID userId, Pageable pageable);
 
-    /*TaskResponseDto createTask(TaskRequestDto taskRequestDto);*/
+    TaskResponseDto createTask(TaskRequestDto taskRequestDto);
 
     Map<String, Object> getTeamTasks(UUID teamId, Pageable pageable);
 }
