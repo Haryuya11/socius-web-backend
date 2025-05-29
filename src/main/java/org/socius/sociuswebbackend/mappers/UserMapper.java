@@ -1,6 +1,5 @@
 package org.socius.sociuswebbackend.mappers;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

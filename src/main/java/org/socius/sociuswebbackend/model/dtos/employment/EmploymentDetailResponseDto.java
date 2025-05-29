@@ -3,6 +3,7 @@ package org.socius.sociuswebbackend.model.dtos.employment;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.dtos.BaseDto;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class EmploymentDetailResponseDto extends BaseDto {
     private UserResponseDto user;
     private PositionResponseDto position;
