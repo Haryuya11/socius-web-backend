@@ -7,11 +7,16 @@ import org.socius.sociuswebbackend.mappers.TeamMapper;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
+import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.TaskEntity;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
+import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.model.enums.NotificationType;
 import org.socius.sociuswebbackend.repositories.TaskRepository;
 import org.socius.sociuswebbackend.repositories.TeamRepository;
+import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.socius.sociuswebbackend.services.NotificationService;
 import org.socius.sociuswebbackend.services.TaskService;
 import org.springframework.data.domain.Page;
@@ -30,6 +35,7 @@ public class TaskServiceImpl implements TaskService {
     private final SimpMessagingTemplate messagingTemplate;
     private final TeamRepository teamRepository;
     private final TeamMapper teamMapper;
+    private final UserRepository userRepository;
 
 
     @Override
@@ -38,17 +44,23 @@ public class TaskServiceImpl implements TaskService {
                 .map(taskMapper::entityToDto);
     }
 
-    /*@Override
+    @Override
     public TaskResponseDto createTask(TaskRequestDto dto) {
         TaskEntity entity = taskMapper.requestDtoToEntity(dto);
         entity = taskRepository.save(entity);
 
         if (dto.getAssignedToId() != null) {
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+            UserEntity user = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + username));
+
             // Create notification
             NotificationRequestDto notification = NotificationRequestDto.builder()
                     .title("New Task Assigned")
                     .message("You have been assigned a new task: " + entity.getName())
-                    .senderId(UUID.randomUUID()) // System user or task creator
+                    .senderId(user.getId()) // System user or task creator
                     .recipientIds(Collections.singletonList(dto.getAssignedToId()))
                     .recipientIds(new ArrayList<>(Arrays.asList(dto.getAssignedToId())))
                     .type(NotificationType.info)
@@ -66,7 +78,7 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return taskMapper.entityToDto(entity);
-    }*/
+    }
 
     @Override
     public Map<String, Object> getTeamTasks(UUID teamId, Pageable pageable) {
