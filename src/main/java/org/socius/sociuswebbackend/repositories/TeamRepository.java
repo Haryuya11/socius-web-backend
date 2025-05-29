@@ -13,5 +13,4 @@ public interface TeamRepository extends JpaRepository<TeamEntity, UUID> {
      * @return true nếu nhóm tồn tại, false nếu không tồn tại
      */
     boolean existsByName(String name);
-    
 }

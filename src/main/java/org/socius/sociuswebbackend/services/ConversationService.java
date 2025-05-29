@@ -11,13 +11,23 @@ import java.util.UUID;
 public interface ConversationService {
 
     /**
-     * Tạo cuộc trò chuyện mới
+     * Tạo cuộc trò chuyện nhóm
      *
-     * @param creatorId  ID của người tạo
-     * @param requestDto Thông tin cuộc trò chuyện
+     * @param groupId   ID của nhóm
+     * @param name      Tên cuộc trò chuyện
+     * @param creatorId ID của người tạo cuộc trò chuyện
+     * @param memberIds Tập hợp các ID của thành viên trong cuộc trò chuyện
      * @return Cuộc trò chuyện đã được tạo
      */
-    ConversationResponseDto createConversation(UUID creatorId, ConversationRequestDto requestDto);
+    ConversationResponseDto createGroupConversation(UUID groupId, String name, UUID creatorId, Set<UUID> memberIds);
+
+    /**
+     * Xóa cuộc trò chuyện nhóm
+     *
+     * @param conversationId ID của cuộc trò chuyện cần xóa
+     */
+    void deleteGroupConversation(UUID conversationId);
+
 
     /**
      * Lấy danh sách cuộc trò chuyện của người dùng với phân trang
@@ -40,31 +50,34 @@ public interface ConversationService {
     /**
      * Thêm thành viên vào cuộc trò chuyện
      *
-     * @param userId         ID của người dùng thực hiện hành động
      * @param conversationId ID của cuộc trò chuyện
      * @param memberId       ID của người dùng được thêm vào
-     * @return Cuộc trò chuyện đã được cập nhật
      */
-    ConversationResponseDto addMember(UUID userId, UUID conversationId, UUID memberId);
+    void addMember(UUID conversationId, UUID memberId);
 
     /**
      * Thêm nhiều thành viên vào cuộc trò chuyện
      *
-     * @param userId         ID của người dùng thực hiện hành động
      * @param conversationId ID của cuộc trò chuyện
      * @param memberIds      Tập hợp các ID của người dùng được thêm vào
      */
-    void addMembers(UUID userId, UUID conversationId, Set<UUID> memberIds);
+    void addMembers(UUID conversationId, Set<UUID> memberIds);
 
     /**
      * Xóa thành viên khỏi cuộc trò chuyện
      *
-     * @param userId         ID của người dùng thực hiện hành động
      * @param conversationId ID của cuộc trò chuyện
      * @param memberId       ID của thành viên bị xóa
-     * @return Cuộc trò chuyện đã được cập nhật
      */
-    ConversationResponseDto removeMember(UUID userId, UUID conversationId, UUID memberId);
+    void removeMember(UUID conversationId, UUID memberId);
+
+    /**
+     * Xóa nhiều thành viên khỏi cuộc trò chuyện
+     *
+     * @param conversationId ID của cuộc trò chuyện
+     * @param memberIds      Tập hợp các ID của thành viên bị xóa
+     */
+    void removeMembers(UUID conversationId, Set<UUID> memberIds);
 
     /**
      * Tìm hoặc tạo cuộc trò chuyện trực tiếp giữa hai người dùng
@@ -85,11 +98,4 @@ public interface ConversationService {
      */
     ConversationResponseDto updateConversation(UUID userId, UUID conversationId, ConversationRequestDto requestDto);
 
-    /**
-     * Rời khỏi cuộc trò chuyện
-     *
-     * @param userId         ID của người dùng muốn rời khỏi
-     * @param conversationId ID của cuộc trò chuyện
-     */
-    void leaveConversation(UUID userId, UUID conversationId);
 }

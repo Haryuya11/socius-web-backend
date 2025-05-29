@@ -47,4 +47,13 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
      */
     @Query("SELECT c FROM ConversationEntity c JOIN c.members m WHERE m.user.id = :userId ORDER BY c.updatedAt DESC")
     Page<ConversationEntity> findUserConversations(UUID userId, Pageable pageable);
+
+    /**
+     * Tìm kiếm các cuộc trò chuyện mà user là thành viên active
+     */
+    @Query("SELECT DISTINCT c FROM ConversationEntity c " +
+            "JOIN ConversationMemberEntity cm ON c.id = cm.id.conversationId " +
+            "WHERE cm.id.userId = :userId AND cm.leftAt IS NULL " +
+            "ORDER BY c.updatedAt DESC")
+    Page<ConversationEntity> findActiveConversationsByUserId(@Param("userId") UUID userId, Pageable pageable);
 }
