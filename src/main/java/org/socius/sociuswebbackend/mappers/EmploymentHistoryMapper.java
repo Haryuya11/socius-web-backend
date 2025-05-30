@@ -22,6 +22,18 @@ public abstract class EmploymentHistoryMapper extends BaseEntityMapper implement
     @Override
     public abstract EmploymentHistoryResponseDto entityToDto(EmploymentHistoryEntity entity);
 
+    @Named("entityToLimitedDto")
+    @Mapping(target = "user", source = "user", qualifiedByName = "toLimitedDto")
+    @Mapping(target = "position", source = "position", qualifiedByName = "entityToLimitedDto")
+    @Mapping(target = "department", source = "department", qualifiedByName = "entityToLimitedDto")
+    @Mapping(target = "team", source = "team", qualifiedByName = "entityToLimitedDto")
+    @Mapping(target = "role", ignore = true)
+    @Mapping(target = "startDate", source = "startDate")
+    @Mapping(target = "endDate", source = "endDate")
+    @Mapping(target = "salary", source = "salary")
+    @Mapping(target = "description", source = "description")
+    public abstract EmploymentHistoryResponseDto entityToLimitedDto(EmploymentHistoryEntity entity);
+
     @Override
     public EmploymentHistoryEntity requestDtoToEntity(EmploymentHistoryRequestDto dto) {
         if (dto == null) {
