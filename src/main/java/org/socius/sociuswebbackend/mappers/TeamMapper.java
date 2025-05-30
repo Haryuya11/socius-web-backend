@@ -82,8 +82,8 @@ public abstract class TeamMapper extends BaseEntityMapper implements
     @Mapping(source = "id", target = "id")
     @Mapping(source = "name", target = "name")
     @Mapping(source = "leader", target = "leader")
-    @Mapping(source = "createdAt", target = "createdAt")
-    @Mapping(source = "updatedAt", target = "updatedAt")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "members", ignore = true)
     @Mapping(target = "memberCount", ignore = true)
     public abstract TeamWithMembersDto entityToWithMembersDto(TeamEntity entity);
@@ -97,8 +97,6 @@ public abstract class TeamMapper extends BaseEntityMapper implements
         result.put("id", entity.getId());
         result.put("name", entity.getName());
         result.put("leader", entity.getLeader() != null ? userMapper.entityToDto(entity.getLeader()) : null);
-        result.put("createdAt", entity.getCreatedAt());
-        result.put("updatedAt", entity.getUpdatedAt());
 
         List<Map<String, Object>> members = entity.getEmploymentDetailEntities().stream()
                 .filter(detail -> detail.getUser() != null)
@@ -158,8 +156,6 @@ public abstract class TeamMapper extends BaseEntityMapper implements
         result.put("id", entity.getId());
         result.put("name", entity.getName());
         result.put("leader", entity.getLeader() != null ? userMapper.toLimitedDto(entity.getLeader()) : null);
-        result.put("createdAt", entity.getCreatedAt());
-        result.put("updatedAt", entity.getUpdatedAt());
 
         List<UserResponseDto> members = entity.getEmploymentDetailEntities().stream()
                 .filter(detail -> detail.getUser() != null)
