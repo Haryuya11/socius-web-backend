@@ -127,20 +127,50 @@ public class OnlineUserServiceImpl implements OnlineUserService {
                     .filter(Objects::nonNull)
                     .map(obj -> (OnlineUserStatusDto) obj)
                     .collect(Collectors.toList());
-//            if (!key.isEmpty()) {
-//                List<Object> values = redisTemplate.opsForValue().multiGet(key);
-//                if (values != null) {
-//                    for (Object value : values) {
-//                        if (value instanceof OnlineUserStatusDto onlineUserStatusDto) {
-//                            if (isRecentlyActive(onlineUserStatusDto.getLastSeen())) {
-//                                onlineUsers.add(onlineUserStatusDto);
-//                            }
-//                        }
-//                    }
-//                }
-//            }
         } catch (Exception e) {
             logger.error("Lỗi khi lấy danh sách người dùng online: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<OnlineUserStatusDto> getOnlineUsersWithExceptSelf() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                logger.warn("Không có người dùng đăng nhập để lấy danh sách online ngoại trừ bản thân");
+                return new ArrayList<>();
+            }
+            String userEmail = auth.getName();
+            UserEntity currentUser = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại: " + userEmail));
+
+            UUID currentUserId = currentUser.getId();
+            String pattern = RedisKeyBuilder.getKeyPattern("user:") + ":online";
+            Set<String> keys = redisTemplate.keys(pattern);
+            List<OnlineUserStatusDto> onlineUsers = new ArrayList<>();
+            if (keys.isEmpty()) {
+                logger.info("Không tìm thấy người dùng online nào");
+                return onlineUsers;
+            }
+
+            List<Object> values = redisTemplate.opsForValue().multiGet(keys);
+            if (values == null || values.isEmpty()) {
+                logger.info("Không tìm thấy giá trị nào cho các khóa online user");
+                return onlineUsers;
+            }
+
+            onlineUsers = values.stream()
+                    .filter(Objects::nonNull)
+                    .map(obj -> (OnlineUserStatusDto) obj)
+                    .filter(user -> !user.getUserId().equals(currentUserId)) // Loại trừ người dùng hiện tại
+                    .collect(Collectors.toList());
+
+            return onlineUsers;
+
+
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy danh sách người dùng online ngoại trừ bản thân: {}", e.getMessage(), e);
             return new ArrayList<>();
         }
     }
@@ -179,28 +209,6 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         return minutesSinceLastSeen < timeoutMinutes;
     }
 
-    private OnlineUserStatusDto convertToDto(Object value) {
-        if (value instanceof OnlineUserStatusDto) {
-            return (OnlineUserStatusDto) value;
-        } else if (value instanceof Map) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.registerModule(new JavaTimeModule());
-                return mapper.convertValue(value, OnlineUserStatusDto.class);
-            } catch (Exception e) {
-                logger.error("Lỗi chuyển đổi Map sang DTO: {}", e.getMessage());
-                return null;
-            }
-        }
-        return null;
-    }
-
-
-    @Override
-    public boolean isUserSessionValid(UUID userId) {
-        // Delegate to SessionValidationService
-        return sessionValidationService.hasValidSession(userId);
-    }
 
     @Override
     public String getUserSessionId(UUID userId) {
@@ -214,26 +222,5 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         }
     }
 
-    /**
-     * Kiểm tra tính hợp lệ của session trong Redis
-     *
-     * @param sessionId ID của session cần kiểm tra
-     * @return true nếu session hợp lệ, false nếu không
-     */
-    private boolean isSessionValid(String sessionId) {
-        try {
-            String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
-            Boolean exists = redisTemplate.hasKey(sessionKey);
-            Long expireTime = redisTemplate.getExpire(sessionKey);
 
-            boolean isValid = exists != null && exists && expireTime != null && expireTime > 0;
-            logger.debug("Session {} validation: exists={}, expireTime={}, valid={}",
-                    sessionId, exists, expireTime, isValid);
-
-            return isValid;
-        } catch (Exception e) {
-            logger.error("Lỗi khi kiểm tra session {}: {}", sessionId, e.getMessage(), e);
-            return false;
-        }
-    }
 }

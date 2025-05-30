@@ -31,7 +31,6 @@ public class SessionController {
         return ResponseEntity.ok(isOnline);
     }
 
-
     /**
      * Kiểm tra session của người dùng có hợp lệ không (dựa trên RBAC key trong Redis)
      *
