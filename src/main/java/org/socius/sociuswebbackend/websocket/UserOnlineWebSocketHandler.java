@@ -34,45 +34,39 @@ public class UserOnlineWebSocketHandler implements HandshakeInterceptor {
             @NonNull ServerHttpResponse response,
             @NonNull WebSocketHandler wsHandler,
             @NonNull Map<String, Object> attributes
-    ) throws Exception {
+    ) {
+        try {
+            if (request instanceof ServletServerHttpRequest servletRequest) {
+                HttpServletRequest httpRequest = servletRequest.getServletRequest();
+                HttpSession httpSession = httpRequest.getSession(false);
 
-        if (request instanceof ServletServerHttpRequest servletRequest) {
-            HttpServletRequest httpRequest = servletRequest.getServletRequest();
-            HttpSession session = httpRequest.getSession(false);
+                if (httpSession == null) {
+                    logger.warn("Không tìm thấy HTTP session trong yêu cầu WebSocket");
+                    return false;
+                }
 
-            logger.info("WebSocket handshake attempt from: {}", request.getRemoteAddress());
+                String sessionId = httpSession.getId();
+                UUID userId = (UUID) httpSession.getAttribute("userId");
 
-            if (session == null) {
-                logger.warn("No HTTP session found for WebSocket connection");
-                return false;
+                if (userId == null) {
+                    logger.warn("Không tìm thấy userId trong HTTP session");
+                    return false;
+                }
+
+                // Lưu thông tin vào websocket attributes
+                attributes.put("userId", userId.toString());
+                attributes.put("sessionId", sessionId);
+
+                logger.info("WebSocket handshake thành công cho userId: {}, sessionId: {}", userId, sessionId);
+                return true;
             }
 
-            String sessionId = session.getId();
-            logger.debug("Session ID: {}", sessionId);
-
-            // Kiểm tra user permissions từ Redis
-            UserPermissionsDto userPermissions = rbacRedisService.getUserPermissions(sessionId);
-            if (userPermissions == null) {
-                logger.warn("No user permissions found for session: {}", sessionId);
-                return false;
-            }
-
-            UUID userId = userPermissions.getUserId();
-            if (userId == null) {
-                logger.warn("No user ID found in permissions for session: {}", sessionId);
-                return false;
-            }
-
-            // Lưu thông tin vào attributes để sử dụng sau
-            attributes.put("userId", userId.toString());
-            attributes.put("sessionId", sessionId);
-
-            logger.info("WebSocket handshake approved for user: {} with session: {}", userId, sessionId);
-            return true;
+            logger.warn("Request không phải là ServletServerHttpRequest");
+            return false;
+        } catch (Exception e) {
+            logger.error("Lỗi trong quá trình xử lý trước khi bắt tay WebSocket: {}", e.getMessage(), e);
+            return false;
         }
-
-        logger.warn("Request is not a ServletServerHttpRequest");
-        return false;
     }
 
     @Override

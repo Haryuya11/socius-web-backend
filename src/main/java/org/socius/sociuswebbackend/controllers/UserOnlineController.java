@@ -1,24 +1,28 @@
 package org.socius.sociuswebbackend.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.message.TypingIndicatorDto;
+import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.services.UserService;
 import org.socius.sociuswebbackend.services.WebSocketService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
+@RequestMapping("/api/user-online")
 @RequiredArgsConstructor
 public class UserOnlineController {
     private static final Logger logger = LoggerFactory.getLogger(UserOnlineController.class);
@@ -36,35 +40,54 @@ public class UserOnlineController {
     @MessageMapping("/heartbeat")
     public void processHeartbeat(SimpMessageHeaderAccessor headerAccessor) {
         try {
-            Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
-            if (sessionAttributes == null) {
-                logger.warn("Session attributes null trong heartbeat");
-                return;
-            }
-
-            UUID userId = (UUID) sessionAttributes.get("userId");
             String sessionId = headerAccessor.getSessionId();
-
-            logger.debug("Processing heartbeat - userId: {}, sessionId: {}", userId, sessionId);
+            UUID userId = (UUID) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("userId");
 
             if (userId == null || sessionId == null) {
                 logger.warn("UserId hoặc SessionId null trong heartbeat - userId: {}, sessionId: {}", userId, sessionId);
                 return;
             }
-
-            // Kiểm tra session validity
-            if (isValidSession(sessionId)) {
-                onlineUserService.handleUserHeartbeat(userId);
-                webSocketService.handleHeartbeat(userId);
-                logger.debug("Heartbeat processed successfully for user: {}", userId);
-            } else {
-                logger.info("Session {} không hợp lệ, đánh dấu user {} offline", sessionId, userId);
-                onlineUserService.markUserOffline(userId, sessionId);
-                webSocketService.sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED",
-                        "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
-            }
+            onlineUserService.handleUserHeartbeat(userId);
+            logger.debug("Heartbeat nhận được từ userId: {}, sessionId: {}", userId, sessionId);
         } catch (Exception e) {
             logger.error("Lỗi xử lý heartbeat: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Api để làm mới trạng thái online của người dùng
+     *
+     * @param userId  ID của người dùng cần làm mới trạng thái
+     * @param request HttpServletRequest để lấy thông tin phiên làm việc
+     * @return ResponseEntity chứa thông tin kết quả
+     */
+    @PostMapping("/refresh/{userId}")
+    public ResponseEntity<Map<String, Object>> refreshOnlineStatus(
+            @PathVariable UUID userId,
+            HttpServletRequest request) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                response.put("success", false);
+                response.put("message", "No valid session");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            String sessionId = session.getId();
+            onlineUserService.updateUserOnlineStatus(userId, sessionId);
+
+            response.put("success", true);
+            response.put("message", "Online status refreshed");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error refreshing online status for user: {}", userId, e);
+            response.put("success", false);
+            response.put("message", "Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
@@ -96,26 +119,39 @@ public class UserOnlineController {
         }
     }
 
-    /**
-     * Kiểm tra tính hợp lệ của phiên làm việc dựa trên sessionId
-     *
-     * @param sessionId ID của phiên làm việc
-     * @return true nếu phiên hợp lệ, false nếu không
-     */
-    private boolean isValidSession(String sessionId) {
+    @GetMapping("/list")
+    public ResponseEntity<List<OnlineUserStatusDto>> getOnlineUsers() {
         try {
-            String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
-            Boolean exists = redisTemplate.hasKey(sessionKey);
-            Long expireTime = redisTemplate.getExpire(sessionKey);
-
-            boolean isValid = exists && expireTime > 0;
-            logger.debug("Session {} validation: exists={}, expireTime={}, valid={}",
-                    sessionId, exists, expireTime, isValid);
-
-            return isValid;
+            List<OnlineUserStatusDto> onlineUsers = onlineUserService.getOnlineUsers();
+            return ResponseEntity.ok(onlineUsers);
         } catch (Exception e) {
-            logger.error("Lỗi khi kiểm tra tính hợp lệ của session: {}", e.getMessage(), e);
-            return false;
+            logger.error("Error getting online users", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
+        }
+    }
+
+    @PostMapping("/offline/{userId}")
+    public ResponseEntity<Map<String, Object>> markUserOffline(
+            @PathVariable UUID userId,
+            HttpServletRequest request) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            HttpSession session = request.getSession(false);
+            String sessionId = session != null ? session.getId() : null;
+
+            onlineUserService.markUserOffline(userId, sessionId);
+
+            response.put("success", true);
+            response.put("message", "User marked offline");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error marking user offline: {}", userId, e);
+            response.put("success", false);
+            response.put("message", "Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

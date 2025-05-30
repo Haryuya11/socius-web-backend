@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.services.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,13 +33,13 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     final private UserRepository userRepository;
     final private ConfigService configService;
     final private SessionValidationService sessionValidationService;
+    final private ObjectMapper objectMapper = JsonMapper.builder()
+            .addModule(new JavaTimeModule())
+            .build();
 
     @Override
     public void updateUserOnlineStatus(UUID userId, String sessionId) {
         try {
-            String key = RedisKeyBuilder.userOnlineKey(userId);
-
-            // Lấy thông tin user
             Optional<UserEntity> userOpt = userRepository.findById(userId);
             if (userOpt.isEmpty()) {
                 logger.warn("User not found: {}", userId);
@@ -54,11 +56,11 @@ public class OnlineUserServiceImpl implements OnlineUserService {
                     .isOnline(true)
                     .build();
 
-            int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 5);
 
-            redisTemplate.opsForValue().set(key, statusDto);
-            redisTemplate.expire(key, Duration.ofMinutes(onlineStatusTimeout));
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+            int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 2);
 
+            redisTemplate.opsForValue().set(key, statusDto, Duration.ofMinutes(onlineStatusTimeout));
             logger.debug("Cập nhật online status cho user: {} với session: {}", userId, sessionId);
 
         } catch (Exception e) {
@@ -75,20 +77,12 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             if (currentStatus != null) {
                 // Chỉ cập nhật lastSeen, GIỮ NGUYÊN TTL
                 currentStatus.setLastSeen(LocalDateTime.now());
-                currentStatus.setOnline(true);
+                int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 2);
+                redisTemplate.opsForValue().set(key, currentStatus, Duration.ofMinutes(onlineStatusTimeout));
 
-                // Kiểm tra session còn hợp lệ không
-                if (isSessionValid(currentStatus.getSessionId())) {
-                    // Session còn hợp lệ -> cập nhật heartbeat
-                    redisTemplate.opsForValue().set(key, currentStatus);
-                    logger.debug("Updated heartbeat for user: {}", userId);
-                } else {
-                    // Session đã hết hạn -> xóa online status
-                    redisTemplate.delete(key);
-                    logger.info("Removed online status for user {} due to expired session", userId);
-                }
+                logger.info("Cập nhật heartbeat cho user: {} với session: {}", userId, currentStatus.getSessionId());
             } else {
-                logger.debug("No online status found for user: {} during heartbeat", userId);
+                logger.warn("Không tìm thấy online status cho user: {} khi xử lý heartbeat", userId);
             }
         } catch (Exception e) {
             logger.error("Lỗi khi xử lý heartbeat: {}", e.getMessage(), e);
@@ -99,18 +93,13 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     public void markUserOffline(UUID userId, String sessionId) {
         try {
             String key = RedisKeyBuilder.userOnlineKey(userId);
-            Object value = redisTemplate.opsForValue().get(key);
+            OnlineUserStatusDto existingStatus = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
 
-            if (value != null) {
-                OnlineUserStatusDto currentStatus = convertToDto(value);
-
-                // CHỈ xóa online status nếu sessionId khớp
-                if (currentStatus != null && sessionId.equals(currentStatus.getSessionId())) {
-                    redisTemplate.delete(key);
-                    logger.info("Đánh dấu user {} offline (session: {})", userId, sessionId);
-                } else {
-                    logger.debug("Không xóa online status - sessionId không khớp cho user: {}", userId);
-                }
+            if (existingStatus != null && sessionId.equals(existingStatus.getSessionId())) {
+                redisTemplate.delete(key);
+                logger.info("Đánh dấu user {} offline với session {}", userId, sessionId);
+            } else {
+                logger.warn("Không tìm thấy online status cho user: {} hoặc session không khớp khi đánh dấu offline", userId);
             }
         } catch (Exception e) {
             logger.error("Lỗi khi đánh dấu user offline: {}", e.getMessage(), e);
@@ -119,26 +108,41 @@ public class OnlineUserServiceImpl implements OnlineUserService {
 
     @Override
     public List<OnlineUserStatusDto> getOnlineUsers() {
-        List<OnlineUserStatusDto> onlineUsers = new ArrayList<>();
         try {
             String pattern = RedisKeyBuilder.getKeyPattern("user:") + ":online";
             Set<String> key = redisTemplate.keys(pattern);
-            if (!key.isEmpty()) {
-                List<Object> values = redisTemplate.opsForValue().multiGet(key);
-                if (values != null) {
-                    for (Object value : values) {
-                        if (value instanceof OnlineUserStatusDto onlineUserStatusDto) {
-                            if (isRecentlyActive(onlineUserStatusDto.getLastSeen())) {
-                                onlineUsers.add(onlineUserStatusDto);
-                            }
-                        }
-                    }
-                }
+            List<OnlineUserStatusDto> onlineUsers = new ArrayList<>();
+
+            if (key.isEmpty()) {
+                logger.info("Không tìm thấy người dùng online nào");
+                return onlineUsers;
             }
+
+            List<Object> values = redisTemplate.opsForValue().multiGet(key);
+            if (values == null || values.isEmpty()) {
+                logger.info("Không tìm thấy giá trị nào cho các khóa online user");
+                return onlineUsers;
+            }
+            return values.stream()
+                    .filter(Objects::nonNull)
+                    .map(obj -> (OnlineUserStatusDto) obj)
+                    .collect(Collectors.toList());
+//            if (!key.isEmpty()) {
+//                List<Object> values = redisTemplate.opsForValue().multiGet(key);
+//                if (values != null) {
+//                    for (Object value : values) {
+//                        if (value instanceof OnlineUserStatusDto onlineUserStatusDto) {
+//                            if (isRecentlyActive(onlineUserStatusDto.getLastSeen())) {
+//                                onlineUsers.add(onlineUserStatusDto);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         } catch (Exception e) {
             logger.error("Lỗi khi lấy danh sách người dùng online: {}", e.getMessage(), e);
+            return new ArrayList<>();
         }
-        return onlineUsers;
     }
 
     @Override
@@ -193,16 +197,22 @@ public class OnlineUserServiceImpl implements OnlineUserService {
 
 
     @Override
-public boolean isUserSessionValid(UUID userId) {
-    // Delegate to SessionValidationService
-    return sessionValidationService.hasValidSession(userId);
-}
+    public boolean isUserSessionValid(UUID userId) {
+        // Delegate to SessionValidationService
+        return sessionValidationService.hasValidSession(userId);
+    }
 
-@Override
-public String getUserSessionId(UUID userId) {
-    // Delegate to SessionValidationService
-    return sessionValidationService.getUserSessionId(userId);
-}
+    @Override
+    public String getUserSessionId(UUID userId) {
+        try {
+            String key = RedisKeyBuilder.userOnlineKey(userId);
+            OnlineUserStatusDto status = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
+            return status != null ? status.getSessionId() : null;
+        } catch (Exception e) {
+            logger.error("Error getting user session ID: {}", userId, e);
+            return null;
+        }
+    }
 
     /**
      * Kiểm tra tính hợp lệ của session trong Redis
@@ -217,7 +227,7 @@ public String getUserSessionId(UUID userId) {
             Long expireTime = redisTemplate.getExpire(sessionKey);
 
             boolean isValid = exists != null && exists && expireTime != null && expireTime > 0;
-            logger.debug("Session {} validation: exists={}, expireTime={}, valid={}", 
+            logger.debug("Session {} validation: exists={}, expireTime={}, valid={}",
                     sessionId, exists, expireTime, isValid);
 
             return isValid;

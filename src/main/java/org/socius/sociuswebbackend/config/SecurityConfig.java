@@ -44,8 +44,6 @@ public class SecurityConfig {
 
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName("_csrf");
-
-
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf
@@ -56,7 +54,8 @@ public class SecurityConfig {
                                 "/ws-heartbeat/websocket", // WebSocket upgrade
                                 "/api/auth/login",         // Login endpoint
                                 "/api/auth/logout",        // Logout endpoint
-                                "/api/csrf/token"          // CSRF token endpoint
+                                "/api/csrf/token",          // CSRF token endpoint
+                                "/api/user-online/**"
                         )
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                 )
