@@ -36,4 +36,14 @@ public class EmploymentDetailController {
         Map<String, Object> response = employmentDetailService.getEmploymentHistory(userId, pageable);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/user/{userId}/salary-history")
+    public ResponseEntity<Map<String, Object>> getSalaryHistory(
+            @PathVariable UUID userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Map<String, Object> response = employmentDetailService.getSalaryHistory(userId, pageable);
+        return ResponseEntity.ok(response);
+    }
 }

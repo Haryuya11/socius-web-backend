@@ -5,13 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.mappers.EmploymentDetailMapper;
 import org.socius.sociuswebbackend.mappers.EmploymentHistoryMapper;
+import org.socius.sociuswebbackend.mappers.SalaryHistoryMapper;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentHistoryResponseDto;
+import org.socius.sociuswebbackend.model.dtos.salary.SalaryHistoryResponseDto;
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.EmploymentHistoryEntity;
+import org.socius.sociuswebbackend.model.entities.SalaryHistoryEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
 import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
+import org.socius.sociuswebbackend.repositories.SalaryHistoryRepository;
 import org.socius.sociuswebbackend.services.EmploymentDetailService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +34,8 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
     private final EmploymentDetailMapper employmentDetailMapper;
     private final EmploymentHistoryRepository employmentHistoryRepository;
     private final EmploymentHistoryMapper employmentHistoryMapper;
+    private final SalaryHistoryRepository salaryHistoryRepository;
+    private final SalaryHistoryMapper salaryHistoryMapper;
 
     @Override
     public Map<String, Object> getAllEmployees(Pageable pageable) {
@@ -79,6 +85,24 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
         result.put("historyCount", history.size());
         result.put("totalPages", historyPage.getTotalPages());
         result.put("totalElements", historyPage.getTotalElements());
+
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getSalaryHistory(UUID userId, Pageable pageable) {
+        UserEntity user = UserEntity.builder().id(userId).build();
+        Page<SalaryHistoryEntity> salaryPage = salaryHistoryRepository.findByUser(user, pageable);
+
+        List<SalaryHistoryResponseDto> salaryHistory = salaryPage.getContent().stream()
+                .map(salaryHistoryMapper::entityToLimitedDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("salaryHistory", salaryHistory);
+        result.put("historyCount", salaryHistory.size());
+        result.put("totalPages", salaryPage.getTotalPages());
+        result.put("totalElements", salaryPage.getTotalElements());
 
         return result;
     }

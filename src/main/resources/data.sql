@@ -479,3 +479,27 @@ VALUES
     ('f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c', 'a1990011-22aa-44bb-55cc-66dd77ee8899', '4a5b6789-012a-abaa-3456-123456789abc', '55ef89f3-0dc4-4b61-a3af-7894d12de24e', 'c3d4e5f6-a7b8-c9d0-e1f2-a3b4c5d6e7f8', 'f2f4f0f7-f8f9-49f6-e4f3-9f0f1f2f3f43', '2023-01-01', '2024-12-31', 16000000.00, 'Gia hạn nhân viên marketing', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d', 'a2001122-aa44-bb55-cc66-dd77ee889900', '5a6b7890-123a-abaa-4567-23456789abcd', '66ab34c2-1ef5-4782-ba9e-908712ab3c5f', 'e5f6a7b8-c9d0-e1f2-a3b4-c5d6e7f8a9b0', 'f2f4f0f7-f8f9-49f6-e4f3-9f0f1f2f3f43', '2021-02-15', '2022-12-31', 15000000.00, 'Nhân viên kinh doanh nhiệm kỳ 1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5e', 'a2001122-aa44-bb55-cc66-dd77ee889900', '5a6b7890-123a-abaa-4567-23456789abcd', '66ab34c2-1ef5-4782-ba9e-908712ab3c5f', 'e5f6a7b8-c9d0-e1f2-a3b4-c5d6e7f8a9b0', 'f2f4f0f7-f8f9-49f6-e4f3-9f0f1f2f3f43', '2023-01-01', '2024-12-31', 16000000.00, 'Gia hạn nhân viên kinh doanh', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Thêm dữ liệu vào bảng salary_history
+INSERT INTO salary_history (id, user_id, previous_salary, new_salary, effective_date, reason, created_at, updated_at)
+VALUES
+    ('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6e', 'aa11bb22-cc33-dd44-ee55-ff6677889900', 48000000.00, 50000000.00, '2020-01-01', 'Bổ nhiệm giám đốc điều hành', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7f', 'aa11bb22-cc33-dd44-ee55-ff6677889900', 50000000.00, 55000000.00, '2022-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8a', 'bb22cc33-dd44-ee55-ff66-778899001122', 33000000.00, 35000000.00, '2020-02-01', 'Bổ nhiệm giám đốc nhân sự', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9b', 'bb22cc33-dd44-ee55-ff66-778899001122', 35000000.00, 36000000.00, '2022-07-01', 'Tăng lương do thăng chức trưởng phòng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0c', 'cc33dd44-ee55-ff66-7788-99001122aa44', 38000000.00, 40000000.00, '2020-01-15', 'Bổ nhiệm giám đốc công nghệ', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1d', 'cc33dd44-ee55-ff66-7788-99001122aa44', 40000000.00, 42000000.00, '2023-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2e', 'dd44ee55-ff66-7788-9900-1122aa44bb55', 36000000.00, 38000000.00, '2020-01-20', 'Bổ nhiệm giám đốc tài chính', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3f', 'dd44ee55-ff66-7788-9900-1122aa44bb55', 38000000.00, 39000000.00, '2023-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4a', 'ee55ff66-7788-9900-1122-aa44bb55cc66', 35000000.00, 37000000.00, '2020-03-01', 'Bổ nhiệm giám đốc marketing', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('d0e1f2a3-b4c5-6d7e-8f9a-0b1c2d3e4f5b', 'ee55ff66-7788-9900-1122-aa44bb55cc66', 37000000.00, 38000000.00, '2023-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6c', 'ff667788-9900-1122-aa44-bb55cc66dd77', 34000000.00, 36000000.00, '2020-03-15', 'Bổ nhiệm giám đốc kinh doanh', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7d', 'ff667788-9900-1122-aa44-bb55cc66dd77', 36000000.00, 37000000.00, '2023-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8e', '00778899-0011-22aa-44bb-55cc66dd77ee', 18000000.00, 20000000.00, '2021-01-05', 'Bổ nhiệm lập trình viên chính', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9f', '00778899-0011-22aa-44bb-55cc66dd77ee', 20000000.00, 22000000.00, '2023-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0a', 'a0889900-1122-aa44-bb55-cc66dd77ee88', 16000000.00, 18000000.00, '2021-01-10', 'Bổ nhiệm lập trình viên', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('d6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1b', 'a0889900-1122-aa44-bb55-cc66dd77ee88', 18000000.00, 19000000.00, '2023-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2c', 'a1990011-22aa-44bb-55cc-66dd77ee8899', 14000000.00, 15000000.00, '2021-02-01', 'Bổ nhiệm nhân viên marketing', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3d', 'a1990011-22aa-44bb-55cc-66dd77ee8899', 15000000.00, 16000000.00, '2023-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4e', 'a2001122-aa44-bb55-cc66-dd77ee889900', 14000000.00, 15000000.00, '2021-02-15', 'Bổ nhiệm nhân viên kinh doanh', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5f', 'a2001122-aa44-bb55-cc66-dd77ee889900', 15000000.00, 16000000.00, '2023-01-01', 'Tăng lương do gia hạn hợp đồng', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
