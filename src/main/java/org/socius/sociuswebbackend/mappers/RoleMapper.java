@@ -46,6 +46,26 @@ public abstract class RoleMapper extends BaseEntityMapper implements
         return dto;
     }
 
+    @Named("entityToLimitedDto")
+    @Mapping(target = "permissions", ignore = true)
+    public RoleResponseDto entityToLimitedDto(RoleEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        RoleResponseDto dto = new RoleResponseDto();
+        dto.setId(entity.getId());
+        dto.setName(entity.getName());
+        dto.setDescription(entity.getDescription());
+
+        if (entity.getRolePermissions() != null) {
+            PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
+            dto.setPermissions(permissionMapper.rolePermissionsToLimitedPermissionDtos(entity.getRolePermissions()));
+        }
+
+        return dto;
+    }
+
     /**
      * Process permissions after entity mapping
      */
@@ -64,13 +84,14 @@ public abstract class RoleMapper extends BaseEntityMapper implements
 //
 //        dto.setPermissions(permissions);
 //    }
-    @AfterMapping
+
+    /*@AfterMapping
     public void mapPermissions(@MappingTarget RoleResponseDto dto, RoleEntity entity) {
         if (entity != null && entity.getRolePermissions() != null) {
             PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
             dto.setPermissions(permissionMapper.rolePermissionsToPermissionDtos(entity.getRolePermissions()));
         }
-    }
+    }*/
 
     @Override
     @Mapping(target = "rolePermissions", ignore = true)
