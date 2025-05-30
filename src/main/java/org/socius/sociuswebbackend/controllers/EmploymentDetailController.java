@@ -11,14 +11,19 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/employees")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class EmploymentDetailController {
 
     private final EmploymentDetailService employmentDetailService;
 
-    @GetMapping
+    @GetMapping("/employees")
     public ResponseEntity<Map<String, Object>> getAllEmployees(Pageable pageable) {
         return ResponseEntity.ok(employmentDetailService.getAllEmployees(pageable));
+    }
+
+    @GetMapping("admin/employees")
+    public ResponseEntity<Map<String, Object>> getAllEmployeesForAdmin(Pageable pageable) {
+        return ResponseEntity.ok(employmentDetailService.getAllEmployeesForAdmin(pageable));
     }
 }
