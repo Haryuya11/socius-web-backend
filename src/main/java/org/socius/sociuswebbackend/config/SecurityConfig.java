@@ -32,7 +32,6 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    final private ConfigService configService;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -73,11 +72,12 @@ public class SecurityConfig {
                         .requestMatchers("/ws-heartbeat/**").permitAll()
                         .requestMatchers("/ws-heartbeat/info/**").permitAll()
                         .requestMatchers("/app/**", "/topic/**", "/user/**").permitAll()
+                        .requestMatchers("/api/user-online/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Chỉ tạo session khi cần thiết
                                 .maximumSessions(1) // Giới hạn số phiên đăng nhập đồng thời là 1
-//                        .maxSessionsPreventsLogin(false) // Cho phép đăng nhập mới nếu đã có phiên khác
+                                .maxSessionsPreventsLogin(false) // Cho phép đăng nhập mới nếu đã có phiên khác
 //                        .sessionRegistry(new org.springframework.security.core.session.SessionRegistryImpl())
                                 .expiredUrl("/api/auth/session-expired")
                 );

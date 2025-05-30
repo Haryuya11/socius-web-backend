@@ -130,6 +130,17 @@ public class UserOnlineController {
         }
     }
 
+    @GetMapping("/list-except-self")
+    public ResponseEntity<List<OnlineUserStatusDto>> getOnlineUsersWithExceptSelf() {
+        try {
+            List<OnlineUserStatusDto> onlineUsers = onlineUserService.getOnlineUsersWithExceptSelf();
+            return ResponseEntity.ok(onlineUsers);
+        } catch (Exception e) {
+            logger.error("Error getting online users except self", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
+        }
+    }
+
     @PostMapping("/offline/{userId}")
     public ResponseEntity<Map<String, Object>> markUserOffline(
             @PathVariable UUID userId,
