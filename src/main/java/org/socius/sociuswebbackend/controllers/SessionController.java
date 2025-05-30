@@ -1,7 +1,6 @@
 package org.socius.sociuswebbackend.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.services.SessionValidationService;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +9,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,18 +18,6 @@ public class SessionController {
 
     final private OnlineUserService onlineUserService;
     final private SessionValidationService sessionValidationService;
-
-
-    /**
-     * Lấy danh sách người dùng đang online
-     *
-     * @return Danh sách người dùng online
-     */
-    @GetMapping("/online-users")
-    public ResponseEntity<List<OnlineUserStatusDto>> getOnlineUsers() {
-        List<OnlineUserStatusDto> onlineUsers = onlineUserService.getOnlineUsers();
-        return ResponseEntity.ok(onlineUsers);
-    }
 
     /**
      * Kiểm tra trạng thái hoạt động của một người dùng cụ thể
@@ -57,7 +43,7 @@ public class SessionController {
         boolean isValid = sessionValidationService.hasValidSession(userId);
         return ResponseEntity.ok(isValid);
     }
-    
+
     /**
      * Kiểm tra session theo sessionId (dựa trên RBAC key trong Redis)
      */
@@ -66,7 +52,7 @@ public class SessionController {
         boolean isValid = sessionValidationService.isSessionValid(sessionId);
         return ResponseEntity.ok(isValid);
     }
-    
+
     /**
      * Lấy sessionId của user (nếu có session hợp lệ)
      */

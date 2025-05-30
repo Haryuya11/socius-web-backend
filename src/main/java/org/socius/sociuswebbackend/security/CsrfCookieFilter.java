@@ -28,6 +28,7 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
             csrfCookie.setHttpOnly(false); // Cho phép JavaScript đọc
             csrfCookie.setSecure(false);
             csrfCookie.setPath("/");
+            csrfCookie.setAttribute("SameSite", "Lax");
             response.addCookie(csrfCookie);
         }
         filterChain.doFilter(request, response);

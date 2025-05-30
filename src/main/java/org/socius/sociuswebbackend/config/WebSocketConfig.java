@@ -1,15 +1,18 @@
 package org.socius.sociuswebbackend.config;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.services.ConfigService;
-import org.socius.sociuswebbackend.util.RedisKeyBuilder;
-import org.socius.sociuswebbackend.websocket.UserOnlineWebSocketHandler;
-import org.socius.sociuswebbackend.websocket.WebSocketCsrfInterceptor;
+import org.socius.sociuswebbackend.services.OnlineUserService;
+import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.context.event.EventListener;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -21,10 +24,20 @@ import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
+import org.springframework.web.socket.messaging.SessionConnectedEvent;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -34,9 +47,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketConfig.class);
 
     final private ConfigService configService;
-    final private UserOnlineWebSocketHandler userOnlineWebSocketHandler;
-    final private RedisTemplate<String, Object> redisTemplate;
-    final private WebSocketCsrfInterceptor webSocketCsrfInterceptor;
+    final private OnlineUserService onlineUserService;
 
     @Bean
     public TaskScheduler webSocketTaskScheduler() {
@@ -49,24 +60,39 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-
-        // Lấy danh sách các origin được phép từ ConfigService
-        String[] allowedOrigins = configService.getList("cors.allowed.origins")
-                .toArray(new String[0]);
-
-        // Điểm kết nối chung
         registry.addEndpoint("/ws-heartbeat")
-                .setAllowedOrigins(allowedOrigins)
-                .addInterceptors(webSocketCsrfInterceptor)
+                .setAllowedOriginPatterns("*")
+                .addInterceptors(new HttpSessionHandshakeInterceptor() {
+                    @Override
+                    public boolean beforeHandshake(
+                            @NonNull ServerHttpRequest request,
+                            @NonNull ServerHttpResponse response,
+                            @NonNull WebSocketHandler wsHandler,
+                            @NonNull Map<String, Object> attributes) throws Exception {
+
+                        boolean result = super.beforeHandshake(request, response, wsHandler, attributes);
+
+                        if (result && request instanceof ServletServerHttpRequest servletRequest) {
+                            HttpSession session = servletRequest.getServletRequest().getSession(false);
+
+                            if (session != null) {
+                                // Lấy thông tin user từ security context
+                                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                                if (auth != null && auth.isAuthenticated()) {
+                                    String email = auth.getName();
+                                    // Có thể lưu thêm thông tin cần thiết vào attributes
+                                    attributes.put("userEmail", email);
+                                    attributes.put("sessionId", session.getId());
+                                    logger.debug("WebSocket handshake successful for user: {}", email);
+                                }
+                            }
+                        }
+
+                        return result;
+                    }
+                })
                 .withSockJS()
-                .setSessionCookieNeeded(true)
-                .setClientLibraryUrl("//cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js");
-
-        // Điểm kết nối riêng cho heartbeat
-        registry.addEndpoint("/ws-heartbeat")
-                .setAllowedOrigins(allowedOrigins)
-                .addInterceptors(userOnlineWebSocketHandler, webSocketCsrfInterceptor)
-                .withSockJS();
+                .setHeartbeatTime(30000); // 30s heartbeat cho SockJS
     }
 
     @Override
@@ -100,29 +126,67 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-                assert accessor != null;
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    // Xác thực người dùng khi kết nối
+                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
                     String sessionId = accessor.getSessionId();
+                    String userId = accessor.getFirstNativeHeader("userId");
 
-                    // Kiểm tra tính hợp lệ của phiên
-                    if (!redisTemplate.hasKey(RedisKeyBuilder.springSessionKey(sessionId))) {
-                        // Nếu phiên không hợp lệ, ném ngoại lệ
-                        logger.warn("Từ chối kết nối WebSocket do phiên không hợp lệ: {}", sessionId);
-                        return null;
-                    }
-
-                    accessor.setUser(() -> sessionId);
-                } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
-                    // Xử lý khi client subscribe vào một topic
-                    String destination = accessor.getDestination();
-                    if (destination != null && destination.startsWith("/topic/conversations/")) {
-                        // Có thể thêm logic xác thực quyền truy cập vào cuộc trò chuyện ở đây
-                        logger.info("Người dùng đăng ký nhận tin nhắn từ: {}", destination);
+                    if (userId != null) {
+                        Objects.requireNonNull(accessor.getSessionAttributes()).put("userId", userId);
+                        logger.debug("User {} connected with session {}", userId, sessionId);
                     }
                 }
+
                 return message;
             }
         });
+    }
+
+    @EventListener
+    public void handleSessionConnected(SessionConnectedEvent event) {
+        logger.info("Handling WebSocket SessionConnectedEvent");
+
+        try {
+            StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+            logger.debug("HeaderAccessor created: {}", true);
+
+            if (headerAccessor.getSessionAttributes() != null) {
+                logger.debug("Session attributes: {}", headerAccessor.getSessionAttributes().keySet());
+
+                UUID userId = (UUID) headerAccessor.getSessionAttributes().get("userId");
+                String sessionId = (String) headerAccessor.getSessionAttributes().get("sessionId");
+
+                logger.debug("Extracted userId: {}, sessionId: {}", userId, sessionId);
+
+                if (userId != null && sessionId != null) {
+                    onlineUserService.updateUserOnlineStatus(userId, sessionId);
+                    logger.info("Updated online status for user: {}", userId);
+                } else {
+                    logger.warn("Missing userId or sessionId in session attributes");
+                }
+            } else {
+                logger.warn("Missing headerAccessor or session attributes");
+            }
+
+        } catch (Exception e) {
+            logger.error("Error in handleSessionConnected: ", e);
+        }
+    }
+
+    @EventListener
+    public void handleSessionDisconnected(SessionDisconnectEvent event) {
+        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+        String sessionId = headerAccessor.getSessionId();
+        String userId = (String) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("userId");
+
+        if (userId != null) {
+            try {
+                UUID userUUID = UUID.fromString(userId);
+                OnlineUserService onlineUserService = ApplicationContextHelper.getBean(OnlineUserService.class);
+                onlineUserService.markUserOffline(userUUID, sessionId);
+                logger.info("User {} disconnected and marked offline", userId);
+            } catch (Exception e) {
+                logger.error("Error handling session disconnected for user: {}", userId, e);
+            }
+        }
     }
 }

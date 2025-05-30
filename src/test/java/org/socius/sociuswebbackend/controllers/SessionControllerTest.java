@@ -58,18 +58,6 @@ public class SessionControllerTest {
     }
 
     @Test
-    @DisplayName("getOnlineUsers phải trả về danh sách người dùng đang online")
-    void getOnlineUsersShouldReturnListOfOnlineUsers() {
-        List<OnlineUserStatusDto> onlineUsers = List.of(adminStatus, regularStatus);
-        when(onlineUserService.getOnlineUsers()).thenReturn(onlineUsers);
-
-        ResponseEntity<List<OnlineUserStatusDto>> response = sessionController.getOnlineUsers();
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(2, response.getBody().size());
-    }
-
-    @Test
     @DisplayName("checkUserStatus phải trả về true khi người dùng đang online")
     void checkUserStatusShouldReturnTrueWhenUserIsOnline() {
         when(onlineUserService.isUserOnline(adminUser.getId())).thenReturn(true);

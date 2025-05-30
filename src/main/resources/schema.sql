@@ -415,7 +415,7 @@ VALUES ('session_timeout', '60', 'Thời gian phiên làm việc (phút)'),
        ('default_user_password', '1', 'Mật khẩu mặc định cho tài khoản mới'),
        ('allowed_origins', 'http://localhost:3000,https://app.socius.com', 'Danh sách domain được phép truy cập API'),
        ('max_login_sessions', '1', 'Số phiên đăng nhập tối đa cho mỗi người dùng'),
-       ('online.status.timeout.minutes', '5', 'Thời gian chờ trạng thái online của người dùng (phút)'),
+       ('online.status.timeout.minutes', '2', 'Thời gian chờ trạng thái online của người dùng (phút)'),
        ('websocket.heartbeat.interval', '1', 'Khoảng thời gian gửi tín hiệu heartbeat của WebSocket (phút)')
 ON CONFLICT (setting_key) DO NOTHING;
 
