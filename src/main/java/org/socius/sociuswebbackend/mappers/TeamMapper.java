@@ -157,7 +157,7 @@ public abstract class TeamMapper extends BaseEntityMapper implements
         Map<String, Object> result = new HashMap<>();
         result.put("id", entity.getId());
         result.put("name", entity.getName());
-        result.put("leader", entity.getLeader() != null ? userMapper.entityToDto(entity.getLeader()) : null);
+        result.put("leader", entity.getLeader() != null ? userMapper.toLimitedDto(entity.getLeader()) : null);
         result.put("createdAt", entity.getCreatedAt());
         result.put("updatedAt", entity.getUpdatedAt());
 
