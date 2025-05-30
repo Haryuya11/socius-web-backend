@@ -32,15 +32,6 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
     Set<UUID> findActiveMemberIds(@Param("conversationId") UUID conversationId);
 
     /**
-     * Kiểm tra xem một thành viên có phải là thành viên của một cuộc trò chuyện hay không
-     *
-     * @param conversationId ID của cuộc trò chuyện
-     * @param userId         ID của người dùng
-     * @return true nếu thành viên đã tham gia cuộc trò chuyện, false nếu không
-     */
-    boolean existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(UUID conversationId, UUID userId);
-
-    /**
      * Xóa cuộc trò chuyện theo ID cuộc trò chuyện
      *
      * @param conversationId ID của cuộc trò chuyện

@@ -53,15 +53,6 @@ public class WebSocketServiceImpl implements WebSocketService {
     }
 
     @Override
-    public void handleHeartbeat(UUID userId) {
-        try {
-            onlineUserService.handleUserHeartbeat(userId);
-        } catch (Exception e) {
-            logger.error("Lỗi khi xử lý heartbeat: {}", e.getMessage(), e);
-        }
-    }
-
-    @Override
     @EventListener
     public void handleWebSocketDisconnectEvent(SessionDisconnectEvent event) {
         // Lấy thông tin phiên làm việc từ sự kiện

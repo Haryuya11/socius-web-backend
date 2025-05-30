@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.util.ApplicationContextHelper;
+import org.socius.sociuswebbackend.websocket.WebSocketCsrfInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
@@ -62,37 +63,45 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-heartbeat")
                 .setAllowedOriginPatterns("*")
-                .addInterceptors(new HttpSessionHandshakeInterceptor() {
-                    @Override
-                    public boolean beforeHandshake(
-                            @NonNull ServerHttpRequest request,
-                            @NonNull ServerHttpResponse response,
-                            @NonNull WebSocketHandler wsHandler,
-                            @NonNull Map<String, Object> attributes) throws Exception {
+                .addInterceptors(
+                        ApplicationContextHelper.getBean(WebSocketCsrfInterceptor.class),
+                        new HttpSessionHandshakeInterceptor() {
+                            @Override
+                            public boolean beforeHandshake(
+                                    @NonNull ServerHttpRequest request,
+                                    @NonNull ServerHttpResponse response,
+                                    @NonNull WebSocketHandler wsHandler,
+                                    @NonNull Map<String, Object> attributes) throws Exception {
 
-                        boolean result = super.beforeHandshake(request, response, wsHandler, attributes);
+                                boolean result = super.beforeHandshake(request, response, wsHandler, attributes);
 
-                        if (result && request instanceof ServletServerHttpRequest servletRequest) {
-                            HttpSession session = servletRequest.getServletRequest().getSession(false);
+                                if (result && request instanceof ServletServerHttpRequest servletRequest) {
+                                    HttpSession session = servletRequest.getServletRequest().getSession(false);
 
-                            if (session != null) {
-                                // Lấy thông tin user từ security context
-                                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                                if (auth != null && auth.isAuthenticated()) {
-                                    String email = auth.getName();
-                                    // Có thể lưu thêm thông tin cần thiết vào attributes
-                                    attributes.put("userEmail", email);
-                                    attributes.put("sessionId", session.getId());
-                                    logger.debug("WebSocket handshake successful for user: {}", email);
+                                    if (session != null) {
+                                        UUID userId = (UUID) session.getAttribute("userId");
+                                        if (userId != null) {
+                                            // Cập nhật trạng thái online ngay khi handshake
+                                            onlineUserService.updateUserOnlineStatus(userId, session.getId());
+
+                                            attributes.put("userId", userId);
+                                            attributes.put("sessionId", session.getId());
+                                            logger.info("User {} connected with session {}", userId, session.getId());
+                                        } else {
+                                            logger.warn("No userId found in session");
+                                            return false;
+                                        }
+                                    } else {
+                                        logger.warn("No HTTP session found");
+                                        return false;
+                                    }
                                 }
-                            }
-                        }
 
-                        return result;
-                    }
-                })
+                                return result;
+                            }
+                        })
                 .withSockJS()
-                .setHeartbeatTime(30000); // 30s heartbeat cho SockJS
+                .setHeartbeatTime(30000);
     }
 
     @Override

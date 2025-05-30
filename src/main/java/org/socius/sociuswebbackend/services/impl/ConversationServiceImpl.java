@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ConversationServiceImpl implements ConversationService {
 
-
     private static final Logger logger = LoggerFactory.getLogger(ConversationServiceImpl.class);
     final private ConversationRepository conversationRepository;
     final private UserRepository userRepository;
@@ -131,6 +130,7 @@ public class ConversationServiceImpl implements ConversationService {
     public Page<ConversationResponseDto> getUserConversations(UUID userId, Pageable pageable) {
         // Kiểm tra người dùng có tồn tại không
         if (!userRepository.existsById(userId)) {
+            logger.info("Không tìm thấy người dùng với ID: {}", userId);
             throw new RuntimeException("Không tìm thấy người dùng với ID: " + userId);
         }
 
@@ -157,7 +157,8 @@ public class ConversationServiceImpl implements ConversationService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
 
         // Kiểm tra người dùng có phải là thành viên không
-        boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(conversationId, userId);
+        boolean isMember = conversationMemberRepository.findActiveMember(conversationId, userId)
+                .isPresent();
         if (!isMember) {
             throw new RuntimeException("Người dùng không phải là thành viên của cuộc trò chuyện");
         }
@@ -276,7 +277,6 @@ public class ConversationServiceImpl implements ConversationService {
 
         conversationMemberRepository.saveAll(members);
 
-
         // Khởi tạo unread counts
         List<UnreadCountEntity> unreadCounts = Arrays.asList(
                 createUnreadCountEntity(conversation, user1),
@@ -384,6 +384,7 @@ public class ConversationServiceImpl implements ConversationService {
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
+                .sender(conversation.getCreatedBy()) // Người tạo cuộc trò chuyện là người gửi
                 .build();
 
         messageRepository.save(systemMessage);

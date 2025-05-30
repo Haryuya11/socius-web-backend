@@ -75,12 +75,28 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             OnlineUserStatusDto currentStatus = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
 
             if (currentStatus != null) {
-                // Chỉ cập nhật lastSeen, GIỮ NGUYÊN TTL
-                currentStatus.setLastSeen(LocalDateTime.now());
-                int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 2);
-                redisTemplate.opsForValue().set(key, currentStatus, Duration.ofMinutes(onlineStatusTimeout));
+                // Check session validity trước khi update
+                String sessionKey = RedisKeyBuilder.springSessionKey(currentStatus.getSessionId());
 
-                logger.info("Cập nhật heartbeat cho user: {} với session: {}", userId, currentStatus.getSessionId());
+                if (redisTemplate.hasKey(sessionKey)) {
+                    Long ttl = redisTemplate.getExpire(sessionKey);
+                    if (ttl > 0) {
+                        // Session còn hợp lệ → update heartbeat
+                        currentStatus.setLastSeen(LocalDateTime.now());
+                        int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 2);
+                        redisTemplate.opsForValue().set(key, currentStatus, Duration.ofMinutes(onlineStatusTimeout));
+
+                        logger.info("Cập nhật heartbeat cho user: {} với session: {}", userId, currentStatus.getSessionId());
+                    } else {
+                        // Session hết hạn → remove online status
+                        redisTemplate.delete(key);
+                        logger.info("Xóa online status cho user: {} do session hết hạn", userId);
+                    }
+                } else {
+                    // Session không tồn tại → remove online status
+                    redisTemplate.delete(key);
+                    logger.info("Xóa online status cho user: {} do session không tồn tại", userId);
+                }
             } else {
                 logger.warn("Không tìm thấy online status cho user: {} khi xử lý heartbeat", userId);
             }
