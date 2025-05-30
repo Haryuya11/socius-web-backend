@@ -62,6 +62,7 @@ public class OnlineUserServiceImplTest {
                 .imageUrl(adminUser.getImageUrl())
                 .sessionId("sessionId1")
                 .lastSeen(LocalDateTime.now())
+                .isOnline(true)
                 .build();
 
         regularStatusDto = OnlineUserStatusDto.builder()
@@ -70,6 +71,7 @@ public class OnlineUserServiceImplTest {
                 .imageUrl(RegularUser.getImageUrl())
                 .sessionId("sessionId2")
                 .lastSeen(LocalDateTime.now())
+                .isOnline(true)
                 .build();
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
@@ -85,8 +87,8 @@ public class OnlineUserServiceImplTest {
 
         onlineUserService.updateUserOnlineStatus(adminUser.getId(), "sessionId1");
 
-        verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class));
-        verify(redisTemplate).expire(eq(key), eq(Duration.ofMinutes(5)));
+        verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class), eq(Duration.ofMinutes(5)));
+
     }
 
     @Test
@@ -95,14 +97,14 @@ public class OnlineUserServiceImplTest {
         String key = RedisKeyBuilder.userOnlineKey(adminUser.getId());
         String sessionKey = RedisKeyBuilder.springSessionKey(adminStatusDto.getSessionId());
 
-
         when(valueOperations.get(key)).thenReturn(adminStatusDto);
         when(redisTemplate.hasKey(sessionKey)).thenReturn(true);
         when(redisTemplate.getExpire(sessionKey)).thenReturn(1800L);
 
         onlineUserService.handleUserHeartbeat(adminUser.getId());
 
-        verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class));
+        verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class), eq(Duration.ofMinutes(5)));
+        verify(redisTemplate, never()).delete(key);
     }
 
     @Test
@@ -113,11 +115,12 @@ public class OnlineUserServiceImplTest {
 
         when(valueOperations.get(key)).thenReturn(adminStatusDto);
         when(redisTemplate.hasKey(sessionKey)).thenReturn(true);
-        when(redisTemplate.getExpire(sessionKey)).thenReturn(1800L);
+        when(redisTemplate.getExpire(sessionKey)).thenReturn(1800L); // 30 minutes
+        when(configService.getInt("online.status.timeout.minutes", 2)).thenReturn(5);
 
         onlineUserService.handleUserHeartbeat(adminUser.getId());
 
-        verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class));
+        verify(valueOperations).set(eq(key), any(OnlineUserStatusDto.class), eq(Duration.ofMinutes(5)));
         verify(redisTemplate, never()).delete(key);
     }
 
@@ -128,12 +131,12 @@ public class OnlineUserServiceImplTest {
         String sessionKey = RedisKeyBuilder.springSessionKey(adminStatusDto.getSessionId());
 
         when(valueOperations.get(key)).thenReturn(adminStatusDto);
-        when(redisTemplate.hasKey(sessionKey)).thenReturn(false); // Session hết hạn
-        when(redisTemplate.getExpire(sessionKey)).thenReturn(-2L);
+        when(redisTemplate.hasKey(sessionKey)).thenReturn(false); // Session không tồn tại
+
 
         onlineUserService.handleUserHeartbeat(adminUser.getId());
 
-        verify(valueOperations, never()).set(eq(key), any(OnlineUserStatusDto.class));
+        verify(valueOperations, never()).set(eq(key), any(OnlineUserStatusDto.class), any(Duration.class));
         verify(redisTemplate).delete(key);
     }
 
@@ -145,7 +148,10 @@ public class OnlineUserServiceImplTest {
 
         onlineUserService.handleUserHeartbeat(adminUser.getId());
 
-        verify(valueOperations, never()).set(eq(key), any(OnlineUserStatusDto.class));
+        verify(redisTemplate, never()).hasKey(anyString());
+        verify(redisTemplate, never()).getExpire(anyString());
+        verify(valueOperations, never()).set(anyString(), any(), any(Duration.class));
+        verify(redisTemplate, never()).delete(anyString());
     }
 
     @Test
