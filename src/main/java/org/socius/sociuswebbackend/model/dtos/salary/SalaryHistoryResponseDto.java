@@ -1,6 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.salary;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,7 +18,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SalaryHistoryResponseDto extends BaseDto {
     private UserResponseDto user;
     private BigDecimal previousSalary;
@@ -37,11 +37,11 @@ public class SalaryHistoryResponseDto extends BaseDto {
         this.newSalary = newSalary;
         calculateDerivedFields();
     }
-    
+
     private void calculateDerivedFields() {
         if (previousSalary != null && newSalary != null) {
             this.changeAmount = newSalary.subtract(previousSalary);
-            
+
             if (previousSalary.compareTo(BigDecimal.ZERO) != 0) {
                 this.percentageChange = this.changeAmount
                         .divide(previousSalary, 4, RoundingMode.HALF_UP)
