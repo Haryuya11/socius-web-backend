@@ -98,9 +98,38 @@ public abstract class TeamMapper extends BaseEntityMapper implements
         result.put("name", entity.getName());
         result.put("leader", entity.getLeader() != null ? userMapper.toLimitedDto(entity.getLeader()) : null);
 
-        List<UserResponseDto> members = entity.getEmploymentDetailEntities().stream()
-                .filter(detail -> detail.getUser() != null)
-                .map(detail -> userMapper.toLimitedDto(detail.getUser()))
+        List<Map<String, Object>> members = entity.getEmploymentDetailEntities().stream()
+                .filter(detail -> detail != null && detail.getUser() != null)
+                .map(detail -> {
+                    Map<String, Object> member = new HashMap<>();
+                    member.put("user", userMapper.toLimitedDto(detail.getUser()));
+
+                    // Tạo Map cho employmentDetail thủ công
+                    Map<String, Object> employmentDetail = new HashMap<>();
+                    if (detail.getPosition() != null) {
+                        employmentDetail.put("position", Map.of(
+                                "id", detail.getPosition().getId(),
+                                "name", detail.getPosition().getName()
+                        ));
+                    }
+                    if (detail.getDepartment() != null) {
+                        employmentDetail.put("department", Map.of(
+                                "id", detail.getDepartment().getId(),
+                                "name", detail.getDepartment().getName()
+                        ));
+                    }
+                    if (detail.getTeam() != null) {
+                        employmentDetail.put("team", Map.of(
+                                "id", detail.getTeam().getId(),
+                                "name", detail.getTeam().getName()
+                        ));
+                    }
+                    employmentDetail.put("startDate", detail.getStartDate());
+                    employmentDetail.put("workingStatus", detail.getWorkingStatus());
+
+                    member.put("employmentDetail", employmentDetail);
+                    return member;
+                })
                 .collect(Collectors.toList());
 
         result.put("members", members);
