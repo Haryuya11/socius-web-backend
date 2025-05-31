@@ -106,4 +106,21 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
 
         return result;
     }
+
+    @Override
+    public Map<String, Object> getEmploymentDetailByUserId(UUID userId) {
+        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUserId(userId)
+                .orElse(null);
+
+        Map<String, Object> result = new HashMap<>();
+        if (employmentDetail == null) {
+            result.put("employmentDetail", null);
+            return result;
+        }
+
+        EmploymentDetailResponseDto employmentDetailDto = employmentDetailMapper.entityToLimitedDto(employmentDetail);
+        result.put("employmentDetail", employmentDetailDto);
+
+        return result;
+    }
 }
