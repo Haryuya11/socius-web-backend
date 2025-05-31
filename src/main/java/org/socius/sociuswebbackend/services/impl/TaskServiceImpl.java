@@ -11,6 +11,7 @@ import org.socius.sociuswebbackend.model.entities.TaskEntity;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.model.enums.NotificationType;
+import org.socius.sociuswebbackend.model.enums.TaskStatus;
 import org.socius.sociuswebbackend.repositories.TaskRepository;
 import org.socius.sociuswebbackend.repositories.TeamRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
@@ -119,5 +120,54 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return taskMapper.entityToDto(entity);
+    }
+
+    @Override
+    public TaskResponseDto updateTaskStatus(UUID taskId, String status) {
+        // Tìm task theo ID
+        TaskEntity task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        // Kiểm tra trạng thái mới hợp lệ
+        TaskStatus newStatus;
+        try {
+            newStatus = TaskStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid status: " + status + ". Valid statuses are: " +
+                    Arrays.stream(TaskStatus.values())
+                            .map(Enum::name)
+                            .collect(Collectors.joining(", ")));
+        }
+
+        // Cập nhật trạng thái
+        task.setStatus(newStatus);
+        task = taskRepository.save(task);
+
+        // Gửi thông báo và WebSocket message nếu có assignedTo
+        if (task.getAssignedTo() != null) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+            UserEntity user = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + username));
+
+            NotificationRequestDto notification = NotificationRequestDto.builder()
+                    .title("Task Status Updated")
+                    .message("Task '" + task.getName() + "' status changed to " + newStatus)
+                    .senderId(user.getId())
+                    .recipientIds(Collections.singletonList(task.getAssignedTo().getId()))
+                    .type(NotificationType.info)
+                    .isUrgent(false)
+                    .expiryDate(task.getDeadline())
+                    .build();
+            notificationService.createNotification(notification);
+
+            TaskResponseDto responseDto = taskMapper.entityToDto(task);
+            messagingTemplate.convertAndSendToUser(
+                    task.getAssignedTo().getId().toString(),
+                    "/queue/tasks",
+                    responseDto);
+        }
+
+        return taskMapper.entityToDto(task);
     }
 }
