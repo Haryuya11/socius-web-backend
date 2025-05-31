@@ -15,6 +15,7 @@ import org.socius.sociuswebbackend.model.enums.TaskStatus;
 import org.socius.sociuswebbackend.repositories.TaskRepository;
 import org.socius.sociuswebbackend.repositories.TeamRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.socius.sociuswebbackend.services.NotificationService;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -169,5 +171,26 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return taskMapper.entityToLimitedDto(task);
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?") // Chạy lúc 0:00 mỗi ngày
+    @Override
+    public void checkAndUpdateOverdueTasks() {
+        LocalDate currentDate = LocalDate.now();
+        List<TaskStatus> excludedStatuses = Arrays.asList(TaskStatus.completed, TaskStatus.failed);
+        List<TaskEntity> overdueTasks = taskRepository.findOverdueTasksNotInStatus(currentDate, excludedStatuses);
+
+        for (TaskEntity task : overdueTasks) {
+            task.setStatus(TaskStatus.failed);
+            taskRepository.save(task);
+
+            if (task.getAssignedTo() != null) {
+                TaskResponseDto responseDto = taskMapper.entityToDto(task);
+                messagingTemplate.convertAndSendToUser(
+                        task.getAssignedTo().getId().toString(),
+                        "/queue/tasks",
+                        responseDto);
+            }
+        }
     }
 }

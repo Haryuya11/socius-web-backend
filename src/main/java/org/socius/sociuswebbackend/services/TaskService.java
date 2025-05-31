@@ -17,4 +17,6 @@ public interface TaskService {
     TaskResponseDto createTask(TaskRequestDto taskRequestDto);
 
     TaskResponseDto updateTaskStatus(UUID taskId, String status);
+
+    void checkAndUpdateOverdueTasks();
 }
