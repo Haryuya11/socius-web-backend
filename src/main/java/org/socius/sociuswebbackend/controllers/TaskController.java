@@ -51,10 +51,10 @@ public class TaskController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/task/{taskId}/update-status")
+    @PatchMapping("/task/{taskId}/update-status/{status}")
     public ResponseEntity<TaskResponseDto> updateTaskStatus(
             @PathVariable UUID taskId,
-            @RequestParam String status) {
+            @PathVariable String status) {
         if (taskId == null || status == null) {
             return ResponseEntity.badRequest().build();
         }
