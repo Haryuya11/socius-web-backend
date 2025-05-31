@@ -42,12 +42,10 @@ public class UserOnlineControllerTest {
     private UserOnlineController userOnlineController;
 
     private UserEntity adminUser;
-    private UserEntity regularUser;
 
     @BeforeEach
     void setUp() {
         adminUser = AuthTestDataUtil.createTestAdminUser();
-        regularUser = AuthTestDataUtil.createTestRegularUser();
     }
 
     @Test

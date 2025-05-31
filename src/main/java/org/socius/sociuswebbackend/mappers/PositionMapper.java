@@ -16,12 +16,9 @@ public abstract class PositionMapper extends BaseEntityMapper implements
         GenericMapper<PositionEntity, PositionResponseDto, PositionRequestDto> {
 
     @Override
-    public abstract PositionResponseDto entityToDto(PositionEntity entity);
-
-    @Named("entityToLimitedDto")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    public abstract PositionResponseDto entityToLimitedDto(PositionEntity entity);
+    public abstract PositionResponseDto entityToDto(PositionEntity entity);
 
     @Override
     public abstract PositionEntity requestDtoToEntity(PositionRequestDto dto);

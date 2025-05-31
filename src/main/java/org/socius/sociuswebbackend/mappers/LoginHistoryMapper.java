@@ -1,6 +1,8 @@
 package org.socius.sociuswebbackend.mappers;
 
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
 import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryResponseDto;
 import org.socius.sociuswebbackend.model.entities.LoginHistoryEntity;
@@ -17,6 +19,8 @@ public abstract class LoginHistoryMapper extends BaseEntityMapper implements
         GenericMapper<LoginHistoryEntity, LoginHistoryResponseDto, LoginHistoryRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract LoginHistoryResponseDto entityToDto(LoginHistoryEntity entity);
 
     @Override

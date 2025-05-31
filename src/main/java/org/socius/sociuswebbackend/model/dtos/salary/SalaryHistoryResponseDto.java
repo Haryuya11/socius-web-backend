@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.salary;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -9,6 +10,7 @@ import org.socius.sociuswebbackend.model.dtos.BaseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 
 @Data
@@ -16,6 +18,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SalaryHistoryResponseDto extends BaseDto {
     private UserResponseDto user;
     private BigDecimal previousSalary;
@@ -41,7 +44,7 @@ public class SalaryHistoryResponseDto extends BaseDto {
             
             if (previousSalary.compareTo(BigDecimal.ZERO) != 0) {
                 this.percentageChange = this.changeAmount
-                        .divide(previousSalary, 4, BigDecimal.ROUND_HALF_UP)
+                        .divide(previousSalary, 4, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(100));
             }
         }

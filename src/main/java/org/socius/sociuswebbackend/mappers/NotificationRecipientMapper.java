@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.mappers;
 
+import lombok.RequiredArgsConstructor;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRecipientDto;
@@ -18,6 +19,7 @@ import java.util.List;
  * Mapper for NotificationRecipient entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
+@RequiredArgsConstructor
 public abstract class NotificationRecipientMapper extends BaseEntityMapper implements
         GenericMapper<NotificationRecipientEntity, NotificationRecipientDto, NotificationRecipientRequestDto> {
 
@@ -33,9 +35,6 @@ public abstract class NotificationRecipientMapper extends BaseEntityMapper imple
     @Override
     @Mapping(source = "id.notificationId", target = "notificationId")
     @Mapping(source = "id.userId", target = "userId")
-    @Mapping(source = "user", target = "user")
-    @Mapping(source = "isRead", target = "isRead")
-    @Mapping(source = "readAt", target = "readAt")
     public abstract NotificationRecipientDto entityToDto(NotificationRecipientEntity entity);
 
     /**

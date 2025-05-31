@@ -1,7 +1,10 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.hibernate.Hibernate;
-import org.mapstruct.*;
+import org.mapstruct.AfterMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationResponseDto;
 import org.socius.sociuswebbackend.model.entities.NotificationEntity;
@@ -13,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -23,26 +27,16 @@ public abstract class NotificationMapper extends BaseEntityMapper implements
         GenericMapper<NotificationEntity, NotificationResponseDto, NotificationRequestDto> {
 
     @Autowired
-    private NotificationRecipientMapper recipientMapper;
+    protected NotificationRecipientMapper recipientMapper;
 
     @Autowired
-    private EntityMappingUtil entityMappingUtil;
+    protected EntityMappingUtil entityMappingUtil;
+
 
     @Override
-    @Mapping(target = "recipients", ignore = true)
-    @Mapping(source = "isUrgent", target = "isUrgent")
-    public NotificationResponseDto entityToDto(NotificationEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return entityToDtoGenerated(entity);
-    }
-
-    // Phương thức do MapStruct sinh, cần khai báo để gọi trong entityToDto
-    @Mapping(source = "isUrgent", target = "isUrgent")
-    @Mapping(target = "recipients", ignore = true)
-    protected abstract NotificationResponseDto entityToDtoGenerated(NotificationEntity entity);
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract NotificationResponseDto entityToDto(NotificationEntity entity);
 
     /**
      * Process recipients after mapping the main entity
@@ -135,7 +129,7 @@ public abstract class NotificationMapper extends BaseEntityMapper implements
             entity.getRecipients().clear(); // Xóa recipients cũ nếu có
 
             dto.getRecipientIds().stream()
-                    .filter(userId -> userId != null)
+                    .filter(Objects::nonNull)
                     .forEach(userId -> {
                         try {
                             UserEntity user = entityMappingUtil.mapUserIdToEntity(userId);

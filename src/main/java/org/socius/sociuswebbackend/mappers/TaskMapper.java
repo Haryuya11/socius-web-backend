@@ -16,6 +16,8 @@ public abstract class TaskMapper extends BaseEntityMapper implements
 
     @Override
     @Mapping(target = "assignedTo", source = "assignedTo", qualifiedByName = "toLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract TaskResponseDto entityToDto(TaskEntity entity);
 
     @Override

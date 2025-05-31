@@ -29,7 +29,6 @@ public class ConversationEntity extends BaseEntity {
     @Column(name = "type", nullable = false)
     private ConversationType type;
 
-
     @Column(name = "image_url")
     private String imageUrl;
 

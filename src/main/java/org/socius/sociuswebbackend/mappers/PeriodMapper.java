@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.socius.sociuswebbackend.model.dtos.period.PeriodRequestDto;
 import org.socius.sociuswebbackend.model.dtos.period.PeriodResponseDto;
@@ -14,6 +15,8 @@ public abstract class PeriodMapper extends BaseEntityMapper implements
         GenericMapper<PeriodEntity, PeriodResponseDto, PeriodRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract PeriodResponseDto entityToDto(PeriodEntity entity);
 
     @Override

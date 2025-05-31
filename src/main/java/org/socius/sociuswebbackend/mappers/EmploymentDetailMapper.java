@@ -20,15 +20,14 @@ public abstract class EmploymentDetailMapper extends BaseEntityMapper implements
         GenericMapper<EmploymentDetailEntity, EmploymentDetailResponseDto, EmploymentDetailRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract EmploymentDetailResponseDto entityToDto(EmploymentDetailEntity entity);
 
     @Named("entityToLimitedDto")
     @Mapping(target = "user", source = "user", qualifiedByName = "toLimitedDto")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "position", source = "position", qualifiedByName = "entityToLimitedDto")
-    @Mapping(target = "department", source = "department", qualifiedByName = "entityToLimitedDto")
-    @Mapping(target = "team", source = "team", qualifiedByName = "entityToLimitedDto")
     @Mapping(target = "role", ignore = true) // Bỏ trường role
     @Mapping(target = "startDate", source = "startDate")
     @Mapping(target = "salary", ignore = true)

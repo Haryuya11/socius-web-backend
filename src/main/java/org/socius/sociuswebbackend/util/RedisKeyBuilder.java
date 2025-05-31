@@ -251,7 +251,7 @@ public class RedisKeyBuilder {
      * @return Chuỗi key theo format: session:attribute:userId
      */
     public static String userIdAttributeKey() {
-        return sessionAttributeKey("userId");
+        return "userId";
     }
 
     /**

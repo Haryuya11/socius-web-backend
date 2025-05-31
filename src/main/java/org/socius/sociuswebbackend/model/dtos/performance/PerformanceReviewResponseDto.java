@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.performance;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PerformanceReviewResponseDto extends BaseDto {
     private UserResponseDto employee;
     private UserResponseDto reviewer;

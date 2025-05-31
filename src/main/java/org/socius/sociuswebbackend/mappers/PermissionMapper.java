@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.socius.sociuswebbackend.model.dtos.permission.PermissionRequestDto;
@@ -20,6 +21,8 @@ public abstract class PermissionMapper extends BaseEntityMapper implements
         GenericMapper<PermissionEntity, PermissionResponseDto, PermissionRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract PermissionResponseDto entityToDto(PermissionEntity entity);
 
     @Override

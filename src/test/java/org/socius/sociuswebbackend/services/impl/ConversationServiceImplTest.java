@@ -10,6 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.mappers.ConversationMapper;
+import org.socius.sociuswebbackend.mappers.ConversationMemberMapper;
+import org.socius.sociuswebbackend.model.dtos.conversation.ConversationMemberDto;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.entities.*;
@@ -46,6 +48,9 @@ public class ConversationServiceImplTest {
 
     @Mock
     private ConversationMapper conversationMapper;
+
+    @Mock
+    private ConversationMemberMapper conversationMemberMapper;
 
     @InjectMocks
     private ConversationServiceImpl conversationService;
@@ -388,10 +393,21 @@ public class ConversationServiceImplTest {
         List<ConversationEntity> conversations = Arrays.asList(conversation);
         Page<ConversationEntity> conversationPage = new PageImpl<>(conversations);
 
-        when(conversationRepository.findConversationsByUserId(userId, pageable))
+        // Sửa lại mock để khớp với implementation
+        when(conversationRepository.findActiveConversationsByUserId(userId, pageable))
                 .thenReturn(conversationPage);
         when(conversationMapper.entityToDto(conversation))
                 .thenReturn(conversationResponseDto);
+        when(userRepository.existsById(userId)).thenReturn(true);
+
+        // Mock thêm cho conversationMemberRepository và conversationMemberMapper
+        when(conversationMemberRepository.findActiveMembers(conversationId))
+                .thenReturn(Collections.singletonList(userMember));
+        when(conversationMemberMapper.entityToDto(userMember))
+                .thenReturn(ConversationMemberDto.builder()
+                        .conversationId(conversationId)
+                        .role(MemberRole.ADMIN)
+                        .build());
 
         // Execute
         Page<ConversationResponseDto> result = conversationService.getUserConversations(userId, pageable);
@@ -400,7 +416,7 @@ public class ConversationServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
         assertEquals(conversationResponseDto, result.getContent().get(0));
-        verify(conversationRepository).findConversationsByUserId(userId, pageable);
+        verify(conversationRepository).findActiveConversationsByUserId(userId, pageable);
     }
 
     @Test
