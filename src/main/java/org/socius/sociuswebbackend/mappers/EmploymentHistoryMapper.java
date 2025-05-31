@@ -27,6 +27,8 @@ public abstract class EmploymentHistoryMapper extends BaseEntityMapper implement
     @Mapping(target = "position", source = "position", qualifiedByName = "entityToLimitedDto")
     @Mapping(target = "department", source = "department", qualifiedByName = "entityToLimitedDto")
     @Mapping(target = "team", source = "team", qualifiedByName = "entityToLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "startDate", source = "startDate")
     @Mapping(target = "endDate", source = "endDate")
