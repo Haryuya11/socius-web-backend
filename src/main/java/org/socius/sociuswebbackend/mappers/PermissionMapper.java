@@ -25,6 +25,11 @@ public abstract class PermissionMapper extends BaseEntityMapper implements
     @Mapping(target = "updatedAt", ignore = true)
     public abstract PermissionResponseDto entityToDto(PermissionEntity entity);
 
+    @Named("entityToLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract PermissionResponseDto entityToLimitedDto(PermissionEntity entity);
+
     @Override
     public abstract PermissionEntity requestDtoToEntity(PermissionRequestDto dto);
 
@@ -42,6 +47,17 @@ public abstract class PermissionMapper extends BaseEntityMapper implements
         return rolePermissions.stream()
                 .filter(rp -> rp != null && rp.getPermission() != null)
                 .map(rp -> entityToDto(rp.getPermission()))
+                .collect(Collectors.toSet());
+    }
+
+    @Named("rolePermissionsToLimitedPermissionDtos")
+    public Set<PermissionResponseDto> rolePermissionsToLimitedPermissionDtos(Set<RolePermissionEntity> rolePermissions) {
+        if (rolePermissions == null) {
+            return new HashSet<>();
+        }
+        return rolePermissions.stream()
+                .filter(rp -> rp != null && rp.getPermission() != null)
+                .map(rp -> entityToLimitedDto(rp.getPermission()))
                 .collect(Collectors.toSet());
     }
 }

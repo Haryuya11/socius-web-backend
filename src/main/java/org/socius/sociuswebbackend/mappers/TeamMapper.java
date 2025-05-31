@@ -84,72 +84,11 @@ public abstract class TeamMapper extends BaseEntityMapper implements
     @Mapping(source = "id", target = "id")
     @Mapping(source = "name", target = "name")
     @Mapping(source = "leader", target = "leader")
-    @Mapping(source = "createdAt", target = "createdAt")
-    @Mapping(source = "updatedAt", target = "updatedAt")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "members", ignore = true)
     @Mapping(target = "memberCount", ignore = true)
     public abstract TeamWithMembersDto entityToWithMembersDto(TeamEntity entity);
-
-    public Map<String, Object> entityToTeamWithTasks(TeamEntity entity, org.springframework.data.domain.Pageable pageable) {
-        if (entity == null) {
-            return Map.of();
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("id", entity.getId());
-        result.put("name", entity.getName());
-        result.put("leader", entity.getLeader() != null ? userMapper.entityToDto(entity.getLeader()) : null);
-        result.put("createdAt", entity.getCreatedAt());
-        result.put("updatedAt", entity.getUpdatedAt());
-
-        List<Map<String, Object>> members = entity.getEmploymentDetailEntities().stream()
-                .filter(detail -> detail.getUser() != null)
-                .map(detail -> {
-                    UserEntity user = detail.getUser();
-                    UserResponseDto userDto = userMapper.entityToDto(user);
-                    List<TaskResponseDto> tasks = taskRepository.findByAssignedToId(user.getId(), pageable)
-                            .getContent()
-                            .stream()
-                            .map(taskMapper::entityToDto)
-                            .collect(Collectors.toList());
-
-                    Map<String, Object> memberData = new HashMap<>();
-                    memberData.put("member", userDto);
-                    memberData.put("tasks", tasks);
-                    return memberData;
-                })
-                .collect(Collectors.toList());
-
-        result.put("members", members);
-        result.put("memberCount", members.size());
-
-        return result;
-    }
-
-    public Map<String, Object> entityToMemberWithTasks(TeamEntity entity, UUID memberId, org.springframework.data.domain.Pageable pageable) {
-        if (entity == null || entity.getEmploymentDetailEntities() == null) {
-            return Map.of();
-        }
-
-        EmploymentDetailEntity employmentDetail = entity.getEmploymentDetailEntities().stream()
-                .filter(detail -> detail.getUser() != null && detail.getUser().getId().equals(memberId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Member not found in team or invalid member ID: " + memberId));
-
-        UserEntity user = employmentDetail.getUser();
-        UserResponseDto userDto = userMapper.entityToDto(user);
-        List<TaskResponseDto> tasks = taskRepository.findByAssignedToId(user.getId(), pageable)
-                .getContent()
-                .stream()
-                .map(taskMapper::entityToDto)
-                .collect(Collectors.toList());
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("member", userDto);
-        result.put("tasks", tasks);
-
-        return result;
-    }
 
     public Map<String, Object> entityToTeamWithMembers(TeamEntity entity, org.springframework.data.domain.Pageable pageable) {
         if (entity == null) {
@@ -159,13 +98,40 @@ public abstract class TeamMapper extends BaseEntityMapper implements
         Map<String, Object> result = new HashMap<>();
         result.put("id", entity.getId());
         result.put("name", entity.getName());
-        result.put("leader", entity.getLeader() != null ? userMapper.entityToDto(entity.getLeader()) : null);
-        result.put("createdAt", entity.getCreatedAt());
-        result.put("updatedAt", entity.getUpdatedAt());
+        result.put("leader", entity.getLeader() != null ? userMapper.toLimitedDto(entity.getLeader()) : null);
 
-        List<UserResponseDto> members = entity.getEmploymentDetailEntities().stream()
-                .filter(detail -> detail.getUser() != null)
-                .map(detail -> userMapper.toLimitedDto(detail.getUser()))
+        List<Map<String, Object>> members = entity.getEmploymentDetailEntities().stream()
+                .filter(detail -> detail != null && detail.getUser() != null)
+                .map(detail -> {
+                    Map<String, Object> member = new HashMap<>();
+                    member.put("user", userMapper.toLimitedDto(detail.getUser()));
+
+                    // Tạo Map cho employmentDetail thủ công
+                    Map<String, Object> employmentDetail = new HashMap<>();
+                    if (detail.getPosition() != null) {
+                        employmentDetail.put("position", Map.of(
+                                "id", detail.getPosition().getId(),
+                                "name", detail.getPosition().getName()
+                        ));
+                    }
+                    if (detail.getDepartment() != null) {
+                        employmentDetail.put("department", Map.of(
+                                "id", detail.getDepartment().getId(),
+                                "name", detail.getDepartment().getName()
+                        ));
+                    }
+                    if (detail.getTeam() != null) {
+                        employmentDetail.put("team", Map.of(
+                                "id", detail.getTeam().getId(),
+                                "name", detail.getTeam().getName()
+                        ));
+                    }
+                    employmentDetail.put("startDate", detail.getStartDate());
+                    employmentDetail.put("workingStatus", detail.getWorkingStatus());
+
+                    member.put("employmentDetail", employmentDetail);
+                    return member;
+                })
                 .collect(Collectors.toList());
 
         result.put("members", members);
@@ -189,5 +155,19 @@ public abstract class TeamMapper extends BaseEntityMapper implements
 
         target.setMembers(members);
         target.setMemberCount(members.size());
+    }
+
+    /**
+     * Get list of member IDs from TeamEntity
+     */
+    public List<UUID> getMemberIds(TeamEntity entity) {
+        if (entity == null || entity.getEmploymentDetailEntities() == null) {
+            return List.of();
+        }
+
+        return entity.getEmploymentDetailEntities().stream()
+                .filter(detail -> detail.getUser() != null)
+                .map(detail -> detail.getUser().getId())
+                .collect(Collectors.toList());
     }
 }

@@ -11,6 +11,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EmploymentDetailRepository extends JpaRepository<EmploymentDetailEntity, UUID> {
 
+
+    /**
+     * Tìm kiếm thông tin chi của nhân viên theo ID người dùng
+     *
+     * @param userId ID của người dùng
+     * @return Optional chứa thông tin chi tiết nếu tìm thấy, empty nếu không tìm thấy
+     */
+    Optional<EmploymentDetailEntity> findByUserId(UUID userId);
     /**
      * Tìm kiếm thông tin chi của nhân viên
      *

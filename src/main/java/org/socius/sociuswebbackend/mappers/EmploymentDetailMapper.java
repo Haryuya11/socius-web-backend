@@ -34,6 +34,19 @@ public abstract class EmploymentDetailMapper extends BaseEntityMapper implements
     @Mapping(target = "workingStatus", source = "workingStatus")
     public abstract EmploymentDetailResponseDto entityToLimitedDto(EmploymentDetailEntity entity);
 
+    @Named("entityToLimitedDto")
+    @Mapping(target = "user", source = "user", qualifiedByName = "toLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "position", source = "position", qualifiedByName = "entityToLimitedDto")
+    @Mapping(target = "department", source = "department", qualifiedByName = "entityToLimitedDto")
+    @Mapping(target = "team", source = "team", qualifiedByName = "entityToLimitedDto")
+    @Mapping(target = "role", source = "role", qualifiedByName = "entityToLimitedDto")
+    @Mapping(target = "startDate", source = "startDate")
+    @Mapping(target = "salary", ignore = true)
+    @Mapping(target = "workingStatus", source = "workingStatus")
+    public abstract EmploymentDetailResponseDto entityToLimitedDtoForAdmin(EmploymentDetailEntity entity);
+
     @Override
     public EmploymentDetailEntity requestDtoToEntity(EmploymentDetailRequestDto dto) {
         if (dto == null) {
