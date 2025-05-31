@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.util.ApplicationContextHelper;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.socius.sociuswebbackend.websocket.WebSocketCsrfInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -79,12 +80,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                     HttpSession session = servletRequest.getServletRequest().getSession(false);
 
                                     if (session != null) {
-                                        UUID userId = (UUID) session.getAttribute("userId");
+                                        String userIdAttributeKey = RedisKeyBuilder.userIdAttributeKey();
+                                        UUID userId = (UUID) session.getAttribute(userIdAttributeKey);
                                         if (userId != null) {
                                             // Cập nhật trạng thái online ngay khi handshake
                                             onlineUserService.updateUserOnlineStatus(userId, session.getId());
 
-                                            attributes.put("userId", userId);
+                                            attributes.put(userIdAttributeKey, userId);
                                             attributes.put("sessionId", session.getId());
                                             logger.info("User {} connected with session {}", userId, session.getId());
                                         } else {
@@ -96,7 +98,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                         return false;
                                     }
                                 }
-
                                 return result;
                             }
                         })
@@ -136,11 +137,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
                 if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+                    String userAttributeKey = RedisKeyBuilder.userIdAttributeKey();
                     String sessionId = accessor.getSessionId();
-                    String userId = accessor.getFirstNativeHeader("userId");
+                    String userId = accessor.getFirstNativeHeader(userAttributeKey);
 
                     if (userId != null) {
-                        Objects.requireNonNull(accessor.getSessionAttributes()).put("userId", userId);
+                        Objects.requireNonNull(accessor.getSessionAttributes()).put(userAttributeKey, userId);
                         logger.debug("User {} connected with session {}", userId, sessionId);
                     }
                 }
@@ -161,7 +163,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             if (headerAccessor.getSessionAttributes() != null) {
                 logger.debug("Session attributes: {}", headerAccessor.getSessionAttributes().keySet());
 
-                UUID userId = (UUID) headerAccessor.getSessionAttributes().get("userId");
+                String userAttributeKey = RedisKeyBuilder.userIdAttributeKey();
+                UUID userId = (UUID) headerAccessor.getSessionAttributes().get(userAttributeKey);
                 String sessionId = (String) headerAccessor.getSessionAttributes().get("sessionId");
 
                 logger.debug("Extracted userId: {}, sessionId: {}", userId, sessionId);
@@ -185,7 +188,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void handleSessionDisconnected(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = headerAccessor.getSessionId();
-        String userId = (String) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("userId");
+        String userId = (String) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get(RedisKeyBuilder.userIdAttributeKey());
 
         if (userId != null) {
             try {

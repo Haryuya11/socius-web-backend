@@ -16,8 +16,8 @@ import java.util.UUID;
 public abstract class ConversationMapper extends BaseEntityMapper implements GenericMapper<ConversationEntity, ConversationResponseDto, ConversationRequestDto> {
 
     @Override
-    @Mapping(target = "lastMessage", ignore = true)
-    @Mapping(target = "unreadCount", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract ConversationResponseDto entityToDto(ConversationEntity entity);
 
     @AfterMapping

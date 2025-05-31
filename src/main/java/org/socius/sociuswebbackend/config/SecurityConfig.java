@@ -60,20 +60,30 @@ public class SecurityConfig {
                 )
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/change-password", "api/auth/session").permitAll()
-                        .requestMatchers("/error", "/ws/**").permitAll()
-                        .requestMatchers("/api/session/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasAuthority("ACCESS_ADMIN_PAGE")
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/change-password",
+                                "/api/auth/session",
+                                "/api/users/**",
+                                "/api/public/**",
+                                "/api/session/**",
+                                "/error",
+                                "/ws/**",
+                                "/ws-heartbeat/**",
+                                "/ws-heartbeat/info/**",
+                                "/app/**",
+                                "/topic/**",
+                                "/user/**",
+                                "/api/user-online/**",
+                                "api/notification/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/api/admin/**",
+                                "/api/master-data/**"
+                        ).hasAuthority("ACCESS_ADMIN_PAGE")
                         .requestMatchers("/api/auth/logout").authenticated()
-                        .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/api/master-data/**").hasAuthority("ACCESS_ADMIN_PAGE")
-                        .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("api/notification/**").permitAll()
-                        .requestMatchers("/ws-heartbeat/**").permitAll()
-                        .requestMatchers("/ws-heartbeat/info/**").permitAll()
-                        .requestMatchers("/app/**", "/topic/**", "/user/**").permitAll()
-                        .requestMatchers("/api/user-online/**").permitAll()
-                        .anyRequest().authenticated())
+                        .anyRequest().authenticated()
+                )
                 .sessionManagement(session -> session
                                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Chỉ tạo session khi cần thiết
                                 .maximumSessions(1) // Giới hạn số phiên đăng nhập đồng thời là 1
@@ -93,7 +103,7 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://127.0.0.1:3000"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",

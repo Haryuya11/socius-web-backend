@@ -44,7 +44,8 @@ public class UserOnlineController {
             return;
         }
 
-        UUID userId = (UUID) sessionAttributes.get("userId");
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) sessionAttributes.get(userKey);
 
         if (userId == null) {
             logger.warn("UserId null trong heartbeat");
@@ -108,7 +109,8 @@ public class UserOnlineController {
 
     @MessageMapping("/chat/typing")
     public void processTypingIndicator(TypingIndicatorDto typingDto, SimpMessageHeaderAccessor headerAccessor) {
-        UUID userId = (UUID) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("userId");
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get(userKey);
         String sessionId = headerAccessor.getSessionId();
 
         if (typingDto.getConversationId() == null) {

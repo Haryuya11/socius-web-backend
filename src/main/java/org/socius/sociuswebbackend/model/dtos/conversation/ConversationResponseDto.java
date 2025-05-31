@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.conversation;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.dtos.BaseDto;
@@ -7,6 +8,7 @@ import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
 
+import java.beans.JavaBean;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,6 +17,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ConversationResponseDto extends BaseDto {
     private String name;
     private ConversationType type;
