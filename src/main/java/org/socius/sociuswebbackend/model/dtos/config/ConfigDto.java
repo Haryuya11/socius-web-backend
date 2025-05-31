@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.config;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,6 +13,7 @@ import org.socius.sociuswebbackend.model.dtos.BaseDto;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ConfigDto extends BaseDto {
     private String key;
     private String value;

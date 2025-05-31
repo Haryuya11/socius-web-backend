@@ -63,7 +63,8 @@ public class FileController {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
 
             // Kiểm tra người dùng có quyền truy cập vào cuộc trò chuyện không
-            boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(conversationId, userId);
+            boolean isMember = conversationMemberRepository.findActiveMember(conversationId, sender.getId())
+                    .isPresent();
             if (!isMember) {
                 throw new RuntimeException("Người gửi không phải là thành viên của cuộc trò chuyện");
             }

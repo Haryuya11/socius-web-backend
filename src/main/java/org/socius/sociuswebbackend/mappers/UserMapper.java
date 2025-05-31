@@ -16,6 +16,8 @@ public abstract class UserMapper extends BaseEntityMapper implements
         GenericMapper<UserEntity, UserResponseDto, UserRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract UserResponseDto entityToDto(UserEntity entity);
 
     @Named("toLimitedDto")

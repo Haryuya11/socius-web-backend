@@ -187,7 +187,8 @@ public class MessageServiceImpl implements MessageService {
             UUID lastMessageId = entry.getValue();
 
             // Kiểm tra người dùng có quyền truy cập cuộc trò chuyện không
-            boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(conversationId, userId);
+            boolean isMember = conversationMemberRepository.findActiveMember(conversationId, userId)
+                    .isPresent();
             if (!isMember) {
                 logger.warn("Người dùng {} không thuộc cuộc trò chuyện {}", userId, conversationId);
                 continue;
@@ -283,7 +284,8 @@ public class MessageServiceImpl implements MessageService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
 
         // Kiểm tra người gửi có phải là thành viên của cuộc trò chuyện không
-        boolean isMember = conversationMemberRepository.existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(conversation.getId(), userId);
+        boolean isMember = conversationMemberRepository.findActiveMember(conversationId, userId)
+                .isPresent();
         if (!isMember) {
             throw new RuntimeException("Người gửi không phải là thành viên của cuộc trò chuyện");
         }

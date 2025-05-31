@@ -28,7 +28,6 @@ public interface WebSocketService {
     /**
      * Xử lý heartbeat từ client
      */
-    void handleHeartbeat(UUID userId);
 
     /**
      * Xử lý sự kiện ngắt kết nối tới WebSocket

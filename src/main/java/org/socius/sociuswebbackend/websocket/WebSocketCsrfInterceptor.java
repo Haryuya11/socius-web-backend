@@ -25,7 +25,11 @@ public class WebSocketCsrfInterceptor implements HandshakeInterceptor {
     private final CsrfTokenRepository csrfTokenRepository;
 
     @Override
-    public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response, @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) {
+    public boolean beforeHandshake(
+            @NonNull ServerHttpRequest request,
+            @NonNull ServerHttpResponse response,
+            @NonNull WebSocketHandler wsHandler,
+            @NonNull Map<String, Object> attributes) {
         // Kiểm tra nếu request không phải là ServletServerHttpRequest
         if (!(request instanceof ServletServerHttpRequest)) {
             logger.warn("Không thể xác thực CSRF cho kết nối không phải ServletServerHttpRequest");

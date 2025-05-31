@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,19 +25,22 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
     Page<ConversationEntity> findConversationsByUserId(@Param("userId") UUID userId, Pageable pageable);
 
 
-    /**
-     * Tìm kiếm cuộc trò chuyện trực tiếp giữa hai người dùng
-     *
-     * @param userId1 ID của người dùng 1
-     * @param userId2 ID của người dùng 2
-     * @return Cuộc trò chuyện trực tiếp giữa hai người dùng, nếu có
-     */
-    @Query("SELECT c FROM ConversationEntity c WHERE c.type = 'DIRECT' AND " +
-            "EXISTS (SELECT m1 FROM ConversationMemberEntity m1 WHERE m1.conversation = c AND m1.user.id = :userId1) AND " +
-            "EXISTS (SELECT m2 FROM ConversationMemberEntity m2 WHERE m2.conversation = c AND m2.user.id = :userId2)")
+    @Query("""
+                SELECT c FROM ConversationEntity c 
+                WHERE c.type = 'DIRECT' 
+                AND c.id IN (
+                    SELECT m1.id.conversationId FROM ConversationMemberEntity m1 
+                    WHERE m1.id.userId = :userId1 AND m1.leftAt IS NULL
+                ) 
+                AND c.id IN (
+                    SELECT m2.id.conversationId FROM ConversationMemberEntity m2 
+                    WHERE m2.id.userId = :userId2 AND m2.leftAt IS NULL
+                )
+            """)
     Optional<ConversationEntity> findDirectConversationBetweenUsers(
             @Param("userId1") UUID userId1,
-            @Param("userId2") UUID userId2);
+            @Param("userId2") UUID userId2
+    );
 
     /**
      * Tìm kiếm các cuộc trò chuyện của người dùng theo ID người dùng
@@ -48,12 +52,39 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
     @Query("SELECT c FROM ConversationEntity c JOIN c.members m WHERE m.user.id = :userId ORDER BY c.updatedAt DESC")
     Page<ConversationEntity> findUserConversations(UUID userId, Pageable pageable);
 
+
     /**
-     * Tìm kiếm các cuộc trò chuyện mà user là thành viên active
+     * Lấy tất cả cuộc trò chuyện mà user tham gia
+     *
+     * @param userId ID của người dùng
+     * @return Danh sách cuộc trò chuyện
      */
-    @Query("SELECT DISTINCT c FROM ConversationEntity c " +
-            "JOIN ConversationMemberEntity cm ON c.id = cm.id.conversationId " +
-            "WHERE cm.id.userId = :userId AND cm.leftAt IS NULL " +
-            "ORDER BY c.updatedAt DESC")
-    Page<ConversationEntity> findActiveConversationsByUserId(@Param("userId") UUID userId, Pageable pageable);
+    @Query("""
+                SELECT DISTINCT c FROM ConversationEntity c 
+                INNER JOIN c.members m 
+                WHERE m.id.userId = :userId 
+                AND m.leftAt IS NULL 
+                ORDER BY c.updatedAt DESC
+            """)
+    List<ConversationEntity> findAllActiveConversationsByUserId(@Param("userId") UUID userId);
+
+
+    /**
+     * Lấy các cuộc trò chuyện đang hoạt động của người dùng với phân trang
+     *
+     * @param userId   ID của người dùng
+     * @param pageable Thông tin phân trang
+     * @return Trang các cuộc trò chuyện
+     */
+    @Query("""
+                SELECT DISTINCT c FROM ConversationEntity c 
+                INNER JOIN c.members m 
+                WHERE m.id.userId = :userId 
+                AND m.leftAt IS NULL 
+                ORDER BY c.updatedAt DESC
+            """)
+    Page<ConversationEntity> findActiveConversationsByUserId(
+            @Param("userId") UUID userId,
+            Pageable pageable
+    );
 }

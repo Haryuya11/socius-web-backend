@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.mappers.ConversationMapper;
+import org.socius.sociuswebbackend.model.dtos.conversation.ConversationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.entities.*;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
@@ -17,6 +18,9 @@ import org.socius.sociuswebbackend.model.enums.MemberRole;
 import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 import org.socius.sociuswebbackend.utils.ChatTestDataUtil;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.*;
 
@@ -63,25 +67,32 @@ public class ConversationServiceImplTest {
         otherUserId = UUID.randomUUID();
         conversationId = UUID.randomUUID();
 
-        user = AuthTestDataUtil.createTestAdminUser();
+        user = new UserEntity();
         user.setId(userId);
+        user.setFirstName("Test");
+        user.setLastName("User");
 
-        otherUser = AuthTestDataUtil.createTestRegularUser();
+        otherUser = new UserEntity();
         otherUser.setId(otherUserId);
+        otherUser.setFirstName("Other");
+        otherUser.setLastName("User");
 
-        conversation = ChatTestDataUtil.createConversationEntity();
+        conversation = new ConversationEntity();
         conversation.setId(conversationId);
+        conversation.setName("Test Conversation");
         conversation.setType(ConversationType.GROUP);
+        conversation.setCreatedBy(user);
 
-        conversationResponseDto = ChatTestDataUtil.createConversationResponseDto();
-
-        userMember = ConversationMemberEntity.builder()
-                .id(new ConversationMemberId(conversationId, userId))
-                .conversation(conversation)
-                .user(user)
-                .role(MemberRole.ADMIN)
-                .leftAt(null)
+        conversationResponseDto = ConversationResponseDto.builder()
+                .id(conversationId)
+                .name("Test Conversation")
+                .type(ConversationType.GROUP)
                 .build();
+
+        userMember = new ConversationMemberEntity();
+        userMember.setUser(user);
+        userMember.setConversation(conversation);
+        userMember.setRole(MemberRole.ADMIN);
     }
 
     @Test
@@ -110,6 +121,8 @@ public class ConversationServiceImplTest {
         verify(unreadCountRepository).saveAll(anyList());
         verify(conversationMapper).entityToDto(conversation);
     }
+
+
 
     @Test
     @DisplayName("Lỗi khi tạo cuộc trò chuyện nhóm với creator không tồn tại")
@@ -366,4 +379,54 @@ public class ConversationServiceImplTest {
                     unreadCountList.stream().allMatch(uc -> uc.getUnreadCount() == 0);
         }));
     }
+
+    @Test
+    @DisplayName("Lấy danh sách conversations của user thành công")
+    void getUserConversationsSuccessfully() {
+        // Setup
+        Pageable pageable = Pageable.ofSize(10);
+        List<ConversationEntity> conversations = Arrays.asList(conversation);
+        Page<ConversationEntity> conversationPage = new PageImpl<>(conversations);
+
+        when(conversationRepository.findConversationsByUserId(userId, pageable))
+                .thenReturn(conversationPage);
+        when(conversationMapper.entityToDto(conversation))
+                .thenReturn(conversationResponseDto);
+
+        // Execute
+        Page<ConversationResponseDto> result = conversationService.getUserConversations(userId, pageable);
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals(conversationResponseDto, result.getContent().get(0));
+        verify(conversationRepository).findConversationsByUserId(userId, pageable);
+    }
+
+    @Test
+    @DisplayName("Tìm conversation theo ID thành công")
+    void findConversationByIdSuccessfully() {
+        when(conversationRepository.findById(conversationId))
+                .thenReturn(Optional.of(conversation));
+        when(conversationMapper.entityToDto(conversation))
+                .thenReturn(conversationResponseDto);
+
+        ConversationResponseDto result = conversationService.findById(conversationId);
+
+        assertNotNull(result);
+        assertEquals(conversationResponseDto, result);
+        verify(conversationRepository).findById(conversationId);
+    }
+
+    @Test
+    @DisplayName("Tìm conversation không tồn tại")
+    void findConversationByIdNotFound() {
+        when(conversationRepository.findById(conversationId))
+                .thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> {
+            conversationService.findById(conversationId);
+        });
+    }
+
 }

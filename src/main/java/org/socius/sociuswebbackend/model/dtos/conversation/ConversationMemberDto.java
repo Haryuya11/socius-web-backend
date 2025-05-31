@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.conversation;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ConversationMemberDto {
     private UUID conversationId;
     private UserResponseDto user;

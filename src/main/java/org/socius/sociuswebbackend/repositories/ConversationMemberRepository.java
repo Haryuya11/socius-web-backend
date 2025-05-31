@@ -19,7 +19,7 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
      * @param conversationId ID của cuộc trò chuyện
      * @return Danh sách các thành viên trong cuộc trò chuyện
      */
-    @Query("SELECT cm FROM ConversationMemberEntity cm WHERE cm.conversation.id = :conversationId AND cm.leftAt IS NULL")
+    @Query("SELECT cm FROM ConversationMemberEntity cm  WHERE cm.id.conversationId = :conversationId AND cm.leftAt IS NULL ORDER BY cm.joinedAt ASC ")
     List<ConversationMemberEntity> findActiveMembers(@Param("conversationId") UUID conversationId);
 
     /**
@@ -30,15 +30,6 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
      */
     @Query("SELECT cm.user.id FROM ConversationMemberEntity cm WHERE cm.conversation.id = :conversationId AND cm.leftAt IS NULL")
     Set<UUID> findActiveMemberIds(@Param("conversationId") UUID conversationId);
-
-    /**
-     * Kiểm tra xem một thành viên có phải là thành viên của một cuộc trò chuyện hay không
-     *
-     * @param conversationId ID của cuộc trò chuyện
-     * @param userId         ID của người dùng
-     * @return true nếu thành viên đã tham gia cuộc trò chuyện, false nếu không
-     */
-    boolean existsByIdConversationIdAndIdUserIdAndLeftAtIsNull(UUID conversationId, UUID userId);
 
     /**
      * Xóa cuộc trò chuyện theo ID cuộc trò chuyện
@@ -58,4 +49,12 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
      */
     @Query("SELECT cm FROM ConversationMemberEntity cm WHERE cm.id.conversationId = :conversationId AND cm.id.userId = :userId AND cm.leftAt IS NULL")
     Optional<ConversationMemberEntity> findActiveMember(@Param("conversationId") UUID conversationId, @Param("userId") UUID userId);
+
+    /**
+     * Tìm kiếm tất cả thành viên trong một cuộc trò chuyện theo ID cuộc trò chuyện
+     *
+     * @param conversationId ID của cuộc trò chuyện
+     * @return Danh sách các thành viên trong cuộc trò chuyện
+     */
+    List<ConversationMemberEntity> findByConversation_Id(UUID conversationId);
 }

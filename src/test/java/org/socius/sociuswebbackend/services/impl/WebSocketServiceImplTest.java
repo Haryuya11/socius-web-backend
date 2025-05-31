@@ -10,22 +10,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
-import org.socius.sociuswebbackend.services.OnlineUserService;
 import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import java.util.UUID;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class WebSocketServiceImplTest {
-    @Mock
-    private OnlineUserService onlineUserService;
-
     @Mock
     private SimpMessagingTemplate messagingTemplate;
 
@@ -40,25 +34,6 @@ public class WebSocketServiceImplTest {
         // Initialize test data
         adminUser = AuthTestDataUtil.createTestAdminUser();
         regularUser = AuthTestDataUtil.createTestRegularUser();
-    }
-
-    @Test
-    @DisplayName("Xử lý heartbeat phải gọi service xử lý heartbeat")
-    void handleHeartbeatShouldCallOnlineUserService() {
-        webSocketService.handleHeartbeat(adminUser.getId());
-
-        verify(onlineUserService).handleUserHeartbeat(adminUser.getId());
-    }
-
-    @Test
-    @DisplayName("Xử lý heartbeat phải bắt ngoại lệ nếu có lỗi")
-    void handleHeartbeatShouldThrowException() {
-
-        doThrow(new RuntimeException("Test Exception")).when(onlineUserService).handleUserHeartbeat(any(UUID.class));
-
-        webSocketService.handleHeartbeat(regularUser.getId());
-
-        verify(onlineUserService).handleUserHeartbeat(regularUser.getId());
     }
 
     @Test

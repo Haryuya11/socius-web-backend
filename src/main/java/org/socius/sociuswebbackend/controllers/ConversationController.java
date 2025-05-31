@@ -3,16 +3,23 @@ package org.socius.sociuswebbackend.controllers;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.socius.sociuswebbackend.model.entities.ConversationMemberEntity;
-import org.socius.sociuswebbackend.model.enums.MemberRole;
+import org.socius.sociuswebbackend.model.dtos.conversation.ConversationMemberDto;
+import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.repositories.ConversationMemberRepository;
+import org.socius.sociuswebbackend.repositories.ConversationRepository;
 import org.socius.sociuswebbackend.services.ConversationService;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -22,45 +29,89 @@ public class ConversationController {
 
     private final ConversationMemberRepository conversationMemberRepository;
     private final ConversationService conversationService;
+    private final ConversationRepository conversationRepository;
 
-    @DeleteMapping("/{conversationId}/members/{memberId}")
-    public ResponseEntity<Void> removeMember(
+
+    @GetMapping("/{conversationId}/members")
+    public ResponseEntity<?> getConversationMembers(
             @PathVariable UUID conversationId,
-            @PathVariable UUID memberId,
             HttpServletRequest request) {
 
-        UUID currentUserId = getCurrentUserId(request);
-
-        // Kiểm tra quyền admin của user hiện tại
-        ConversationMemberEntity currentMember = conversationMemberRepository
-                .findActiveMember(conversationId, currentUserId)
-                .orElseThrow(() -> new RuntimeException("Bạn không phải thành viên của cuộc trò chuyện"));
-
-        if (currentMember.getRole() != MemberRole.ADMIN) {
-            throw new RuntimeException("Chỉ admin mới có thể xóa thành viên");
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session không hợp lệ hoặc đã hết hạn"));
         }
 
-        conversationService.removeMember(conversationId, memberId);
-        return ResponseEntity.ok().build();
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) session.getAttribute(userKey);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "User ID không hợp lệ trong session"));
+        }
+
+        try {
+            List<ConversationMemberDto> members = conversationService.getConversationMembers(conversationId, userId);
+            return ResponseEntity.ok(members);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /**
-     * Lấy ID của user hiện tại từ session
-     *
-     * @param request HTTP request
-     * @return UUID của user hiện tại
+     * Lấy cuộc trò chuyện của user với phân trang (existing method với cải tiến)
      */
-    private UUID getCurrentUserId(HttpServletRequest request) {
+    @GetMapping()
+    public ResponseEntity<?> getUserConversations(
+            Pageable pageable,
+            HttpServletRequest request) {
+
         HttpSession session = request.getSession(false);
         if (session == null) {
-            throw new RuntimeException("Phiên đăng nhập không hợp lệ");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session không hợp lệ hoặc đã hết hạn"));
         }
 
-        UUID userId = (UUID) session.getAttribute("userId");
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) session.getAttribute(userKey);
         if (userId == null) {
-            throw new RuntimeException("Không tìm thấy thông tin người dùng trong phiên");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "User ID không hợp lệ trong session"));
         }
 
-        return userId;
+        try {
+            Page<ConversationResponseDto> conversations = conversationService.getUserConversations(userId, pageable);
+            return ResponseEntity.ok(conversations);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Lấy tất cả cuộc trò chuyện của user hiện tại
+     */
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllUserConversations(
+            HttpServletRequest request) {
+
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session không hợp lệ hoặc đã hết hạn"));
+        }
+
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) session.getAttribute(userKey);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "User ID không hợp lệ trong session"));
+        }
+
+        try {
+            List<ConversationResponseDto> conversations = conversationService.getAllUserConversations(userId);
+            return ResponseEntity.ok(conversations);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

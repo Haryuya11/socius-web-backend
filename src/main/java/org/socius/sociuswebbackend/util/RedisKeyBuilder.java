@@ -248,28 +248,28 @@ public class RedisKeyBuilder {
     /**
      * Key cho thuộc tính người dùng trong phiên
      *
-     * @return Chuỗi key theo format: session:attribute:USER_ID
+     * @return Chuỗi key theo format: session:attribute:userId
      */
     public static String userIdAttributeKey() {
-        return sessionAttributeKey("USER_ID");
+        return sessionAttributeKey("userId");
     }
 
     /**
      * Key cho thuộc tính nhóm trong phiên
      *
-     * @return Chuỗi key theo format: session:attribute:TEAM_ID
+     * @return Chuỗi key theo format: session:attribute:teamId
      */
     public static String teamIdAttributeKey() {
-        return sessionAttributeKey("TEAM_ID");
+        return sessionAttributeKey("teamId");
     }
 
     /**
      * Key cho thuộc tính vai trò trong phiên
      *
-     * @return Chuỗi key theo format: session:attribute:ROLE_ID
+     * @return Chuỗi key theo format: session:attribute:roleId
      */
     public static String roleIdAttributeKey() {
-        return sessionAttributeKey("ROLE_ID");
+        return sessionAttributeKey("roleId");
     }
 
     /**
@@ -280,8 +280,7 @@ public class RedisKeyBuilder {
     public static String rbacPattern() {
         return "rbac:session:*";
     }
-    
-    
+
 
     public static String extractSessionIdFromExpiresKey(String sessionKey) {
         if (sessionKey.startsWith(SPRING_SESSION_PREFIX + "sessions:expires:")) {

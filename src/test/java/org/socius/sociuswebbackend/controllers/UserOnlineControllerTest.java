@@ -64,7 +64,7 @@ public class UserOnlineControllerTest {
 
         userOnlineController.processHeartbeat(headerAccessor);
 
-        verify(webSocketService).handleHeartbeat(adminUser.getId());
+        verify(onlineUserService).handleUserHeartbeat(adminUser.getId());
     }
 
     @Test
@@ -75,7 +75,7 @@ public class UserOnlineControllerTest {
 
         userOnlineController.processHeartbeat(headerAccessor);
 
-        verify(webSocketService, never()).handleHeartbeat(any(UUID.class));
+        verify(onlineUserService, never()).handleUserHeartbeat(any(UUID.class));
     }
 
     @Test
@@ -91,7 +91,7 @@ public class UserOnlineControllerTest {
 
         userOnlineController.processHeartbeat(headerAccessor);
 
-        verify(webSocketService, never()).handleHeartbeat(any(UUID.class));
+        verify(onlineUserService, never()).handleUserHeartbeat(any(UUID.class));
         verify(onlineUserService).markUserOffline(adminUser.getId(), mockSessionId);
         verify(webSocketService).sendSessionInvalidationNotification(
                 eq(mockSessionId),

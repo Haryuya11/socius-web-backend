@@ -39,19 +39,35 @@ public class UserOnlineController {
      */
     @MessageMapping("/heartbeat")
     public void processHeartbeat(SimpMessageHeaderAccessor headerAccessor) {
-        try {
-            String sessionId = headerAccessor.getSessionId();
-            UUID userId = (UUID) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("userId");
-
-            if (userId == null || sessionId == null) {
-                logger.warn("UserId hoặc SessionId null trong heartbeat - userId: {}, sessionId: {}", userId, sessionId);
-                return;
-            }
-            onlineUserService.handleUserHeartbeat(userId);
-            logger.debug("Heartbeat nhận được từ userId: {}, sessionId: {}", userId, sessionId);
-        } catch (Exception e) {
-            logger.error("Lỗi xử lý heartbeat: {}", e.getMessage(), e);
+        Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
+        if (sessionAttributes == null) {
+            return;
         }
+
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) sessionAttributes.get(userKey);
+
+        if (userId == null) {
+            logger.warn("UserId null trong heartbeat");
+            return;
+        }
+        String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("SessionId null trong heartbeat");
+            return;
+        }
+        String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
+        if (!redisTemplate.hasKey(sessionKey)) {
+            onlineUserService.markUserOffline(userId, sessionId);
+            webSocketService.sendSessionInvalidationNotification(
+                    sessionId,
+                    "SESSION_EXPIRED",
+                    "Phiên làm việc đã hết hạn"
+            );
+            return;
+        }
+        onlineUserService.handleUserHeartbeat(userId);
+        logger.debug("Heartbeat nhận được từ userId: {}, sessionId: {}", userId, sessionId);
     }
 
     /**
@@ -93,7 +109,8 @@ public class UserOnlineController {
 
     @MessageMapping("/chat/typing")
     public void processTypingIndicator(TypingIndicatorDto typingDto, SimpMessageHeaderAccessor headerAccessor) {
-        UUID userId = (UUID) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("userId");
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get(userKey);
         String sessionId = headerAccessor.getSessionId();
 
         if (typingDto.getConversationId() == null) {

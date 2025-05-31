@@ -16,6 +16,8 @@ public abstract class DepartmentMapper extends BaseEntityMapper implements
         GenericMapper<DepartmentEntity, DepartmentResponseDto, DepartmentRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract DepartmentResponseDto entityToDto(DepartmentEntity entity);
 
     @Named("entityToLimitedDto")

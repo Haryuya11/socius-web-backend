@@ -1,10 +1,11 @@
 package org.socius.sociuswebbackend.services;
 
-import org.socius.sociuswebbackend.model.dtos.conversation.ConversationRequestDto;
+import org.socius.sociuswebbackend.model.dtos.conversation.ConversationMemberDto;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -28,7 +29,6 @@ public interface ConversationService {
      */
     void deleteGroupConversation(UUID conversationId);
 
-
     /**
      * Lấy danh sách cuộc trò chuyện của người dùng với phân trang
      *
@@ -37,15 +37,6 @@ public interface ConversationService {
      * @return Trang cuộc trò chuyện
      */
     Page<ConversationResponseDto> getUserConversations(UUID userId, Pageable pageable);
-
-    /**
-     * Lấy thông tin chi tiết của một cuộc trò chuyện
-     *
-     * @param userId         ID của người dùng hiện tại
-     * @param conversationId ID của cuộc trò chuyện
-     * @return Thông tin cuộc trò chuyện
-     */
-    ConversationResponseDto getConversation(UUID userId, UUID conversationId);
 
     /**
      * Thêm thành viên vào cuộc trò chuyện
@@ -89,13 +80,28 @@ public interface ConversationService {
     ConversationResponseDto getOrCreateDirectConversation(UUID userId1, UUID userId2);
 
     /**
-     * Cập nhật thông tin cuộc trò chuyện
+     * Tìm kiếm cuộc trò chuyện theo ID
      *
-     * @param userId         ID của người dùng thực hiện hành động
      * @param conversationId ID của cuộc trò chuyện
-     * @param requestDto     Thông tin cập nhật
-     * @return Cuộc trò chuyện đã được cập nhật
+     * @return Thông tin cuộc trò chuyện
      */
-    ConversationResponseDto updateConversation(UUID userId, UUID conversationId, ConversationRequestDto requestDto);
+    ConversationResponseDto findById(UUID conversationId);
+
+    /**
+     * Lấy danh sách thành viên trong cuộc trò chuyện
+     *
+     * @param conversationId ID của cuộc trò chuyện
+     * @param userId         ID của người dùng hiện tại (để kiểm tra quyền truy cập)
+     * @return Danh sách thành viên
+     */
+    List<ConversationMemberDto> getConversationMembers(UUID conversationId, UUID userId);
+
+    /**
+     * Lấy tất cả cuộc trò chuyện của người dùng
+     *
+     * @param userId ID của người dùng
+     * @return Danh sách cuộc trò chuyện
+     */
+    List<ConversationResponseDto> getAllUserConversations(UUID userId);
 
 }
