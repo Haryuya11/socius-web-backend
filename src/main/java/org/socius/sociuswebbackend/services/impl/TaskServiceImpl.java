@@ -168,6 +168,6 @@ public class TaskServiceImpl implements TaskService {
                     responseDto);
         }
 
-        return taskMapper.entityToDto(task);
+        return taskMapper.entityToLimitedDto(task);
     }
 }
