@@ -46,4 +46,14 @@ public class EmploymentDetailController {
         Map<String, Object> response = employmentDetailService.getSalaryHistory(userId, pageable);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/user/{userId}/employment-detail")
+    public ResponseEntity<Map<String, Object>> getEmploymentDetail(
+            @PathVariable UUID userId) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Map<String, Object> response = employmentDetailService.getEmploymentDetailByUserId(userId);
+        return ResponseEntity.ok(response);
+    }
 }

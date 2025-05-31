@@ -10,4 +10,5 @@ public interface EmploymentDetailService {
     Map<String, Object> getAllEmployeesForAdmin(Pageable pageable);
     Map<String, Object> getEmploymentHistory(UUID userId, Pageable pageable);
     Map<String, Object> getSalaryHistory(UUID userId, Pageable pageable);
+    Map<String, Object> getEmploymentDetailByUserId(UUID userId);
 }
