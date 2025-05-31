@@ -15,4 +15,6 @@ public interface TaskService {
     Map<String, Object> getTasksByTeamId(UUID teamId, Pageable pageable);
 
     TaskResponseDto createTask(TaskRequestDto taskRequestDto);
+
+    TaskResponseDto updateTaskStatus(UUID taskId, String status);
 }
