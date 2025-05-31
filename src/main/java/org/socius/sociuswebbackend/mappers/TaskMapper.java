@@ -20,8 +20,6 @@ public abstract class TaskMapper extends BaseEntityMapper implements
 
     @Named("entityToLimitedDto")
     @Mapping(target = "assignedTo", source = "assignedTo", qualifiedByName = "toLimitedDto")
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     public abstract TaskResponseDto entityToLimitedDto(TaskEntity entity);
 
     @Override
