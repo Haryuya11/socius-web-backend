@@ -7,7 +7,6 @@ import org.socius.sociuswebbackend.mappers.TeamMapper;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
-import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.TaskEntity;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
@@ -25,6 +24,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,11 +37,52 @@ public class TaskServiceImpl implements TaskService {
     private final TeamMapper teamMapper;
     private final UserRepository userRepository;
 
+    @Override
+    public Map<String, Object> getTasksByUserId(UUID userId, Pageable pageable) {
+        Page<TaskEntity> taskPage = taskRepository.findByAssignedToId(userId, pageable);
+
+        List<TaskResponseDto> task = taskPage.getContent().stream()
+                .map(taskMapper::entityToLimitedDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("task", task);
+        result.put("totalTaskCount", task.size());
+        result.put("totalPages", taskPage.getTotalPages());
+        result.put("totalElements", taskPage.getTotalElements());
+
+        return result;
+    }
 
     @Override
-    public Page<TaskResponseDto> getTasksByUserId(UUID userId, Pageable pageable) {
-        return taskRepository.findByAssignedToId(userId, pageable)
-                .map(taskMapper::entityToDto);
+    public Map<String, Object> getTasksByTeamId(UUID teamId, Pageable pageable) {
+
+        TeamEntity team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found with ID: " + teamId));
+        List<UUID> memberIds = teamMapper.getMemberIds(team);
+        // Kiểm tra danh sách memberIds không rỗng
+        if (memberIds == null || memberIds.isEmpty()) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("task", new ArrayList<>());
+            result.put("totalTaskCount", 0);
+            result.put("totalPages", 0);
+            result.put("totalElements", 0L);
+            return result;
+        }
+
+        Page<TaskEntity> taskPage = taskRepository.findByManyAssignedToId(memberIds, pageable);
+
+        List<TaskResponseDto> task = taskPage.getContent().stream()
+                .map(taskMapper::entityToLimitedDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("task", task);
+        result.put("totalTaskCount", task.size());
+        result.put("totalPages", taskPage.getTotalPages());
+        result.put("totalElements", taskPage.getTotalElements());
+
+        return result;
     }
 
     @Override
@@ -78,12 +119,5 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return taskMapper.entityToDto(entity);
-    }
-
-    @Override
-    public Map<String, Object> getTeamTasks(UUID teamId, Pageable pageable) {
-        TeamEntity team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new IllegalArgumentException("Team not found with ID: " + teamId));
-        return teamMapper.entityToTeamWithTasks(team, pageable);
     }
 }
