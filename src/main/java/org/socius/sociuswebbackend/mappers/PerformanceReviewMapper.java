@@ -1,6 +1,8 @@
 package org.socius.sociuswebbackend.mappers;
 
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.socius.sociuswebbackend.model.dtos.performance.PerformanceReviewRequestDto;
 import org.socius.sociuswebbackend.model.dtos.performance.PerformanceReviewResponseDto;
 import org.socius.sociuswebbackend.model.entities.PerformanceReviewEntity;
@@ -14,9 +16,13 @@ public abstract class PerformanceReviewMapper extends BaseEntityMapper implement
         GenericMapper<PerformanceReviewEntity, PerformanceReviewResponseDto, PerformanceReviewRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract PerformanceReviewResponseDto entityToDto(PerformanceReviewEntity entity);
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public PerformanceReviewEntity requestDtoToEntity(PerformanceReviewRequestDto dto) {
         if (dto == null) {
             return null;

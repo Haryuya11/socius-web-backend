@@ -15,6 +15,8 @@ public abstract class TargetMapper extends BaseEntityMapper implements
         GenericMapper<TargetEntity, TargetResponseDto, TargetRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract TargetResponseDto entityToDto(TargetEntity entity);
 
     @Override

@@ -25,7 +25,8 @@ public abstract class RoleMapper extends BaseEntityMapper implements
         GenericMapper<RoleEntity, RoleResponseDto, RoleRequestDto> {
 
     @Override
-    @Mapping(target = "permissions", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public RoleResponseDto entityToDto(RoleEntity entity) {
         if (entity == null) {
             return null;

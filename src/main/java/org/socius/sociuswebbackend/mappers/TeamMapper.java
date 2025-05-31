@@ -36,6 +36,8 @@ public abstract class TeamMapper extends BaseEntityMapper implements
     private TaskMapper taskMapper;
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract TeamResponseDto entityToDto(TeamEntity entity);
 
     @Named("entityToLimitedDto")

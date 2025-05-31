@@ -21,6 +21,8 @@ public abstract class PermissionMapper extends BaseEntityMapper implements
         GenericMapper<PermissionEntity, PermissionResponseDto, PermissionRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract PermissionResponseDto entityToDto(PermissionEntity entity);
 
     @Named("entityToLimitedDto")

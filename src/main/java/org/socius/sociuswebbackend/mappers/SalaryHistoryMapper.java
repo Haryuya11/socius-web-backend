@@ -16,6 +16,8 @@ public abstract class SalaryHistoryMapper extends BaseEntityMapper implements
         GenericMapper<SalaryHistoryEntity, SalaryHistoryResponseDto, SalaryHistoryRequestDto> {
     
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract SalaryHistoryResponseDto entityToDto(SalaryHistoryEntity entity);
 
     @Named("entityToLimitedDto")

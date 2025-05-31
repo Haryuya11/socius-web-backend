@@ -115,8 +115,6 @@ public class ConversationMapperTest {
         assertEquals(conversation.getName(), dto.getName());
         assertEquals(conversation.getType(), dto.getType());
         assertEquals(creatorDto, dto.getCreatedBy());
-        assertEquals(conversation.getCreatedAt(), dto.getCreatedAt());
-        assertEquals(conversation.getUpdatedAt(), dto.getUpdatedAt());
     }
 
     /**

@@ -13,10 +13,10 @@ import org.socius.sociuswebbackend.model.entities.RolePermissionId;
  * Mapper for RolePermission entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {RoleMapper.class, PermissionMapper.class})
-public abstract class RolePermissionMapper {
+public abstract class RolePermissionMapper extends BaseEntityMapper implements
+        GenericMapper<RolePermissionEntity, RolePermissionResponseDto, RolePermissionRequestDto> {
 
-    @Mapping(source = "role", target = "role")
-    @Mapping(source = "permission", target = "permission")
+    @Override
     public abstract RolePermissionResponseDto entityToDto(RolePermissionEntity entity);
 
     public RolePermissionEntity requestDtoToEntity(RolePermissionRequestDto dto) {

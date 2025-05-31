@@ -20,6 +20,8 @@ public abstract class EmploymentHistoryMapper extends BaseEntityMapper implement
         GenericMapper<EmploymentHistoryEntity, EmploymentHistoryResponseDto, EmploymentHistoryRequestDto> {
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract EmploymentHistoryResponseDto entityToDto(EmploymentHistoryEntity entity);
 
     @Named("entityToLimitedDto")

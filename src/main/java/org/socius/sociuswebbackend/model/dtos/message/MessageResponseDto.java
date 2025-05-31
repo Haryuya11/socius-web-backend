@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.message;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MessageResponseDto extends BaseDto {
     private UUID conversationId;
     private UserResponseDto sender;

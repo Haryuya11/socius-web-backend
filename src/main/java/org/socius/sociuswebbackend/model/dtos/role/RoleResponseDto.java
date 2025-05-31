@@ -1,11 +1,7 @@
 package org.socius.sociuswebbackend.model.dtos.role;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.dtos.BaseDto;
 import org.socius.sociuswebbackend.model.dtos.permission.PermissionResponseDto;
@@ -22,7 +18,7 @@ import java.util.Set;
 public class RoleResponseDto extends BaseDto {
     private String name;
     private String description;
-    
+
     @Builder.Default
     private Set<PermissionResponseDto> permissions = new HashSet<>();
 }

@@ -11,12 +11,11 @@ import org.socius.sociuswebbackend.util.EntityMappingUtil;
 
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
 public abstract class MessageMapper extends BaseEntityMapper implements GenericMapper<MessageEntity, MessageResponseDto, MessageRequestDto> {
+
     @Override
     @Mapping(source = "conversation.id", target = "conversationId")
-    @Mapping(source = "fileUrl", target = "fileUrl")
-    @Mapping(source = "fileOriginalName", target = "fileOriginalName")
-    @Mapping(source = "fileContentType", target = "fileContentType")
-    @Mapping(source = "fileSize", target = "fileSize")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     public abstract MessageResponseDto entityToDto(MessageEntity entity);
 
 
