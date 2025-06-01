@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.websocket;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -37,24 +38,52 @@ public class WebSocketCsrfInterceptor implements HandshakeInterceptor {
         }
 
         HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
-        CsrfToken csrfToken = csrfTokenRepository.loadToken(servletRequest);
+
+        String requestURI = servletRequest.getRequestURI();
+        if (requestURI.contains("/xhr") || requestURI.contains("/jsonp") || requestURI.contains("/iframe")) {
+            logger.debug("Cho phép SockJS fallback bypass CSRF: {}", requestURI);
+            return true;
+        }
+
+        // Lấy CSRF token từ nhiều nguồn
+        String csrfToken;
+
+        // 1. Từ header X-CSRF-TOKEN
+        csrfToken = servletRequest.getHeader("X-CSRF-TOKEN");
+
+        // 2. Từ cookie XSRF-TOKEN
+        if (csrfToken == null) {
+            Cookie[] cookies = servletRequest.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if ("XSRF-TOKEN".equals(cookie.getName())) {
+                        csrfToken = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 3. Từ query parameter
+        if (csrfToken == null) {
+            csrfToken = servletRequest.getParameter("X-CSRF-TOKEN");
+        }
 
         if (csrfToken == null) {
+            logger.warn("Không tìm thấy CSRF token trong request");
+            return false;
+        }
+
+        CsrfToken expectedToken = csrfTokenRepository.loadToken(servletRequest);
+
+        if (expectedToken == null) {
             logger.warn("Không tìm thấy CSRF token trong yêu cầu");
             return false;
         }
 
-        // Lấy header X-CSRF-Token từ yêu cầu
-        String csrfHeader = servletRequest.getHeader(csrfToken.getHeaderName());
-
-        // Nếu không có trong header, tìm trong tham số truy vấn
-        if (csrfHeader == null || csrfHeader.isEmpty()) {
-            csrfHeader = servletRequest.getParameter(csrfToken.getParameterName());
-        }
-
-        // Kiểm tra xem CSRF token có hợp lệ không
-        if (csrfHeader == null || !csrfHeader.equals(csrfToken.getToken())) {
-            logger.warn("CSRF token không hợp lệ");
+        if (!csrfToken.equals(expectedToken.getToken())) {
+            logger.warn("CSRF token không khớp. Expected: {}, Actual: {}",
+                    expectedToken.getToken(), csrfToken);
             return false;
         }
 

@@ -13,10 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -27,10 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ConversationController {
 
-    private final ConversationMemberRepository conversationMemberRepository;
     private final ConversationService conversationService;
-    private final ConversationRepository conversationRepository;
-
 
     @GetMapping("/{conversationId}/members")
     public ResponseEntity<?> getConversationMembers(
@@ -54,7 +48,8 @@ public class ConversationController {
             List<ConversationMemberDto> members = conversationService.getConversationMembers(conversationId, userId);
             return ResponseEntity.ok(members);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -83,7 +78,8 @@ public class ConversationController {
             Page<ConversationResponseDto> conversations = conversationService.getUserConversations(userId, pageable);
             return ResponseEntity.ok(conversations);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -111,7 +107,37 @@ public class ConversationController {
             List<ConversationResponseDto> conversations = conversationService.getAllUserConversations(userId);
             return ResponseEntity.ok(conversations);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Tạo hoặc lấy cuộc trò chuyện với người dùng khác
+     */
+    @PostMapping("/direct/{otherUserId}")
+    public ResponseEntity<?> createOrGetDirectConversation(
+            @PathVariable UUID otherUserId,
+            HttpServletRequest request) {
+
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session không hợp lệ hoặc đã hết hạn"));
+        }
+
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) session.getAttribute(userKey);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "User ID không hợp lệ trong session"));
+        }
+        try {
+            ConversationResponseDto conversation = conversationService.getOrCreateDirectConversation(userId, otherUserId);
+            return ResponseEntity.ok(conversation);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 }

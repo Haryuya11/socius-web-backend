@@ -25,7 +25,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/master-data")
-@PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
 @RequiredArgsConstructor
 public class MasterDataController {
 
@@ -193,98 +192,7 @@ public class MasterDataController {
     }
 
 
-    // TEAM ENDPOINTS
 
-    /**
-     * Lấy danh sách tất cả các team
-     *
-     * @return Danh sách các team
-     */
-    @GetMapping("/teams")
-    public ResponseEntity<List<TeamResponseDto>> getAllTeams() {
-        List<TeamResponseDto> teams = teamService.findAll();
-        return ResponseEntity.ok(teams);
-    }
-
-    /**
-     * Lấy thông tin một team theo ID
-     *
-     * @param id ID của team cần tìm
-     * @return Thông tin team nếu tìm thấy, null nếu không tìm thấy
-     */
-    @GetMapping("/teams/{id}")
-    public ResponseEntity<TeamResponseDto> getTeamById(@PathVariable UUID id) {
-        TeamResponseDto team = teamService.findById(id);
-        return ResponseEntity.ok(team);
-    }
-
-    /**
-     * Tạo một team mới
-     *
-     * @param requestDto Thông tin yêu cầu tạo team
-     * @return Thông tin team đã được tạo
-     */
-    @PostMapping("/teams")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<TeamResponseDto> createTeam(@Valid @RequestBody TeamRequestDto requestDto) {
-        TeamResponseDto createdTeam = teamService.create(requestDto);
-        return ResponseEntity.ok(createdTeam);
-    }
-
-    /**
-     * Xóa một team theo ID
-     *
-     * @param teamId ID của team cần xóa
-     * @return ResponseEntity với mã trạng thái 204 No Content nếu xóa thành công
-     */
-    @DeleteMapping("/teams/{teamId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<TeamResponseDto> deleteTeam(@PathVariable UUID teamId) {
-        teamService.delete(teamId);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Cập nhật thông tin một team
-     *
-     * @param teamId     ID của team cần cập nhật
-     * @param requestDto Thông tin yêu cầu cập nhật team
-     * @return Thông tin team đã được cập nhật
-     */
-    @PutMapping("/teams/{teamId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<TeamResponseDto> updateTeam(@PathVariable UUID teamId, @Valid @RequestBody TeamRequestDto requestDto) {
-        TeamResponseDto updatedTeam = teamService.update(teamId, requestDto);
-        return ResponseEntity.ok(updatedTeam);
-    }
-
-    /**
-     * Thêm một nhân viên vào team
-     *
-     * @param teamId     ID của team
-     * @param employeeId ID của nhân viên cần thêm vào team
-     * @return Thông tin team đã được cập nhật
-     */
-    @PostMapping("/teams/{teamId}/employees/{employeeId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<TeamResponseDto> addEmployeeToTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
-        TeamResponseDto updatedTeam = teamService.addEmployee(teamId, employeeId);
-        return ResponseEntity.ok(updatedTeam);
-    }
-
-    /**
-     * Xóa một nhân viên khỏi team
-     *
-     * @param teamId     ID của team
-     * @param employeeId ID của nhân viên cần xóa khỏi team
-     * @return Thông tin team đã được cập nhật
-     */
-    @DeleteMapping("/teams/{teamId}/employees/{employeeId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<TeamResponseDto> removeEmployeeFromTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
-        TeamResponseDto updatedTeam = teamService.removeEmployee(teamId, employeeId);
-        return ResponseEntity.ok(updatedTeam);
-    }
 
     // ROLE ENDPOINTS
 

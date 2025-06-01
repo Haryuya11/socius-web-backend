@@ -1,11 +1,11 @@
 package org.socius.sociuswebbackend.mappers;
 
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.socius.sociuswebbackend.model.entities.BaseEntity;
+import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import lombok.RequiredArgsConstructor;
-
-import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 
 /**
  * Base mapper interface providing common functionality for entity mapping
@@ -23,10 +23,9 @@ public abstract class BaseEntityMapper {
                 : ApplicationContextHelper.getBean(EntityMappingUtil.class);
     }
 
-    /**
-     * Common method for setting audit fields
-     */
-    protected void setAuditFields(Object target) {
-        // Common audit logic if needed
-    }
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract void mapForCreate(Object source, @MappingTarget BaseEntity target);
+
 }

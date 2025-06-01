@@ -40,6 +40,7 @@ import org.springframework.web.socket.server.support.HttpSessionHandshakeInterce
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -50,6 +51,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     final private ConfigService configService;
     final private OnlineUserService onlineUserService;
+    private final WebSocketCsrfInterceptor csrfInterceptor;
+
 
     @Bean
     public TaskScheduler webSocketTaskScheduler() {
@@ -65,7 +68,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws-heartbeat")
                 .setAllowedOriginPatterns("*")
                 .addInterceptors(
-                        ApplicationContextHelper.getBean(WebSocketCsrfInterceptor.class),
+                        csrfInterceptor,
                         new HttpSessionHandshakeInterceptor() {
                             @Override
                             public boolean beforeHandshake(
@@ -84,10 +87,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                         UUID userId = (UUID) session.getAttribute(userIdAttributeKey);
                                         if (userId != null) {
                                             // Cập nhật trạng thái online ngay khi handshake
-                                            onlineUserService.updateUserOnlineStatus(userId, session.getId());
 
                                             attributes.put(userIdAttributeKey, userId);
                                             attributes.put("sessionId", session.getId());
+
+                                            onlineUserService.updateUserOnlineStatus(userId, session.getId());
+
                                             logger.info("User {} connected with session {}", userId, session.getId());
                                         } else {
                                             logger.warn("No userId found in session");
@@ -102,8 +107,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                             }
                         })
                 .withSockJS()
-                .setHeartbeatTime(30000);
+                .setHeartbeatTime(2500)
+                .setDisconnectDelay(30000)
+                .setClientLibraryUrl("https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js");
     }
+
+//    @Override
+//    public void registerStompEndpoints(StompEndpointRegistry registry) {
+//        registry.addEndpoint("/ws-heartbeat")
+//                .setAllowedOriginPatterns("*")
+//                .addInterceptors(csrfInterceptor)
+//                .withSockJS()
+//                .setHeartbeatTime(25000)
+//                .setDisconnectDelay(30000)
+//                .setClientLibraryUrl("https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js");
+//    }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
@@ -113,10 +131,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         // Prefix cho các channel mà client có thể subscribe
         registry.enableSimpleBroker("/topic", "/queue")
-                .setHeartbeatValue(new long[]{
-                        configService.getInt("websocket.heartbeat.send", 25000),
-                        configService.getInt("websocket.heartbeat.receive", 25000)
-                })
+                .setHeartbeatValue(new long[]{25000, 25000})
                 .setTaskScheduler(webSocketTaskScheduler());
     }
 
@@ -136,14 +151,40 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+                if (accessor != null) {
                     String userAttributeKey = RedisKeyBuilder.userIdAttributeKey();
-                    String sessionId = accessor.getSessionId();
-                    String userId = accessor.getFirstNativeHeader(userAttributeKey);
 
-                    if (userId != null) {
-                        Objects.requireNonNull(accessor.getSessionAttributes()).put(userAttributeKey, userId);
-                        logger.debug("User {} connected with session {}", userId, sessionId);
+                    if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                        String sessionId = accessor.getSessionId();
+                        String userId = accessor.getFirstNativeHeader("userId");
+
+                        if (userId != null) {
+                            try {
+                                UUID userUUID = UUID.fromString(userId);
+                                Objects.requireNonNull(accessor.getSessionAttributes()).put(userAttributeKey, userUUID);
+                                accessor.getSessionAttributes().put("userSessionId", accessor.getFirstNativeHeader("sessionId"));
+                                logger.debug("User {} connected with session {}", userId, sessionId);
+                            } catch (Exception e) {
+                                logger.error("Error parsing userId: {}", userId, e);
+                            }
+                        }
+                    }
+
+                    // Refresh online status trên mỗi message để maintain connection
+                    if (accessor.getSessionAttributes() != null) {
+                        UUID userId = (UUID) accessor.getSessionAttributes().get(userAttributeKey);
+                        String sessionId = (String) accessor.getSessionAttributes().get("userSessionId");
+
+                        if (userId != null && sessionId != null) {
+                            // Async refresh để không block message processing
+                            CompletableFuture.runAsync(() -> {
+                                try {
+                                    onlineUserService.handleUserHeartbeat(userId);
+                                } catch (Exception e) {
+                                    logger.warn("Error refreshing online status for user {}: {}", userId, e.getMessage());
+                                }
+                            });
+                        }
                     }
                 }
 

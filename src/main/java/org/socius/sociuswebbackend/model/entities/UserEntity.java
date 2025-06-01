@@ -68,11 +68,11 @@ public class UserEntity extends BaseEntity {
     @Column(name = "address")
     private String address;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private AccountEntity account;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private EmploymentDetailEntity employmentDetail;
 
@@ -131,7 +131,7 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private Set<EmployeeRankingEntity> rankings = new HashSet<>();
 
-    @OneToOne(mappedBy = "leader", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "leader")
     @JsonIgnore
     private TeamEntity ledTeam;
 

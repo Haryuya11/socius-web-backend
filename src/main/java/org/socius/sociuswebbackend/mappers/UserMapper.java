@@ -18,6 +18,9 @@ public abstract class UserMapper extends BaseEntityMapper implements
     @Override
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+//    @Mapping(target = "version", ignore = true)
+//    @Mapping(target = "createdBy", ignore = true)
+//    @Mapping(target = "updatedBy", ignore = true)
     public abstract UserResponseDto entityToDto(UserEntity entity);
 
     @Named("toLimitedDto")
@@ -34,11 +37,22 @@ public abstract class UserMapper extends BaseEntityMapper implements
     @Mapping(target = "phoneNumber", ignore = true)
     @Mapping(target = "hireDate", ignore = true)
     @Mapping(target = "address", ignore = true)
+//    @Mapping(target = "version", ignore = true)
+//    @Mapping(target = "createdBy", ignore = true)
+//    @Mapping(target = "updatedBy", ignore = true)
     public abstract UserResponseDto toLimitedDto(UserEntity entity);
 
     @Override
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     public abstract UserEntity requestDtoToEntity(UserRequestDto dto);
 
     @Override
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     public abstract void updateEntityFromDto(UserRequestDto dto, @MappingTarget UserEntity entity);
 }

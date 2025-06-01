@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.model.dtos.team;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,8 +14,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class TeamRequestDto {
-    @NotBlank(message = "Team name must not be empty")
+    @NotBlank(message = "Tên nhóm không được để trống")
     private String name;
-    
+
+    @NotNull(message = "ID của người đứng đầu nhóm không được để trống")
     private UUID leaderId;
 }
