@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.mappers;
 
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -18,8 +19,6 @@ public abstract class PeerVoteMapper extends BaseEntityMapper implements
         GenericMapper<PeerVoteEntity, PeerVoteResponseDto, PeerVoteRequestDto> {
 
     @Override
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     public abstract PeerVoteResponseDto entityToDto(PeerVoteEntity entity);
 
     @Override
@@ -69,5 +68,10 @@ public abstract class PeerVoteMapper extends BaseEntityMapper implements
         if (dto.getVoteType() != null) {
             entity.setVoteType(dto.getVoteType());
         }
+    }
+
+    @AfterMapping
+    protected void afterCreate(@MappingTarget PeerVoteEntity entity) {
+        mapForCreate(entity, entity);
     }
 }

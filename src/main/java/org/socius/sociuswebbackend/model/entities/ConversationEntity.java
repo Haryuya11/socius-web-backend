@@ -2,14 +2,11 @@ package org.socius.sociuswebbackend.model.entities;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -19,7 +16,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = {"createdBy", "members", "messages"})
+@ToString(exclude = {"members", "messages", "createdByUser"})
 public class ConversationEntity extends BaseEntity {
     @NotBlank(message = "Group name must not be empty")
     @Column(name = "name")
@@ -34,7 +31,7 @@ public class ConversationEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
-    private UserEntity createdBy;
+    private UserEntity createdByUser;
 
     @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

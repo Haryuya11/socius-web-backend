@@ -332,9 +332,11 @@ CREATE TABLE conversations
     name       VARCHAR(255),
     type       VARCHAR(20) NOT NULL CHECK (type IN ('DIRECT', 'GROUP')),
     image_url  TEXT,
-    created_by UUID        NOT NULL REFERENCES users (id),
+    created_by UUID        NOT NULL,
     created_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users (id)
+
 );
 
 -- Bảng thành viên cuộc trò chuyện
@@ -356,7 +358,7 @@ CREATE TABLE messages
     sender_id          UUID NOT NULL REFERENCES users (id),
     content            TEXT NOT NULL,
     message_type       VARCHAR(20)      DEFAULT 'TEXT' CHECK (message_type IN ('TEXT', 'IMAGE', 'FILE', 'AUDIO', 'VIDEO')),
-    file_url          TEXT,
+    file_url           TEXT,
     created_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     is_edited          BOOLEAN          DEFAULT FALSE,
@@ -409,45 +411,85 @@ ALTER TABLE notification_recipients
     ADD CONSTRAINT unique_notification_recipient UNIQUE (notification_id, user_id);
 
 
-INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES ('session_timeout', '60', 'Thời gian phiên làm việc (phút)'),
-       ('session_extension_threshold', '2', 'Ngưỡng thời gian còn lại để gia hạn phiên (phút)'),
-       ('default_user_password', '1', 'Mật khẩu mặc định cho tài khoản mới'),
-       ('allowed_origins', 'http://localhost:3000,https://app.socius.com', 'Danh sách domain được phép truy cập API'),
-       ('max_login_sessions', '1', 'Số phiên đăng nhập tối đa cho mỗi người dùng'),
-       ('online.status.timeout.minutes', '2', 'Thời gian chờ trạng thái online của người dùng (phút)'),
-       ('websocket.heartbeat.interval', '1', 'Khoảng thời gian gửi tín hiệu heartbeat của WebSocket (phút)')
-ON CONFLICT (setting_key) DO NOTHING;
+-- Thêm versioning cho bảng users (Critical)
+ALTER TABLE users
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
 
-INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES ('rabbitmq.message.ttl', '7', 'Thời gian sống của tin nhắn RabbitMQ (ngày)')
-ON CONFLICT (setting_key) DO NOTHING;
+-- Thêm versioning cho bảng departments (Critical)
+ALTER TABLE departments
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
 
-INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES ('websocket.time.to.first.message', '60000', 'Thời gian tối đa cho tin nhắn đầu tiên qua WebSocket (ms)'),
-       ('websocket.heartbeat.send', '25000', 'Thời gian gửi heartbeat từ server đến client (ms)'),
-       ('websocket.heartbeat.receive', '25000', 'Thời gian server chờ nhận heartbeat từ client (ms)')
-ON CONFLICT (setting_key) DO NOTHING;
+ALTER TABLE conversations
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
 
-INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES ('rabbitmq.prefetch.count', '10', 'Số lượng tin nhắn được gửi đến consumer cùng một lúc'),
-       ('rabbitmq.concurrent.consumers', '3', 'Số lượng consumer đồng thời cho mỗi queue'),
-       ('rabbitmq.max.concurrent.consumers', '10', 'Số lượng consumer tối đa cho mỗi queue'),
-       ('rabbitmq.retry.max.attempts', '3', 'Số lần thử lại tối đa khi gửi tin nhắn'),
-       ('rabbitmq.retry.initial.interval', '1000', 'Thời gian chờ giữa các lần thử lại (ms)'),
-       ('rabbitmq.retry.multiplier', '2', 'Hệ số nhân cho thời gian chờ giữa các lần thử lại'),
-       ('rabbitmq.retry.max.interval', '10000', 'Thời gian chờ tối đa giữa các lần thử lại (ms)'),
-       ('chat.offline.messages.expiry.days', '7', 'Thời gian hết hạn tin nhắn ngoại tuyến (ngày)'),
-       ('chat.offline.messages.max', '100', 'Số lượng tin nhắn ngoại tuyến tối đa cho mỗi người dùng'),
-       ('rabbitmq.dlx.message.ttl', '86400000', 'Thời gian sống của tin nhắn trong Dead Letter Exchange (ms)'),
-       ('rabbitmq.dlq.retry.window.minutes', '360',
-        'Thời gian tối đa để gửi lại tin nhắn trong Dead Letter Queue (phút)'),
-       ('websocket.disconnect.grace.seconds', '60', 'Thời gian chờ trước khi ngắt kết nối WebSocket (giây)'),
-       ('message.file.cleanup.days', '30', 'Thời gian sống của các tệp đính kèm tin nhắn (ngày)'),
-       ('session.cookie.max.age', '86400', 'Thời gian sống của cookie phiên (giây)'),
-       ('session.cookie.secure', 'true', 'Đặt cookie phiên là bảo mật (chỉ gửi qua HTTPS)'),
-       ('file.upload.max.size', '52428800', 'Kích thước tối đa của tệp tải lên (byte)'),
-       ('websocket.heartbeat.timeout', '300000', 'Thời gian chờ heartbeat WebSocket (ms)'),
-       ('rabbitmq.max.retries', '3', 'Số lần thử lại tối đa khi gửi tin nhắn RabbitMQ'),
-       ('user.online.timeout.minutes', '10', 'Thời gian chờ để xác định trạng thái online của người dùng (phút)')
-ON CONFLICT (setting_key) DO NOTHING;
+-- Thêm versioning cho bảng positions (Critical)
+ALTER TABLE positions
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng roles (Critical)
+ALTER TABLE roles
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng permissions (Critical)
+ALTER TABLE permissions
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng teams (Critical)
+ALTER TABLE teams
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng account (Critical)
+ALTER TABLE account
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng employment_details (Critical)
+ALTER TABLE employment_details
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng employment_history (Important)
+ALTER TABLE employment_history
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng salary_history (Important)
+ALTER TABLE salary_history
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng app_settings (Important)
+ALTER TABLE app_settings
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE login_history
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE tasks
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE employee_ranking
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE notifications
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE messages
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE peer_votes
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE performance_reviews
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE periods
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE targets
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+
+-- Thêm comment để giải thích
+COMMENT ON COLUMN users.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN teams.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN employment_details.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN account.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN login_history.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN tasks.version IS 'Optimistic locking version for concurrent updates';

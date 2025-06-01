@@ -1,6 +1,5 @@
 package org.socius.sociuswebbackend.mappers;
 
-import lombok.RequiredArgsConstructor;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRecipientDto;
@@ -14,25 +13,24 @@ import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Mapper for NotificationRecipient entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
-@RequiredArgsConstructor
-public abstract class NotificationRecipientMapper extends BaseEntityMapper implements
-        GenericMapper<NotificationRecipientEntity, NotificationRecipientDto, NotificationRecipientRequestDto> {
+public abstract class NotificationRecipientMapper {
 
     @Autowired
-    private UserRepository userRepository;
+    protected UserRepository userRepository;
 
     @Autowired
-    private NotificationRepository notificationRepository;
+    protected NotificationRepository notificationRepository;
 
     /**
      * Convert NotificationRecipientEntity to NotificationRecipientDto
      */
-    @Override
+//    @Override
     @Mapping(source = "id.notificationId", target = "notificationId")
     @Mapping(source = "id.userId", target = "userId")
     public abstract NotificationRecipientDto entityToDto(NotificationRecipientEntity entity);
@@ -40,13 +38,13 @@ public abstract class NotificationRecipientMapper extends BaseEntityMapper imple
     /**
      * Convert list of NotificationRecipientEntity to list of NotificationRecipientDto
      */
-    @Override
+//    @Override
     public abstract List<NotificationRecipientDto> entitiesToDtos(List<NotificationRecipientEntity> entities);
 
     /**
      * Convert NotificationRecipientRequestDto to NotificationRecipientEntity
      */
-    @Override
+//    @Override
     public NotificationRecipientEntity requestDtoToEntity(NotificationRecipientRequestDto dto) {
         if (dto == null) {
             return null;
@@ -67,4 +65,12 @@ public abstract class NotificationRecipientMapper extends BaseEntityMapper imple
                 .isRead(dto.getIsRead())
                 .build();
     }
+
+//    protected UUID entityIdNotificationId(NotificationRecipientEntity entity) {
+//        return entity.getId() != null ? entity.getId().getNotificationId() : null;
+//    }
+//
+//    protected UUID entityIdUserId(NotificationRecipientEntity entity) {
+//        return entity.getId() != null ? entity.getId().getUserId() : null;
+//    }
 }
