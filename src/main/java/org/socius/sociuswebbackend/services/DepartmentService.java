@@ -56,9 +56,8 @@ public interface DepartmentService {
      *
      * @param departmentId ID của phòng ban
      * @param employeeId   ID của nhân viên cần thêm
-     * @return Thông tin phòng ban sau khi thêm nhân viên
      */
-    DepartmentResponseDto addEmployee(UUID departmentId, UUID employeeId);
+    void addEmployee(UUID departmentId, UUID employeeId);
 
 
     /**
@@ -74,9 +73,8 @@ public interface DepartmentService {
      *
      * @param departmentId ID của phòng ban
      * @param employeeId   ID của nhân viên cần xóa
-     * @return Thông tin phòng ban sau khi xóa nhân viên
      */
-    DepartmentResponseDto removeEmployee(UUID departmentId, UUID employeeId);
+    void removeEmployee(UUID departmentId, UUID employeeId);
 
     /**
      * Xóa nhiều nhân viên khỏi phòng ban

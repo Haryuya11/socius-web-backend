@@ -28,81 +28,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MasterDataController {
 
-    final private DepartmentService departmentService;
     final private PositionService positionService;
     final private RoleService roleService;
     final private TeamService teamService;
 
     // POSITION ENDPOINTS
 
-    /**
-     * Lấy danh sách tất cả các vị trí
-     *
-     * @return Danh sách các vị trí
-     */
-    @GetMapping("/positions")
-    public ResponseEntity<List<PositionResponseDto>> getAllPositions() {
-        List<PositionResponseDto> positions = positionService.findAll();
-        return ResponseEntity.ok(positions);
-    }
 
-    /**
-     * Lấy thông tin một vị trí theo ID
-     *
-     * @param id ID của vị trí cần tìm
-     * @return Thông tin vị trí nếu tìm thấy, null nếu không tìm thấy
-     */
-    @GetMapping("/positions/{id}")
-    public ResponseEntity<PositionResponseDto> getPositionById(@PathVariable UUID id) {
-        PositionResponseDto position = positionService.findById(id);
-        return ResponseEntity.ok(position);
-    }
-
-    /**
-     * Tạo một vị trí mới
-     *
-     * @param requestDto Thông tin yêu cầu tạo vị trí
-     * @return Thông tin vị trí đã được tạo
-     */
-    @PostMapping("/positions")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<PositionResponseDto> createPosition(@Valid @RequestBody PositionRequestDto requestDto) {
-        PositionResponseDto createdPosition = positionService.create(requestDto);
-        return ResponseEntity.ok(createdPosition);
-    }
-
-    /**
-     * Xóa một vị trí theo ID
-     *
-     * @param positionId ID của vị trí cần xóa
-     * @return ResponseEntity với mã trạng thái 204 No Content nếu xóa thành công
-     */
-    @DeleteMapping("/positions/{positionId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<PositionResponseDto> deletePosition(@PathVariable UUID positionId) {
-        positionService.delete(positionId);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Cập nhật thông tin một vị trí
-     *
-     * @param positionId ID của vị trí cần cập nhật
-     * @param requestDto Thông tin yêu cầu cập nhật vị trí
-     * @return Thông tin vị trí đã được cập nhật
-     */
-    @PutMapping("/positions/{positionId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<PositionResponseDto> updatePosition(@PathVariable UUID positionId, @Valid @RequestBody PositionRequestDto requestDto) {
-        PositionResponseDto updatedPosition = positionService.update(positionId, requestDto);
-        return ResponseEntity.ok(updatedPosition);
-    }
-
-    // DEPARTMENT ENDPOINTS
-
-
-
-    // ROLE ENDPOINTS
 
     /**
      * Lấy danh sách tất cả các vai trò

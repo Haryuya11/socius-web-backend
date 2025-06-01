@@ -137,10 +137,10 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public DepartmentResponseDto addEmployee(UUID departmentId, UUID employeeId) {
+    public void addEmployee(UUID departmentId, UUID employeeId) {
 
         // Tìm phòng ban theo ID
-        DepartmentEntity department = departmentRepository.findById(departmentId)
+        departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + departmentId));
 
         // Tìm nhân viên theo ID
@@ -157,16 +157,15 @@ public class DepartmentServiceImpl implements DepartmentService {
                 employmentDetail.getDepartment().getId().equals(departmentId)) {
             throw new RuntimeException("Nhân viên đã thuộc phòng ban này");
         }
-        DepartmentResponseDto result = addEmployeeToDatabase(departmentId, employeeId);
+        addEmployeeToDatabase(departmentId, employeeId);
 
         // Thêm vào group chat trong transaction riêng biệt
         CompletableFuture.runAsync(() -> addToGroupChatSafely(departmentId, employeeId));
 
-        return result;
     }
 
     @Transactional
-    public DepartmentResponseDto addEmployeeToDatabase(UUID departmentId, UUID employeeId) {
+    public void addEmployeeToDatabase(UUID departmentId, UUID employeeId) {
         // Logic thêm nhân viên vào database
         DepartmentEntity department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + departmentId));
@@ -185,7 +184,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         employmentDetail.setDepartment(department);
         employmentDetailRepository.save(employmentDetail);
 
-        return departmentMapper.entityToDto(department);
+        departmentMapper.entityToDto(department);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -217,9 +216,9 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public DepartmentResponseDto removeEmployee(UUID departmentId, UUID employeeId) {
+    public void removeEmployee(UUID departmentId, UUID employeeId) {
         // Kiểm tra điều kiện trước khi thực hiện
-        DepartmentEntity department = departmentRepository.findById(departmentId)
+        departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + departmentId));
 
         UserEntity employee = userRepository.findById(employeeId)
@@ -234,16 +233,15 @@ public class DepartmentServiceImpl implements DepartmentService {
         }
 
         // Thực hiện cập nhật database trong transaction riêng biệt
-        DepartmentResponseDto result = removeEmployeeFromDatabase(departmentId, employeeId);
+        removeEmployeeFromDatabase(departmentId, employeeId);
 
         // Xóa khỏi group chat trong transaction riêng biệt
         CompletableFuture.runAsync(() -> removeFromGroupChatSafely(departmentId, employeeId));
 
-        return result;
     }
 
     @Transactional
-    public DepartmentResponseDto removeEmployeeFromDatabase(UUID departmentId, UUID employeeId) {
+    public void removeEmployeeFromDatabase(UUID departmentId, UUID employeeId) {
         try {
             // Tìm phòng ban theo ID
             DepartmentEntity department = departmentRepository.findById(departmentId)
@@ -276,7 +274,7 @@ public class DepartmentServiceImpl implements DepartmentService {
             employmentDetail.setDepartment(null);
             employmentDetailRepository.save(employmentDetail);
 
-            return departmentMapper.entityToDto(department);
+            departmentMapper.entityToDto(department);
         } catch (Exception e) {
             logger.error("Lỗi khi xóa nhân viên {} khỏi phòng ban {}: {}",
                     employeeId, departmentId, e.getMessage());

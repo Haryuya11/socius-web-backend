@@ -3,7 +3,6 @@ package org.socius.sociuswebbackend.services;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.springframework.data.domain.Pageable;
-import org.socius.sociuswebbackend.model.dtos.team.TeamWithMembersDto;
 
 import java.util.List;
 import java.util.Map;
@@ -55,9 +54,8 @@ public interface TeamService {
      *
      * @param teamId     ID của team
      * @param employeeId ID của nhân viên cần thêm
-     * @return Thông tin team sau khi thêm nhân viên
      */
-    TeamResponseDto addEmployee(UUID teamId, UUID employeeId);
+    void addEmployee(UUID teamId, UUID employeeId);
 
     /**
      * Thêm nhiều nhân viên vào team
@@ -73,9 +71,8 @@ public interface TeamService {
      *
      * @param teamId     ID của team
      * @param employeeId ID của nhân viên cần xóa
-     * @return Thông tin team sau khi xóa nhân viên
      */
-    TeamResponseDto removeEmployee(UUID teamId, UUID employeeId);
+    void removeEmployee(UUID teamId, UUID employeeId);
 
     /**
      * Xóa nhiều nhân viên khỏi team
