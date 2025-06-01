@@ -52,7 +52,6 @@ public class ConversationServiceImpl implements ConversationService {
             throw new RuntimeException("Creator ID không thể null");
         }
 
-
         UserEntity creator = userRepository.findById(creatorId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + creatorId));
 
@@ -70,13 +69,14 @@ public class ConversationServiceImpl implements ConversationService {
         }
 
         ConversationEntity conversation = ConversationEntity.builder()
-                .id(groupId)
                 .name(name)
                 .type(ConversationType.GROUP)
                 .createdByUser(creator)
                 .build();
 
         conversation = conversationRepository.save(conversation);
+
+        conversationRepository.flush();
 
         List<ConversationMemberEntity> members = new ArrayList<>();
         members.add(createMemberEntity(conversation, creator, MemberRole.ADMIN));

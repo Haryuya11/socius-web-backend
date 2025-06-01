@@ -30,26 +30,19 @@ public abstract class TeamMapper extends BaseEntityMapper implements
     @Override
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-//    @Mapping(target = "version", ignore = true)
-//    @Mapping(target = "createdBy", ignore = true)
-//    @Mapping(target = "updatedBy", ignore = true)
     public abstract TeamResponseDto entityToDto(TeamEntity entity);
 
     @Named("entityToLimitedDto")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "leader", ignore = true)
-//    @Mapping(target = "version", ignore = true)
-//    @Mapping(target = "createdBy", ignore = true)
-//    @Mapping(target = "updatedBy", ignore = true)
     public abstract TeamResponseDto entityToLimitedDto(TeamEntity entity);
 
     @Override
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "id", ignore = true)
     public TeamEntity requestDtoToEntity(TeamRequestDto dto) {
         if (dto == null) {
             return null;
@@ -69,8 +62,6 @@ public abstract class TeamMapper extends BaseEntityMapper implements
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     public void updateEntityFromDto(TeamRequestDto dto, @MappingTarget TeamEntity entity) {
         if (dto == null) {
             return;

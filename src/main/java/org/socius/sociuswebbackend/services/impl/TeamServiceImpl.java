@@ -65,9 +65,7 @@ public class TeamServiceImpl implements TeamService {
             if (teamRepository.existsByName(requestDto.getName())) {
                 throw new RuntimeException("Team đã tồn tại");
             }
-            UUID teamId = UUID.randomUUID();
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
             String userEmail = auth.getName();
 
             UserEntity creator = userRepository.findByEmail(userEmail)
@@ -77,7 +75,6 @@ public class TeamServiceImpl implements TeamService {
 
 
             TeamEntity team = TeamEntity.builder()
-                    .id(teamId)
                     .name(requestDto.getName())
                     .leader(leader)
                     .build();
@@ -85,8 +82,8 @@ public class TeamServiceImpl implements TeamService {
             TeamEntity savedTeam = teamRepository.save(team);
 
             conversationService.createGroupConversation(
-                    teamId,
-                    "Team " + team.getName(),
+                    savedTeam.getId(),
+                    "Team " + savedTeam.getName(),
                     creator.getId(),
                     new HashSet<>()
             );
