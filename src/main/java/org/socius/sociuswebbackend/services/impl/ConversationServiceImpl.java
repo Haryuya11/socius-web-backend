@@ -73,7 +73,7 @@ public class ConversationServiceImpl implements ConversationService {
                 .id(groupId)
                 .name(name)
                 .type(ConversationType.GROUP)
-                .createdBy(creator)
+                .createdByUser(creator)
                 .build();
 
         conversation = conversationRepository.save(conversation);
@@ -250,7 +250,7 @@ public class ConversationServiceImpl implements ConversationService {
         ConversationEntity conversation = ConversationEntity.builder()
                 .name(user2.getFirstName())
                 .type(ConversationType.DIRECT)
-                .createdBy(user1)
+                .createdByUser(user1)
                 .build();
 
         conversation = conversationRepository.save(conversation);
@@ -404,7 +404,7 @@ public class ConversationServiceImpl implements ConversationService {
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
-                .sender(conversation.getCreatedBy()) // Người tạo cuộc trò chuyện là người gửi
+                .sender(conversation.getCreatedByUser()) // Người tạo cuộc trò chuyện là người gửi
                 .build();
 
         messageRepository.save(systemMessage);

@@ -68,40 +68,57 @@ public class OnlineUserServiceImpl implements OnlineUserService {
         }
     }
 
+//    @Override
+//    public void handleUserHeartbeat(UUID userId) {
+//        try {
+//            String key = RedisKeyBuilder.userOnlineKey(userId);
+//            OnlineUserStatusDto currentStatus = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
+//
+//            if (currentStatus != null) {
+//                // Check session validity trước khi update
+//                String sessionKey = RedisKeyBuilder.springSessionKey(currentStatus.getSessionId());
+//
+//                if (redisTemplate.hasKey(sessionKey)) {
+//                    Long ttl = redisTemplate.getExpire(sessionKey);
+//                    if (ttl > 0) {
+//                        // Session còn hợp lệ → update heartbeat
+//                        currentStatus.setLastSeen(LocalDateTime.now());
+//                        int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 2);
+//                        redisTemplate.opsForValue().set(key, currentStatus, Duration.ofMinutes(onlineStatusTimeout));
+//
+//                        logger.info("Cập nhật heartbeat cho user: {} với session: {}", userId, currentStatus.getSessionId());
+//                    } else {
+//                        // Session hết hạn → remove online status
+//                        redisTemplate.delete(key);
+//                        logger.info("Xóa online status cho user: {} do session hết hạn", userId);
+//                    }
+//                } else {
+//                    // Session không tồn tại → remove online status
+//                    redisTemplate.delete(key);
+//                    logger.info("Xóa online status cho user: {} do session không tồn tại", userId);
+//                }
+//            } else {
+//                logger.warn("Không tìm thấy online status cho user: {} khi xử lý heartbeat", userId);
+//            }
+//        } catch (Exception e) {
+//            logger.error("Lỗi khi xử lý heartbeat: {}", e.getMessage(), e);
+//        }
+//    }
+
     @Override
     public void handleUserHeartbeat(UUID userId) {
         try {
-            String key = RedisKeyBuilder.userOnlineKey(userId);
-            OnlineUserStatusDto currentStatus = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
+            String userOnlineKey = RedisKeyBuilder.userOnlineKey(userId);
 
-            if (currentStatus != null) {
-                // Check session validity trước khi update
-                String sessionKey = RedisKeyBuilder.springSessionKey(currentStatus.getSessionId());
+            // Chỉ refresh TTL nếu key tồn tại
+            if (redisTemplate.hasKey(userOnlineKey)) {
+                int onlineStatusTtl = configService.getInt("online.status.timeout.minutes", 2);
+                redisTemplate.expire(userOnlineKey, Duration.ofMinutes(onlineStatusTtl));
 
-                if (redisTemplate.hasKey(sessionKey)) {
-                    Long ttl = redisTemplate.getExpire(sessionKey);
-                    if (ttl > 0) {
-                        // Session còn hợp lệ → update heartbeat
-                        currentStatus.setLastSeen(LocalDateTime.now());
-                        int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 2);
-                        redisTemplate.opsForValue().set(key, currentStatus, Duration.ofMinutes(onlineStatusTimeout));
-
-                        logger.info("Cập nhật heartbeat cho user: {} với session: {}", userId, currentStatus.getSessionId());
-                    } else {
-                        // Session hết hạn → remove online status
-                        redisTemplate.delete(key);
-                        logger.info("Xóa online status cho user: {} do session hết hạn", userId);
-                    }
-                } else {
-                    // Session không tồn tại → remove online status
-                    redisTemplate.delete(key);
-                    logger.info("Xóa online status cho user: {} do session không tồn tại", userId);
-                }
-            } else {
-                logger.warn("Không tìm thấy online status cho user: {} khi xử lý heartbeat", userId);
+                logger.debug("Refreshed online status TTL for user: {}", userId);
             }
         } catch (Exception e) {
-            logger.error("Lỗi khi xử lý heartbeat: {}", e.getMessage(), e);
+            logger.warn("Error handling heartbeat for user {}: {}", userId, e.getMessage());
         }
     }
 

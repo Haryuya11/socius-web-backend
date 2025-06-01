@@ -16,6 +16,8 @@ import org.socius.sociuswebbackend.repositories.TeamRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.TeamService;
+import org.socius.sociuswebbackend.util.EntityMappingUtil;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,6 +41,7 @@ public class TeamServiceImpl implements TeamService {
     final private EmploymentDetailRepository employmentDetailRepository;
     final private ConversationService conversationService;
     final private EmploymentHistoryRepository employmentHistoryRepository;
+    final private EntityMappingUtil entityMappingUtil;
 
     @Override
     public List<TeamResponseDto> findAll() {
@@ -56,33 +59,47 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    @Transactional
     public TeamResponseDto create(TeamRequestDto requestDto) {
-        if (teamRepository.existsByName(requestDto.getName())) {
-            throw new RuntimeException("Team đã tồn tại");
+        try {
+            if (teamRepository.existsByName(requestDto.getName())) {
+                throw new RuntimeException("Team đã tồn tại");
+            }
+            UUID teamId = UUID.randomUUID();
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+            String userEmail = auth.getName();
+
+            UserEntity creator = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+            UserEntity leader = entityMappingUtil.mapUserIdToEntity(requestDto.getLeaderId());
+
+
+            TeamEntity team = TeamEntity.builder()
+                    .id(teamId)
+                    .name(requestDto.getName())
+                    .leader(leader)
+                    .build();
+
+            TeamEntity savedTeam = teamRepository.save(team);
+
+            conversationService.createGroupConversation(
+                    teamId,
+                    "Team " + team.getName(),
+                    creator.getId(),
+                    new HashSet<>()
+            );
+            return teamMapper.entityToDto(savedTeam);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("Không thể tạo team do vi phạm ràng buộc dữ liệu", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi tạo team: " + e.getMessage(), e);
         }
-        UUID teamId = UUID.randomUUID();
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        String userEmail = auth.getName();
-
-        UserEntity creator = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
-
-        TeamEntity team = teamMapper.requestDtoToEntity(requestDto);
-        team.setId(teamId);
-
-        team = teamRepository.save(team);
-
-        conversationService.createGroupConversation(
-                teamId,
-                "Team " + team.getName(),
-                creator.getId(),
-                new HashSet<>()
-        );
-        return teamMapper.entityToDto(team);
     }
 
     @Override
+    @Transactional
     public TeamResponseDto update(UUID id, TeamRequestDto requestDto) {
         TeamEntity team = teamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + id));

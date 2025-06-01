@@ -24,10 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ConversationController {
 
-    private final ConversationMemberRepository conversationMemberRepository;
     private final ConversationService conversationService;
-    private final ConversationRepository conversationRepository;
-
 
     @GetMapping("/{conversationId}/members")
     public ResponseEntity<?> getConversationMembers(
@@ -51,7 +48,8 @@ public class ConversationController {
             List<ConversationMemberDto> members = conversationService.getConversationMembers(conversationId, userId);
             return ResponseEntity.ok(members);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -80,7 +78,8 @@ public class ConversationController {
             Page<ConversationResponseDto> conversations = conversationService.getUserConversations(userId, pageable);
             return ResponseEntity.ok(conversations);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -108,7 +107,8 @@ public class ConversationController {
             List<ConversationResponseDto> conversations = conversationService.getAllUserConversations(userId);
             return ResponseEntity.ok(conversations);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
