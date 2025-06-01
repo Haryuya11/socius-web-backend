@@ -2,9 +2,11 @@ package org.socius.sociuswebbackend.services;
 
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
+import org.springframework.data.domain.Pageable;
 
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface DepartmentService {
@@ -84,4 +86,13 @@ public interface DepartmentService {
      * @return Danh sách thông tin phòng ban sau khi xóa nhân viên
      */
     List<DepartmentResponseDto> removeEmployees(UUID departmentId, List<UUID> employeeIds);
+
+    /**
+     * Lấy thông tin phòng ban cùng với danh sách thành viên
+     *
+     * @param departmentId ID của phòng ban
+     * @param pageable     Thông tin phân trang
+     * @return Map chứa thông tin phòng ban và danh sách thành viên
+     */
+    Map<String, Object> getDepartmentWithMembers(UUID departmentId, Pageable pageable);
 }

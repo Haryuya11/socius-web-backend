@@ -19,6 +19,7 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      * @return Optional chứa thông tin chi tiết nếu tìm thấy, empty nếu không tìm thấy
      */
     Optional<EmploymentDetailEntity> findByUserId(UUID userId);
+
     /**
      * Tìm kiếm thông tin chi của nhân viên
      *
@@ -54,8 +55,10 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
 
     /**
      * Lấy tất cả thông tin chi tiết của nhân viên với phân trang
+     *
      * @param pageable Thông tin phân trang
      * @return Page chứa danh sách EmploymentDetailEntity
      */
     Page<EmploymentDetailEntity> findAll(Pageable pageable);
+
 }
