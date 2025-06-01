@@ -235,6 +235,7 @@ public class ConversationServiceImpl implements ConversationService {
         Optional<ConversationEntity> existingConversation = conversationRepository.findDirectConversationBetweenUsers(userId1, userId2);
 
         if (existingConversation.isPresent()) {
+            logger.info("Đã tìm thấy cuộc trò chuyện trực tiếp giữa {} và {}", userId1, userId2);
             return getConversation(userId1, existingConversation.get().getId());
         }
 
@@ -269,6 +270,7 @@ public class ConversationServiceImpl implements ConversationService {
         );
 
         unreadCountRepository.saveAll(unreadCounts);
+        logger.info("Đã tạo cuộc trò chuyện trực tiếp giữa {} và {}", userId1, userId2);
 
         return getConversation(userId1, conversation.getId());
     }
