@@ -32,6 +32,13 @@ public class TeamController {
     }
 
 
+    /**
+     * Lấy thông tin một team cùng với danh sách thành viên của nó
+     *
+     * @param teamId ID của team cần tìm
+     * @param pageable Thông tin phân trang
+     * @return Thông tin team cùng với danh sách thành viên nếu tìm thấy, null nếu không tìm thấy
+     */
     @GetMapping("/{teamId}/members")
     public ResponseEntity<Map<String, Object>> getTeamWithMembers(
             @PathVariable UUID teamId,
@@ -42,7 +49,6 @@ public class TeamController {
         }
         return ResponseEntity.ok(teamService.getTeamWithMembers(teamId, pageable));
     }
-
 
     /**
      * Lấy thông tin một team theo ID

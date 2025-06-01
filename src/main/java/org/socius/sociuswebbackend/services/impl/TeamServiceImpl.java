@@ -73,7 +73,6 @@ public class TeamServiceImpl implements TeamService {
 
             UserEntity leader = entityMappingUtil.mapUserIdToEntity(requestDto.getLeaderId());
 
-
             TeamEntity team = TeamEntity.builder()
                     .name(requestDto.getName())
                     .leader(leader)
