@@ -86,7 +86,7 @@ public class ConversationServiceImplTest {
         conversation.setId(conversationId);
         conversation.setName("Test Conversation");
         conversation.setType(ConversationType.GROUP);
-        conversation.setCreatedBy(user);
+        conversation.setCreatedByUser(user);
 
         conversationResponseDto = ConversationResponseDto.builder()
                 .id(conversationId)
@@ -356,7 +356,7 @@ public class ConversationServiceImplTest {
         verify(conversationRepository).save(argThat(conv ->
                 conv.getName().equals(groupName) &&
                         conv.getType() == ConversationType.GROUP &&
-                        conv.getCreatedBy().getId().equals(userId)
+                        conv.getCreatedByUser().getId().equals(userId)
         ));
     }
 

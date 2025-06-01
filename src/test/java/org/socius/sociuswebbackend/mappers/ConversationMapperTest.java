@@ -100,7 +100,7 @@ public class ConversationMapperTest {
     void shouldMapEntityToDtoWithBasicInfo() {
         // Khởi tạo - Tạo cuộc trò chuyện thử nghiệm
         ConversationEntity conversation = ChatTestDataUtil.createConversationEntity();
-        UserEntity creator = conversation.getCreatedBy();
+        UserEntity creator = conversation.getCreatedByUser();
         UserResponseDto creatorDto = AuthTestDataUtil.createTestAdminUserResponse();
 
         // Giả lập mapper người dùng để trả về DTO
@@ -114,7 +114,7 @@ public class ConversationMapperTest {
         assertEquals(conversation.getId(), dto.getId());
         assertEquals(conversation.getName(), dto.getName());
         assertEquals(conversation.getType(), dto.getType());
-        assertEquals(creatorDto, dto.getCreatedBy());
+        assertEquals(creatorDto, dto.getCreatedByUser());
     }
 
     /**
@@ -128,7 +128,7 @@ public class ConversationMapperTest {
     void shouldMapEntityToDtoWithLastMessage() {
         // Khởi tạo - Tạo cuộc trò chuyện thử nghiệm với tin nhắn
         ConversationEntity conversation = ChatTestDataUtil.createConversationEntity();
-        UserEntity creator = conversation.getCreatedBy();
+        UserEntity creator = conversation.getCreatedByUser();
         UserResponseDto creatorDto = AuthTestDataUtil.createTestAdminUserResponse();
 
         // Tạo tin nhắn và thêm vào cuộc trò chuyện
@@ -153,7 +153,7 @@ public class ConversationMapperTest {
         assertEquals(conversation.getId(), dto.getId());
         assertEquals(conversation.getName(), dto.getName());
         assertEquals(conversation.getType(), dto.getType());
-        assertEquals(creatorDto, dto.getCreatedBy());
+        assertEquals(creatorDto, dto.getCreatedByUser());
     }
 
     /**
@@ -215,7 +215,7 @@ public class ConversationMapperTest {
         // Khởi tạo - Tạo cuộc trò chuyện không có tin nhắn
         ConversationEntity conversation = ChatTestDataUtil.createConversationEntity();
         conversation.setMessages(new HashSet<>());
-        UserEntity creator = conversation.getCreatedBy();
+        UserEntity creator = conversation.getCreatedByUser();
         UserResponseDto creatorDto = AuthTestDataUtil.createTestAdminUserResponse();
 
         // Giả lập mapper người dùng
@@ -229,7 +229,7 @@ public class ConversationMapperTest {
         assertEquals(conversation.getId(), dto.getId());
         assertEquals(conversation.getName(), dto.getName());
         assertEquals(conversation.getType(), dto.getType());
-        assertEquals(creatorDto, dto.getCreatedBy());
+        assertEquals(creatorDto, dto.getCreatedByUser());
         assertNull(dto.getLastMessage()); // Không có tin nhắn cuối
     }
 
@@ -244,7 +244,7 @@ public class ConversationMapperTest {
     void shouldMapEntityToDtoWithLastMessageFromMultiple() {
         // Khởi tạo - Tạo cuộc trò chuyện với nhiều tin nhắn
         ConversationEntity conversation = ChatTestDataUtil.createConversationEntity();
-        UserEntity creator = conversation.getCreatedBy();
+        UserEntity creator = conversation.getCreatedByUser();
         UserResponseDto creatorDto = AuthTestDataUtil.createTestAdminUserResponse();
 
         // Tạo nhiều tin nhắn với thời gian khác nhau
@@ -290,7 +290,7 @@ public class ConversationMapperTest {
         conversation.setId(java.util.UUID.randomUUID());
         conversation.setName("Test Conversation");
         conversation.setType(ConversationType.GROUP);
-        conversation.setCreatedBy(null); // Null creator
+        conversation.setCreatedByUser(null); // Null creator
         conversation.setMessages(null); // Null messages
         conversation.setMembers(new HashSet<>());
 
@@ -302,7 +302,7 @@ public class ConversationMapperTest {
         assertEquals(conversation.getId(), dto.getId());
         assertEquals(conversation.getName(), dto.getName());
         assertEquals(conversation.getType(), dto.getType());
-        assertNull(dto.getCreatedBy()); // Null creator được xử lý đúng
+        assertNull(dto.getCreatedByUser()); // Null creator được xử lý đúng
         assertNull(dto.getLastMessage()); // Null messages được xử lý đúng
     }
 
@@ -318,7 +318,7 @@ public class ConversationMapperTest {
         // Test với DIRECT conversation
         ConversationEntity directConversation = ChatTestDataUtil.createConversationEntity();
         directConversation.setType(ConversationType.DIRECT);
-        UserEntity creator = directConversation.getCreatedBy();
+        UserEntity creator = directConversation.getCreatedByUser();
         UserResponseDto creatorDto = AuthTestDataUtil.createTestAdminUserResponse();
 
         when(userMapper.entityToDto(creator)).thenReturn(creatorDto);

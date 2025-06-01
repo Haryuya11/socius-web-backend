@@ -32,8 +32,6 @@ public interface GenericMapper<E, R, Q> {
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     void updateEntityFromDto(Q dto, @MappingTarget E entity);
 
     /**
