@@ -67,7 +67,7 @@ class ConversationControllerCreateOrGetDirectConversationTest {
                 .id(UUID.randomUUID())
                 .name("Direct Conversation")
                 .type(ConversationType.DIRECT)
-                .createdBy(createdBy)
+                .createdByUser(createdBy)
                 .createdAt(LocalDateTime.now())
                 .build();
     }
@@ -264,7 +264,7 @@ class ConversationControllerCreateOrGetDirectConversationTest {
             assertEquals(conversationResponseDto.getId(), responseBody.getId());
             assertEquals(conversationResponseDto.getName(), responseBody.getName());
             assertEquals(conversationResponseDto.getType(), responseBody.getType());
-            assertEquals(conversationResponseDto.getCreatedBy().getId(), responseBody.getCreatedBy().getId());
+            assertEquals(conversationResponseDto.getCreatedByUser().getId(), responseBody.getCreatedByUser().getId());
         }
     }
 

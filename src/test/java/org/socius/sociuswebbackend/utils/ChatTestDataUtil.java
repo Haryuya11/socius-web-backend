@@ -29,7 +29,7 @@ public class ChatTestDataUtil {
                 .type(ConversationType.GROUP)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
-                .createdBy(AuthTestDataUtil.createTestAdminUser())
+                .createdByUser(AuthTestDataUtil.createTestAdminUser())
                 .members(new HashSet<>())
                 .messages(new HashSet<>())
                 .build();
@@ -105,7 +105,7 @@ public class ChatTestDataUtil {
                 .id(UUID.randomUUID())
                 .name("Cuộc trò chuyện mẫu")
                 .type(ConversationType.GROUP)
-                .createdBy(AuthTestDataUtil.createTestAdminUserResponse())
+                .createdByUser(AuthTestDataUtil.createTestAdminUserResponse())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -172,7 +172,7 @@ public class ChatTestDataUtil {
         Set<ConversationMemberEntity> members = new HashSet<>();
 
         // Thêm người tạo là admin với vai trò ADMIN
-        ConversationMemberEntity creator = createConversationMemberEntity(conversation, conversation.getCreatedBy());
+        ConversationMemberEntity creator = createConversationMemberEntity(conversation, conversation.getCreatedByUser());
         creator.setRole(MemberRole.ADMIN);
         members.add(creator);
 
@@ -194,7 +194,7 @@ public class ChatTestDataUtil {
         List<MessageEntity> messages = new ArrayList<>();
 
         LocalDateTime baseTime = LocalDateTime.now().minusHours(1);
-        UserEntity sender = conversation.getCreatedBy();
+        UserEntity sender = conversation.getCreatedByUser();
 
         for (int i = 0; i < messageCount; i++) {
             MessageEntity message = createMessageEntity(conversation, sender);

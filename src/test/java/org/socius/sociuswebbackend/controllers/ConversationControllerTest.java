@@ -104,7 +104,7 @@ class ConversationControllerTest {
                 .id(UUID.randomUUID())
                 .name("Team Discussion")
                 .type(ConversationType.GROUP)
-                .createdBy(user1)
+                .createdByUser(user1)
                 .createdAt(LocalDateTime.now().minusDays(2))
                 .build();
 
@@ -112,7 +112,7 @@ class ConversationControllerTest {
                 .id(UUID.randomUUID())
                 .name("Project Chat")
                 .type(ConversationType.GROUP)
-                .createdBy(user2)
+                .createdByUser(user2)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
 
