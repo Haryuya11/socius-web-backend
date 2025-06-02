@@ -5,55 +5,28 @@ import org.socius.sociuswebbackend.services.EmploymentDetailService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/employee")
 @RequiredArgsConstructor
 public class EmploymentDetailController {
 
     private final EmploymentDetailService employmentDetailService;
 
-    @GetMapping("/employees")
+    @GetMapping("/all")
     public ResponseEntity<Map<String, Object>> getAllEmployees(Pageable pageable) {
         return ResponseEntity.ok(employmentDetailService.getAllEmployees(pageable));
     }
 
-    @GetMapping("admin/employees")
+
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<Map<String, Object>> getAllEmployeesForAdmin(Pageable pageable) {
         return ResponseEntity.ok(employmentDetailService.getAllEmployeesForAdmin(pageable));
-    }
-
-    @GetMapping("/user/{userId}/employment-history")
-    public ResponseEntity<Map<String, Object>> getEmploymentHistory(
-            @PathVariable UUID userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Map<String, Object> response = employmentDetailService.getEmploymentHistory(userId, pageable);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/user/{userId}/salary-history")
-    public ResponseEntity<Map<String, Object>> getSalaryHistory(
-            @PathVariable UUID userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Map<String, Object> response = employmentDetailService.getSalaryHistory(userId, pageable);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/user/{userId}/employment-detail")
-    public ResponseEntity<Map<String, Object>> getEmploymentDetail(
-            @PathVariable UUID userId) {
-        if (userId == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        Map<String, Object> response = employmentDetailService.getEmploymentDetailByUserId(userId);
-        return ResponseEntity.ok(response);
     }
 }

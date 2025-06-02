@@ -25,7 +25,7 @@ public class TeamController {
      *
      * @return Danh sách các team
      */
-    @GetMapping("/")
+    @GetMapping()
     public ResponseEntity<List<TeamResponseDto>> getAllTeams() {
         List<TeamResponseDto> teams = teamService.findAll();
         return ResponseEntity.ok(teams);

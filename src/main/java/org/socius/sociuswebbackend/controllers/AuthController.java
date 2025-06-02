@@ -8,10 +8,12 @@ import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginResponseDto;
 import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.SessionInfoDto;
+import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 import org.socius.sociuswebbackend.services.AuthenticationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -115,5 +117,20 @@ public class AuthController {
             default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Lỗi hệ thống"));
         };
+    }
+
+    @PostMapping("/reset-password")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<?> resetPassword(@RequestParam String email) {
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email không được để trống");
+        }
+
+        boolean result = authenticationService.resetPassword(email);
+        if (result) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "Đã gửi email hướng dẫn đặt lại mật khẩu"));
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Không tìm thấy người dùng với email này"));
+        }
     }
 }

@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.repositories;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -62,4 +63,5 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      */
     Page<EmploymentDetailEntity> findAll(@NonNull Pageable pageable);
 
+    List<EmploymentDetailEntity> findByTeam_Id(UUID teamId);
 }

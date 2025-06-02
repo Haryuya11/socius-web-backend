@@ -26,7 +26,7 @@ public class DepartmentController {
      *
      * @return Danh sách các phòng ban
      */
-    @GetMapping("/")
+    @GetMapping()
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<List<DepartmentResponseDto>> getAllDepartments() {
         List<DepartmentResponseDto> departments = departmentService.findAll();
