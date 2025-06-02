@@ -27,7 +27,7 @@ public class PositionController {
      *
      * @return Danh sách các vị trí
      */
-    @GetMapping("/")
+    @GetMapping()
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<List<PositionResponseDto>> getAllPositions() {
         List<PositionResponseDto> positions = positionService.findAll();

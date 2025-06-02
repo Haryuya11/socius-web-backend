@@ -432,4 +432,40 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
         return result;
     }
+
+    @Override
+    public boolean resetPassword(String email) {
+        try {
+            String defaultPassword = configService.getString("default_user_password", "1");
+
+            Optional<UserEntity> userOptional = userRepository.findByEmail(email);
+
+            if (userOptional.isEmpty()) {
+                logger.warn("Không tìm thấy người dùng với email: {}", email);
+                return false;
+            }
+
+            UserEntity user = userOptional.get();
+
+            Optional<AccountEntity> accountOptional = accountRepository.findByUser(user);
+            if (accountOptional.isEmpty()) {
+                logger.warn("Không tìm thấy tài khoản cho người dùng: {}", user.getId());
+                return false;
+            }
+
+            AccountEntity account = accountOptional.get();
+
+            // Mã hóa mật khẩu mới
+            String encodedPassword = passwordEncoder.encode(defaultPassword);
+            account.setPassword(encodedPassword);
+            account.setIsDefaultPassword(true);
+
+            accountRepository.save(account);
+            logger.info("Đặt lại mật khẩu thành công cho email: {}", email);
+            return true;
+        } catch (Exception e) {
+            logger.error("Lỗi khi đặt lại mật khẩu cho email {}: {}", email, e.getMessage());
+            return false;
+        }
+    }
 }
