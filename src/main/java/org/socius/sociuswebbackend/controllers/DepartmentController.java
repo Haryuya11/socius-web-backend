@@ -26,7 +26,8 @@ public class DepartmentController {
      *
      * @return Danh sách các phòng ban
      */
-    @GetMapping()
+    @GetMapping("/")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<List<DepartmentResponseDto>> getAllDepartments() {
         List<DepartmentResponseDto> departments = departmentService.findAll();
         return ResponseEntity.ok(departments);
@@ -40,6 +41,7 @@ public class DepartmentController {
      * @return Thông tin phòng ban cùng với danh sách thành viên nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{departmentId}/members")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<Map<String, Object>> getDepartmentWithMember(
             @PathVariable UUID departmentId,
             Pageable pageable
@@ -70,8 +72,9 @@ public class DepartmentController {
      */
     @PostMapping("/create")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<DepartmentResponseDto> createDepartment(@Valid @RequestBody DepartmentRequestDto requestDto) {
+    public ResponseEntity<?> createDepartment(@Valid @RequestBody DepartmentRequestDto requestDto) {
         DepartmentResponseDto createdDepartment = departmentService.create(requestDto);
+
         return ResponseEntity.ok(createdDepartment);
     }
 
@@ -83,7 +86,7 @@ public class DepartmentController {
      */
     @DeleteMapping("/delete/{departmentId}")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<DepartmentResponseDto> deleteDepartment(@PathVariable UUID departmentId) {
+    public ResponseEntity<?> deleteDepartment(@PathVariable UUID departmentId) {
         departmentService.delete(departmentId);
         return ResponseEntity.noContent().build();
     }
@@ -111,9 +114,9 @@ public class DepartmentController {
      */
     @PostMapping("/add/{departmentId}/employees/{employeeId}")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<DepartmentResponseDto> addEmployeeToDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
-        DepartmentResponseDto updatedDepartment = departmentService.addEmployee(departmentId, employeeId);
-        return ResponseEntity.ok(updatedDepartment);
+    public ResponseEntity<?> addEmployeeToDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
+        departmentService.addEmployee(departmentId, employeeId);
+        return ResponseEntity.ok().build();
     }
 
     /**
@@ -125,9 +128,9 @@ public class DepartmentController {
      */
     @DeleteMapping("/remove/{departmentId}/employees/{employeeId}")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<DepartmentResponseDto> removeEmployeeFromDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
-        DepartmentResponseDto updatedDepartment = departmentService.removeEmployee(departmentId, employeeId);
-        return ResponseEntity.ok(updatedDepartment);
+    public ResponseEntity<?> removeEmployeeFromDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
+        departmentService.removeEmployee(departmentId, employeeId);
+        return ResponseEntity.noContent().build();
     }
 
 }

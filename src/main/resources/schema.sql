@@ -126,10 +126,10 @@ CREATE TABLE
 (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id        UUID                                                                       NOT NULL UNIQUE,
-    position_id    UUID                                                                       NOT NULL,
-    department_id  UUID                                                                       NOT NULL,
+    position_id    UUID,
+    department_id  UUID,
     team_id        UUID,
-    role_id        UUID                                                                       NOT NULL,
+    role_id        UUID,
     start_date     DATE                                                                       NOT NULL CHECK (start_date <= CURRENT_DATE),
     salary         DECIMAL(10, 2) CHECK (salary >= 0)                                         NOT NULL,
     working_status VARCHAR(10) CHECK (working_status IN ('active', 'inactive', 'terminated')) NOT NULL,
@@ -141,6 +141,15 @@ CREATE TABLE
     FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE SET NULL,
     FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
 );
+
+ALTER TABLE employment_details
+    ALTER COLUMN department_id DROP NOT NULL;
+
+ALTER TABLE employment_details
+    ALTER COLUMN role_id DROP NOT NULL;
+
+ALTER TABLE employment_details
+    ALTER COLUMN position_id DROP NOT NULL;
 
 -- Bảng lịch sử việc làm
 CREATE TABLE

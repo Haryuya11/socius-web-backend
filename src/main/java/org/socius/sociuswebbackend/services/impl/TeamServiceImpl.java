@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -29,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -135,35 +137,67 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public TeamResponseDto addEmployee(UUID teamId, UUID employeeId) {
+    public void addEmployee(UUID teamId, UUID employeeId) {
         // Tìm team
-        TeamEntity team = teamRepository.findById(teamId)
+        teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + teamId));
 
         // Tìm nhân viên
         UserEntity employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
 
-        // Tìm chi tiết việc làm của nhân viên
+        // Kiểm tra xem nhân viên đã thuộc team chưa
         EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm của nhân viên"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
+
+        // Kiểm tra xem nhân viên có thuộc team không
+        if (employmentDetail.getTeam() != null &&
+                employmentDetail.getTeam().getId().equals(teamId)) {
+            throw new RuntimeException("Nhân viên đã thuộc team này");
+        }
+
+        TeamResponseDto result = addEmployeeToDatabase(teamId, employeeId);
+
+        // Thêm vào group chat trong transaction riêng biệt
+        CompletableFuture.runAsync(() -> addToGroupChatSafely(teamId, employeeId));
+
+    }
+
+    @Transactional
+    public TeamResponseDto addEmployeeToDatabase(UUID teamId, UUID employeeId) {
+        // Logic thêm nhân viên vào database
+        TeamEntity team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + teamId));
+
+        UserEntity employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
+
+        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
+
+        if (employmentDetail.getTeam() != null &&
+                !employmentDetail.getTeam().getId().equals(teamId)) {
+            throw new RuntimeException("Nhân viên đã thuộc team khác");
+        }
 
         employmentDetail.setTeam(team);
         employmentDetailRepository.save(employmentDetail);
 
-        // Tự động thêm nhân viên vào nhóm trò chuyện của team
-        try {
-            conversationService.addMember(teamId, employeeId);
-            logger.info("Đã thêm nhân viên {} vào nhóm trò chuyện của team {}", employeeId, teamId);
-        } catch (Exception e) {
-            logger.error("Lỗi khi thêm nhân viên vào nhóm trò chuyện của team: {}", e.getMessage());
-        }
-
-
         return teamMapper.entityToDto(team);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void addToGroupChatSafely(UUID teamId, UUID employeeId) {
+        try {
+            conversationService.addMember(teamId, employeeId);
+            logger.info("Đã thêm nhân viên {} vào group chat của team {}", employeeId, teamId);
+        } catch (Exception e) {
+            logger.error("Không thể thêm nhân viên vào group chat của team: {}", e.getMessage());
+        }
+    }
+
     @Override
+    @Transactional
     public List<TeamResponseDto> addEmployees(UUID teamId, List<UUID> employeeIds) {
         for (UUID employeeId : employeeIds) {
             addEmployee(teamId, employeeId);
@@ -172,6 +206,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    @Transactional
     public List<TeamResponseDto> removeEmployees(UUID teamId, List<UUID> employeeIds) {
         for (UUID employeeId : employeeIds) {
             removeEmployee(teamId, employeeId);
@@ -180,50 +215,80 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public TeamResponseDto removeEmployee(UUID teamId, UUID employeeId) {
-        // Tìm team
-        TeamEntity team = teamRepository.findById(teamId)
+    public void removeEmployee(UUID teamId, UUID employeeId) {
+        // Kiểm tra điều kiện trước khi thực hiện
+        teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + teamId));
 
-        // Tìm nhân viên
         UserEntity employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
 
-        // Tìm chi tiết việc làm của nhân viên
         EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm của nhân viên"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
 
+        // Kiểm tra xem nhân viên có thuộc team không
         if (employmentDetail.getTeam() == null || !employmentDetail.getTeam().getId().equals(teamId)) {
             throw new RuntimeException("Nhân viên không thuộc team này");
         }
 
-        // Lưu lịch sử làm việc
-        EmploymentHistoryEntity history = EmploymentHistoryEntity.builder()
-                .user(employee)
-                .position(employmentDetail.getPosition())
-                .department(employmentDetail.getDepartment())
-                .team(employmentDetail.getTeam())
-                .role(employmentDetail.getRole())
-                .startDate(employmentDetail.getStartDate())
-                .endDate(LocalDate.now())
-                .salary(employmentDetail.getSalary())
-                .description("Đã rời khỏi team " + team.getName())
-                .build();
+        // Thực hiện cập nhật database trong transaction riêng biệt
+        removeEmployeeFromDatabase(teamId, employeeId);
 
-        employmentHistoryRepository.save(history);
+        // Xóa khỏi group chat trong transaction riêng biệt
+        CompletableFuture.runAsync(() -> removeFromGroupChatSafely(teamId, employeeId));
+    }
 
-        employmentDetail.setTeam(null);
-        employmentDetailRepository.save(employmentDetail);
+    @Transactional
+    public void removeEmployeeFromDatabase(UUID teamId, UUID employeeId) {
+        try {
+            // Tìm team theo ID
+            TeamEntity team = teamRepository.findById(teamId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + teamId));
 
-        // Xóa nhân viên khỏi nhóm trò chuyện của team
+            // Tìm nhân viên theo ID
+            UserEntity employee = userRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
+
+            // Tìm chi tiết việc làm của nhân viên
+            EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
+
+            // Lưu lịch sử làm việc
+            EmploymentHistoryEntity history = EmploymentHistoryEntity.builder()
+                    .user(employee)
+                    .position(employmentDetail.getPosition())
+                    .department(employmentDetail.getDepartment())
+                    .team(employmentDetail.getTeam())
+                    .role(employmentDetail.getRole())
+                    .startDate(employmentDetail.getStartDate())
+                    .endDate(LocalDate.now())
+                    .salary(employmentDetail.getSalary())
+                    .description("Đã rời khỏi team " + team.getName())
+                    .build();
+
+            employmentHistoryRepository.save(history);
+
+            // Xóa nhân viên khỏi team
+            employmentDetail.setTeam(null);
+            employmentDetailRepository.save(employmentDetail);
+
+            teamMapper.entityToDto(team);
+        } catch (Exception e) {
+            logger.error("Lỗi khi xóa nhân viên {} khỏi team {}: {}",
+                    employeeId, teamId, e.getMessage());
+            throw new RuntimeException("Không thể xóa nhân viên khỏi team: " + e.getMessage(), e);
+        }
+    }
+
+    protected void removeFromGroupChatSafely(UUID teamId, UUID employeeId) {
         try {
             conversationService.removeMember(teamId, employeeId);
-            logger.info("Đã xóa nhân viên {} khỏi nhóm trò chuyện của team {}", employeeId, teamId);
+            logger.info("Đã xóa nhân viên {} khỏi group chat của team {}", employeeId, teamId);
         } catch (Exception e) {
-            logger.error("Lỗi khi xóa nhân viên khỏi nhóm trò chuyện của team: {}", e.getMessage());
+            logger.error("Không thể xóa nhân viên {} khỏi group chat của team {}: {}",
+                    employeeId, teamId, e.getMessage());
+            // Không throw exception để không ảnh hưởng đến quá trình chính
         }
-
-        return teamMapper.entityToDto(team);
     }
 
     @Override

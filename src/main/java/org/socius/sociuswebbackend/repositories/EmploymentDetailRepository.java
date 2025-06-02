@@ -8,6 +8,7 @@ import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.lang.NonNull;
 
 public interface EmploymentDetailRepository extends JpaRepository<EmploymentDetailEntity, UUID> {
 
@@ -59,6 +60,6 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      * @param pageable Thông tin phân trang
      * @return Page chứa danh sách EmploymentDetailEntity
      */
-    Page<EmploymentDetailEntity> findAll(Pageable pageable);
+    Page<EmploymentDetailEntity> findAll(@NonNull Pageable pageable);
 
 }

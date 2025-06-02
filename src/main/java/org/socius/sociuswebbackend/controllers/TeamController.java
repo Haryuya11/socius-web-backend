@@ -25,7 +25,7 @@ public class TeamController {
      *
      * @return Danh sách các team
      */
-    @GetMapping()
+    @GetMapping("/")
     public ResponseEntity<List<TeamResponseDto>> getAllTeams() {
         List<TeamResponseDto> teams = teamService.findAll();
         return ResponseEntity.ok(teams);
@@ -112,8 +112,8 @@ public class TeamController {
     @PostMapping("/add/{teamId}/employees/{employeeId}")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<TeamResponseDto> addEmployeeToTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
-        TeamResponseDto updatedTeam = teamService.addEmployee(teamId, employeeId);
-        return ResponseEntity.ok(updatedTeam);
+        teamService.addEmployee(teamId, employeeId);
+        return ResponseEntity.ok().build();
     }
 
     /**
@@ -125,8 +125,8 @@ public class TeamController {
      */
     @DeleteMapping("/remove/{teamId}/employees/{employeeId}")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<TeamResponseDto> removeEmployeeFromTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
-        TeamResponseDto updatedTeam = teamService.removeEmployee(teamId, employeeId);
-        return ResponseEntity.ok(updatedTeam);
+    public ResponseEntity<?> removeEmployeeFromTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
+        teamService.removeEmployee(teamId, employeeId);
+        return ResponseEntity.noContent().build();
     }
 }

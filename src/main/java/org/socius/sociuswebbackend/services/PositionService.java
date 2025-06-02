@@ -2,8 +2,10 @@ package org.socius.sociuswebbackend.services;
 
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface PositionService {
@@ -53,9 +55,8 @@ public interface PositionService {
      *
      * @param positionId ID của vị trí
      * @param employeeId ID của nhân viên cần thêm
-     * @return Thông tin vị trí sau khi thêm nhân viên
      */
-    PositionResponseDto addEmployee(UUID positionId, UUID employeeId);
+    void addEmployee(UUID positionId, UUID employeeId);
 
     /**
      * Thêm nhiều nhân viên vào vị trí
@@ -71,9 +72,8 @@ public interface PositionService {
      *
      * @param positionId ID của vị trí
      * @param employeeId ID của nhân viên cần xóa
-     * @return Thông tin vị trí sau khi xóa nhân viên
      */
-    PositionResponseDto removeEmployee(UUID positionId, UUID employeeId);
+    void removeEmployee(UUID positionId, UUID employeeId);
 
     /**
      * Xóa nhiều nhân viên khỏi vị trí
@@ -83,4 +83,13 @@ public interface PositionService {
      * @return Danh sách thông tin vị trí sau khi xóa nhân viên
      */
     List<PositionResponseDto> removeEmployees(UUID positionId, List<UUID> employeeIds);
+
+    /**
+     * Lấy thông tin vị trí cùng với danh sách thành viên
+     *
+     * @param positionId ID của vị trí
+     * @param pageable   Thông tin phân trang
+     * @return Map chứa thông tin vị trí và danh sách thành viên
+     */
+    Map<String, Object> getPositionWithMembers(UUID positionId, Pageable pageable);
 }
