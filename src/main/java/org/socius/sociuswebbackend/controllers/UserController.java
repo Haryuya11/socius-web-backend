@@ -130,7 +130,7 @@ public class UserController {
      * @param request Request HTTP hiện tại
      * @return Danh sách người dùng không thuộc bất kỳ phòng ban nào
      */
-    @GetMapping("not-in-any-department")
+    @GetMapping("/not-in-any-department")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<?> getUsersNotInAnyDepartment(HttpServletRequest request) {
         List<UserResponseDto> users = userService.getUsersNotInAnyDepartment(request);
@@ -147,7 +147,7 @@ public class UserController {
      * @param request Request HTTP hiện tại
      * @return Danh sách người dùng không thuộc bất kỳ vị trí nào
      */
-    @GetMapping("not-in-any-position")
+    @GetMapping("/not-in-any-position")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<?> getUsersNotInAnyPosition(HttpServletRequest request) {
         List<UserResponseDto> users = userService.getUsersNotInAnyPosition(request);
