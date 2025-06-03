@@ -91,4 +91,13 @@ public interface TeamService {
      * @return Map chứa thông tin team và danh sách thành viên
      */
     Map<String, Object> getTeamWithMembers(UUID teamId, Pageable pageable);
+
+    /**
+     * Lấy danh sách task của một team theo ID
+     *
+     * @param teamId   ID của team cần lấy danh sách task
+     * @param pageable Thông tin phân trang (số trang, kích thước trang)
+     * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử
+     */
+    Map<String, Object> getTasksByTeamId(UUID teamId, Pageable pageable);
 }

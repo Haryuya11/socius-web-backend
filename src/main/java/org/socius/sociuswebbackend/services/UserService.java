@@ -74,4 +74,13 @@ public interface UserService {
      * @return Danh sách người dùng không thuộc bất kỳ vị trí nào
      */
     List<UserResponseDto> getUsersNotInAnyPosition(HttpServletRequest request);
+
+    /**
+     * Lấy danh sách task của một người dùng theo ID
+     *
+     * @param userId  ID của người dùng cần lấy danh sách task
+     * @param pageable Thông tin phân trang (số trang, kích thước trang)
+     * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử
+     */
+    Map<String, Object> getTasksByUserId(UUID userId, Pageable pageable);
 }

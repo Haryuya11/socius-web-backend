@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.socius.sociuswebbackend.services.TeamService;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -128,5 +129,23 @@ public class TeamController {
     public ResponseEntity<?> removeEmployeeFromTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
         teamService.removeEmployee(teamId, employeeId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Lấy danh sách task của một team theo ID
+     *
+     * @param teamId ID của team cần lấy danh sách task
+     * @param page Số trang (mặc định là 0)
+     * @param size Số lượng task trên mỗi trang (mặc định là 10)
+     * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử, hoặc 404 nếu không tìm thấy
+     */
+    @GetMapping("/{teamId}/tasks")
+    public ResponseEntity<Map<String, Object>> getTeamTasks(
+            @PathVariable UUID teamId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Map<String, Object> response = teamService.getTasksByTeamId(teamId, pageable);
+        return ResponseEntity.ok(response);
     }
 }

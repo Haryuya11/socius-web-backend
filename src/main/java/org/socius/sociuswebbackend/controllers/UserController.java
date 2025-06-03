@@ -157,4 +157,22 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy người dùng nào không thuộc vị trí nào");
         }
     }
+
+    /**
+     * Lấy danh sách task của một người dùng theo ID
+     *
+     * @param userId ID của người dùng cần lấy danh sách task
+     * @param page Số trang (mặc định là 0)
+     * @param size Số lượng task trên mỗi trang (mặc định là 10)
+     * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử, hoặc 404 nếu không tìm thấy
+     */
+    @GetMapping("/{userId}/tasks")
+    public ResponseEntity<Map<String, Object>> getTasksByUserId(
+            @PathVariable UUID userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Map<String, Object> response = userService.getTasksByUserId(userId, pageable);
+        return ResponseEntity.ok(response);
+    }
 }

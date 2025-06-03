@@ -3,21 +3,18 @@ package org.socius.sociuswebbackend.services.impl;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.socius.sociuswebbackend.mappers.TaskMapper;
 import org.socius.sociuswebbackend.mappers.TeamMapper;
+import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
-import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
-import org.socius.sociuswebbackend.model.entities.EmploymentHistoryEntity;
-import org.socius.sociuswebbackend.model.entities.TeamEntity;
-import org.socius.sociuswebbackend.model.entities.UserEntity;
-import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
-import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
-import org.socius.sociuswebbackend.repositories.TeamRepository;
-import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.socius.sociuswebbackend.model.entities.*;
+import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.TeamService;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,11 +23,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +39,8 @@ public class TeamServiceImpl implements TeamService {
     final private ConversationService conversationService;
     final private EmploymentHistoryRepository employmentHistoryRepository;
     final private EntityMappingUtil entityMappingUtil;
+    final private TaskRepository taskRepository;
+    final private TaskMapper taskMapper;
 
     @Override
     public List<TeamResponseDto> findAll() {
@@ -299,5 +296,36 @@ public class TeamServiceImpl implements TeamService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Team not found with ID: " + teamId));
         return teamMapper.entityToTeamWithMembers(team, pageable);
+    }
+
+    @Override
+    public Map<String, Object> getTasksByTeamId(UUID teamId, Pageable pageable) {
+
+        TeamEntity team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found with ID: " + teamId));
+        List<UUID> memberIds = teamMapper.getMemberIds(team);
+        // Kiểm tra danh sách memberIds không rỗng
+        if (memberIds == null || memberIds.isEmpty()) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("task", new ArrayList<>());
+            result.put("totalTaskCount", 0);
+            result.put("totalPages", 0);
+            result.put("totalElements", 0L);
+            return result;
+        }
+
+        Page<TaskEntity> taskPage = taskRepository.findByManyAssignedToId(memberIds, pageable);
+
+        List<TaskResponseDto> task = taskPage.getContent().stream()
+                .map(taskMapper::entityToLimitedDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("task", task);
+        result.put("totalTaskCount", task.size());
+        result.put("totalPages", taskPage.getTotalPages());
+        result.put("totalElements", taskPage.getTotalElements());
+
+        return result;
     }
 }

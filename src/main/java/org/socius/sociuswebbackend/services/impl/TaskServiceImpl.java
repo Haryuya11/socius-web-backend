@@ -40,53 +40,8 @@ public class TaskServiceImpl implements TaskService {
     private final TeamMapper teamMapper;
     private final UserRepository userRepository;
 
-    @Override
-    public Map<String, Object> getTasksByUserId(UUID userId, Pageable pageable) {
-        Page<TaskEntity> taskPage = taskRepository.findByAssignedToId(userId, pageable);
 
-        List<TaskResponseDto> task = taskPage.getContent().stream()
-                .map(taskMapper::entityToLimitedDto)
-                .collect(Collectors.toList());
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("task", task);
-        result.put("totalTaskCount", task.size());
-        result.put("totalPages", taskPage.getTotalPages());
-        result.put("totalElements", taskPage.getTotalElements());
-
-        return result;
-    }
-
-    @Override
-    public Map<String, Object> getTasksByTeamId(UUID teamId, Pageable pageable) {
-
-        TeamEntity team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RuntimeException("Team not found with ID: " + teamId));
-        List<UUID> memberIds = teamMapper.getMemberIds(team);
-        // Kiểm tra danh sách memberIds không rỗng
-        if (memberIds == null || memberIds.isEmpty()) {
-            Map<String, Object> result = new HashMap<>();
-            result.put("task", new ArrayList<>());
-            result.put("totalTaskCount", 0);
-            result.put("totalPages", 0);
-            result.put("totalElements", 0L);
-            return result;
-        }
-
-        Page<TaskEntity> taskPage = taskRepository.findByManyAssignedToId(memberIds, pageable);
-
-        List<TaskResponseDto> task = taskPage.getContent().stream()
-                .map(taskMapper::entityToLimitedDto)
-                .collect(Collectors.toList());
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("task", task);
-        result.put("totalTaskCount", task.size());
-        result.put("totalPages", taskPage.getTotalPages());
-        result.put("totalElements", taskPage.getTotalElements());
-
-        return result;
-    }
 
     @Override
     public TaskResponseDto createTask(TaskRequestDto dto) {
