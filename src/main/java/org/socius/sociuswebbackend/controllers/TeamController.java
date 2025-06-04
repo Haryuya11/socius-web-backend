@@ -26,6 +26,7 @@ public class TeamController {
      * @return Danh sách các team
      */
     @GetMapping()
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<List<TeamResponseDto>> getAllTeams() {
         List<TeamResponseDto> teams = teamService.findAll();
         return ResponseEntity.ok(teams);
@@ -35,7 +36,7 @@ public class TeamController {
     /**
      * Lấy thông tin một team cùng với danh sách thành viên của nó
      *
-     * @param teamId ID của team cần tìm
+     * @param teamId   ID của team cần tìm
      * @param pageable Thông tin phân trang
      * @return Thông tin team cùng với danh sách thành viên nếu tìm thấy, null nếu không tìm thấy
      */
@@ -100,33 +101,5 @@ public class TeamController {
     public ResponseEntity<TeamResponseDto> updateTeam(@PathVariable UUID teamId, @Valid @RequestBody TeamRequestDto requestDto) {
         TeamResponseDto updatedTeam = teamService.update(teamId, requestDto);
         return ResponseEntity.ok(updatedTeam);
-    }
-
-    /**
-     * Thêm một nhân viên vào team
-     *
-     * @param teamId     ID của team
-     * @param employeeId ID của nhân viên cần thêm vào team
-     * @return Thông tin team đã được cập nhật
-     */
-    @PostMapping("/add/{teamId}/employees/{employeeId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<TeamResponseDto> addEmployeeToTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
-        teamService.addEmployee(teamId, employeeId);
-        return ResponseEntity.ok().build();
-    }
-
-    /**
-     * Xóa một nhân viên khỏi team
-     *
-     * @param teamId     ID của team
-     * @param employeeId ID của nhân viên cần xóa khỏi team
-     * @return Thông tin team đã được cập nhật
-     */
-    @DeleteMapping("/remove/{teamId}/employees/{employeeId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<?> removeEmployeeFromTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
-        teamService.removeEmployee(teamId, employeeId);
-        return ResponseEntity.noContent().build();
     }
 }

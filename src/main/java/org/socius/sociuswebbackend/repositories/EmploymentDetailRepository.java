@@ -64,4 +64,20 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
     Page<EmploymentDetailEntity> findAll(@NonNull Pageable pageable);
 
     List<EmploymentDetailEntity> findByTeam_Id(UUID teamId);
+
+    /**
+     * Đếm số lượng nhân viên có vai trò cụ thể
+     *
+     * @param roleId ID của vai trò
+     * @return Số lượng nhân viên có vai trò đó
+     */
+    long countByRoleId(UUID roleId);
+
+    /**
+     * Tìm kiếm danh sách thông tin chi tiết việc làm theo ID vai trò
+     *
+     * @param roleId ID của vai trò
+     * @return Danh sách EmploymentDetailEntity có vai trò đó
+     */
+    List<EmploymentDetailEntity> findByRole_Id(UUID roleId);
 }

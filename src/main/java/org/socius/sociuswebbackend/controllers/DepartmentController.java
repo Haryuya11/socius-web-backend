@@ -104,33 +104,4 @@ public class DepartmentController {
         DepartmentResponseDto updatedDepartment = departmentService.update(departmentId, requestDto);
         return ResponseEntity.ok(updatedDepartment);
     }
-
-    /**
-     * Thêm một nhân viên vào phòng ban
-     *
-     * @param departmentId ID của phòng ban
-     * @param employeeId   ID của nhân viên cần thêm vào phòng ban
-     * @return Thông tin phòng ban đã được cập nhật
-     */
-    @PostMapping("/add/{departmentId}/employees/{employeeId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<?> addEmployeeToDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
-        departmentService.addEmployee(departmentId, employeeId);
-        return ResponseEntity.ok().build();
-    }
-
-    /**
-     * Xóa một nhân viên khỏi phòng ban
-     *
-     * @param departmentId ID của phòng ban
-     * @param employeeId   ID của nhân viên cần xóa khỏi phòng ban
-     * @return Thông tin phòng ban đã được cập nhật
-     */
-    @DeleteMapping("/remove/{departmentId}/employees/{employeeId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<?> removeEmployeeFromDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
-        departmentService.removeEmployee(departmentId, employeeId);
-        return ResponseEntity.noContent().build();
-    }
-
 }

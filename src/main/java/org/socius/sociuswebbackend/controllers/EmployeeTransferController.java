@@ -5,10 +5,7 @@ import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailRespons
 import org.socius.sociuswebbackend.services.EmployeeTransferService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -46,6 +43,23 @@ public class EmployeeTransferController {
 
         EmploymentDetailResponseDto result = employeeTransferService
                 .transferPosition(employeeId, newPositionId);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Chuyển role cho nhân viên
+     *
+     * @param employeeId ID của nhân viên
+     * @param newRoleId  ID của role mới
+     * @return Thông tin chi tiết việc làm sau khi cập nhật
+     */
+    @PostMapping("/role")
+    public ResponseEntity<EmploymentDetailResponseDto> transferEmployeeRole(
+            @RequestParam UUID employeeId,
+            @RequestParam UUID newRoleId) {
+
+        EmploymentDetailResponseDto result = employeeTransferService
+                .transferEmployeeRole(employeeId, newRoleId);
         return ResponseEntity.ok(result);
     }
 }

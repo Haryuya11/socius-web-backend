@@ -7,12 +7,9 @@ import org.socius.sociuswebbackend.mappers.DepartmentMapper;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
 import org.socius.sociuswebbackend.model.entities.DepartmentEntity;
-import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
-import org.socius.sociuswebbackend.model.entities.EmploymentHistoryEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.DepartmentRepository;
 import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
-import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.DepartmentService;
@@ -21,15 +18,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +35,6 @@ public class DepartmentServiceImpl implements DepartmentService {
     final private UserRepository userRepository;
     final private EmploymentDetailRepository employmentDetailRepository;
     final private ConversationService conversationService;
-    final private EmploymentHistoryRepository employmentHistoryRepository;
 
 
     @Override
@@ -134,163 +127,6 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         departmentRepository.deleteById(id);
         logger.info("Đã xóa phòng ban với ID: {}", id);
-    }
-
-    @Override
-    public void addEmployee(UUID departmentId, UUID employeeId) {
-
-        // Tìm phòng ban theo ID
-        departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + departmentId));
-
-        // Tìm nhân viên theo ID
-        UserEntity employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
-
-
-        // Kiểm tra xem nhân viên đã thuộc phòng ban chưa
-        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
-
-        // Kiểm tra xem nhân viên có thuộc phòng ban không
-        if (employmentDetail.getDepartment() != null &&
-                employmentDetail.getDepartment().getId().equals(departmentId)) {
-            throw new RuntimeException("Nhân viên đã thuộc phòng ban này");
-        }
-        addEmployeeToDatabase(departmentId, employeeId);
-
-        // Thêm vào group chat trong transaction riêng biệt
-        CompletableFuture.runAsync(() -> addToGroupChatSafely(departmentId, employeeId));
-
-    }
-
-    @Transactional
-    public void addEmployeeToDatabase(UUID departmentId, UUID employeeId) {
-        // Logic thêm nhân viên vào database
-        DepartmentEntity department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + departmentId));
-
-        UserEntity employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
-
-        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
-
-        if (employmentDetail.getDepartment() != null &&
-                !employmentDetail.getDepartment().getId().equals(departmentId)) {
-            throw new RuntimeException("Nhân viên đã thuộc phòng ban khác");
-        }
-
-        employmentDetail.setDepartment(department);
-        employmentDetailRepository.save(employmentDetail);
-
-        departmentMapper.entityToDto(department);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected void addToGroupChatSafely(UUID departmentId, UUID employeeId) {
-        try {
-            conversationService.addMember(departmentId, employeeId);
-            logger.info("Đã thêm nhân viên {} vào group chat của phòng ban {}", employeeId, departmentId);
-        } catch (Exception e) {
-            logger.error("Không thể thêm nhân viên vào group chat của phòng ban: {}", e.getMessage());
-        }
-    }
-
-    @Override
-    @Transactional
-    public List<DepartmentResponseDto> addEmployees(UUID departmentId, List<UUID> employeeIds) {
-        for (UUID employeeId : employeeIds) {
-            addEmployee(departmentId, employeeId);
-        }
-        return findAll();
-    }
-
-    @Override
-    @Transactional
-    public List<DepartmentResponseDto> removeEmployees(UUID departmentId, List<UUID> employeeIds) {
-        for (UUID employeeId : employeeIds) {
-            removeEmployee(departmentId, employeeId);
-        }
-        return findAll();
-    }
-
-    @Override
-    public void removeEmployee(UUID departmentId, UUID employeeId) {
-        // Kiểm tra điều kiện trước khi thực hiện
-        departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + departmentId));
-
-        UserEntity employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
-
-        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
-
-        // Kiểm tra xem nhân viên có thuộc phòng ban không
-        if (employmentDetail.getDepartment() == null || !employmentDetail.getDepartment().getId().equals(departmentId)) {
-            throw new RuntimeException("Nhân viên không thuộc phòng ban này");
-        }
-
-        // Thực hiện cập nhật database trong transaction riêng biệt
-        removeEmployeeFromDatabase(departmentId, employeeId);
-
-        // Xóa khỏi group chat trong transaction riêng biệt
-        CompletableFuture.runAsync(() -> removeFromGroupChatSafely(departmentId, employeeId));
-
-    }
-
-    @Transactional
-    public void removeEmployeeFromDatabase(UUID departmentId, UUID employeeId) {
-        try {
-            // Tìm phòng ban theo ID
-            DepartmentEntity department = departmentRepository.findById(departmentId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + departmentId));
-
-            // Tìm nhân viên theo ID
-            UserEntity employee = userRepository.findById(employeeId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
-
-            // Tìm chi tiết việc làm của nhân viên
-            EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
-
-            // Lưu lịch sử làm việc
-            EmploymentHistoryEntity history = EmploymentHistoryEntity.builder()
-                    .user(employee)
-                    .position(employmentDetail.getPosition())
-                    .department(employmentDetail.getDepartment())
-                    .team(employmentDetail.getTeam())
-                    .role(employmentDetail.getRole())
-                    .startDate(employmentDetail.getStartDate())
-                    .endDate(LocalDate.now())
-                    .salary(employmentDetail.getSalary())
-                    .description("Đã rời khỏi phòng ban " + department.getName())
-                    .build();
-
-            employmentHistoryRepository.save(history);
-
-            // Xóa nhân viên khỏi phòng ban
-            employmentDetail.setDepartment(null);
-            employmentDetailRepository.save(employmentDetail);
-
-            departmentMapper.entityToDto(department);
-        } catch (Exception e) {
-            logger.error("Lỗi khi xóa nhân viên {} khỏi phòng ban {}: {}",
-                    employeeId, departmentId, e.getMessage());
-            throw new RuntimeException("Không thể xóa nhân viên khỏi phòng ban: " + e.getMessage(), e);
-        }
-    }
-
-    protected void removeFromGroupChatSafely(UUID departmentId, UUID employeeId) {
-        try {
-            conversationService.removeMember(departmentId, employeeId);
-            logger.info("Đã xóa nhân viên {} khỏi group chat của phòng ban {}", employeeId, departmentId);
-        } catch (Exception e) {
-            logger.error("Không thể xóa nhân viên {} khỏi group chat của phòng ban {}: {}",
-                    employeeId, departmentId, e.getMessage());
-            // Không throw exception để không ảnh hưởng đến quá trình chính
-        }
     }
 
     @Override

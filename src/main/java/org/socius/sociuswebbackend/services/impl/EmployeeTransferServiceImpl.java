@@ -4,17 +4,20 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.socius.sociuswebbackend.events.RBACEvent;
 import org.socius.sociuswebbackend.mappers.EmploymentDetailMapper;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.model.entities.*;
 import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.EmployeeTransferService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -23,13 +26,15 @@ public class EmployeeTransferServiceImpl implements EmployeeTransferService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmployeeTransferServiceImpl.class);
     private final EmploymentDetailRepository employmentDetailRepository;
+    private final EmploymentHistoryRepository employmentHistoryRepository;
     private final DepartmentRepository departmentRepository;
-    private final TeamRepository teamRepository;
     private final PositionRepository positionRepository;
+    private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final ConversationService conversationService;
     private final EmploymentDetailMapper employmentDetailMapper;
-    private final EmploymentHistoryRepository employmentHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public EmploymentDetailResponseDto transferDepartment(UUID employeeId, UUID newDepartmentId) {
@@ -83,6 +88,48 @@ public class EmployeeTransferServiceImpl implements EmployeeTransferService {
         employmentDetail.setUpdatedAt(LocalDateTime.now());
 
         employmentDetail = employmentDetailRepository.save(employmentDetail);
+        return employmentDetailMapper.entityToDto(employmentDetail);
+    }
+
+    @Override
+    public EmploymentDetailResponseDto transferEmployeeRole(UUID employeeId, UUID newRoleId) {
+        UserEntity employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
+
+        RoleEntity newRole = roleRepository.findById(newRoleId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy role với ID: " + newRoleId));
+
+        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
+
+        RoleEntity currentRole = employmentDetail.getRole();
+
+        if (currentRole != null && currentRole.getId().equals(newRoleId)) {
+            throw new RuntimeException("Nhân viên đã có role này rồi");
+        }
+
+        String historyDescription = currentRole != null
+                ? "Chuyển role từ " + currentRole.getName() + " sang " + newRole.getName()
+                : "Gán role " + newRole.getName();
+
+        // Lưu lịch sử
+        saveEmploymentHistory(employmentDetail, historyDescription);
+
+        // Cập nhật role mới
+        employmentDetail.setRole(newRole);
+        employmentDetail.setUpdatedAt(LocalDateTime.now());
+
+        employmentDetail = employmentDetailRepository.save(employmentDetail);
+
+        // Phát sự kiện cập nhật RBAC
+        CompletableFuture.runAsync(() -> {
+            if (currentRole != null) {
+                eventPublisher.publishEvent(new RBACEvent(this, currentRole.getId(), RBACEvent.EventType.ROLE_UPDATED));
+            }
+            eventPublisher.publishEvent(new RBACEvent(this, newRoleId, RBACEvent.EventType.ROLE_UPDATED));
+        });
+
+        logger.info("Đã chuyển role cho nhân viên {} thành công", employee.getEmail());
         return employmentDetailMapper.entityToDto(employmentDetail);
     }
 
