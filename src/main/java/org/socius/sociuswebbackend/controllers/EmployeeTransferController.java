@@ -16,30 +16,44 @@ import java.util.UUID;
 public class EmployeeTransferController {
     private final EmployeeTransferService employeeTransferService;
 
-    @PostMapping("/department")
+    /**
+     * Chuyển phòng ban cho nhân viên
+     *
+     * @param employeeId      Id của nhân viên cần chuyển
+     * @param newDepartmentId Id của phòng ban mới
+     * @return Thông tin chi tiết việc làm sau khi cập nhật
+     */
+    @PostMapping("/{employeeId}/department/{newDepartmentId}")
     public ResponseEntity<EmploymentDetailResponseDto> transferDepartment(
-            @RequestParam UUID employeeId,
-            @RequestParam UUID newDepartmentId) {
-
+            @PathVariable UUID employeeId,
+            @PathVariable UUID newDepartmentId) {
         EmploymentDetailResponseDto result = employeeTransferService
                 .transferDepartment(employeeId, newDepartmentId);
         return ResponseEntity.ok(result);
     }
 
-    @PostMapping("/team")
+    /**
+     * Chuyển team cho nhân viên
+     *
+     * @param employeeId ID của nhân viên cần chuyển
+     * @param newTeamId  ID của team mới
+     * @return Thông tin chi tiết việc làm sau khi cập nhật
+     */
+    @PostMapping("/{employeeId}/team/{newTeamId}")
     public ResponseEntity<EmploymentDetailResponseDto> transferTeam(
-            @RequestParam UUID employeeId,
-            @RequestParam UUID newTeamId) {
+            @PathVariable UUID employeeId,
+            @PathVariable UUID newTeamId) {
 
         EmploymentDetailResponseDto result = employeeTransferService
                 .transferTeam(employeeId, newTeamId);
         return ResponseEntity.ok(result);
     }
 
-    @PostMapping("/position")
+    @PostMapping("/{employeeId}/position/{newPositionId}")
     public ResponseEntity<EmploymentDetailResponseDto> transferPosition(
-            @RequestParam UUID employeeId,
-            @RequestParam UUID newPositionId) {
+            @PathVariable UUID employeeId,
+            @PathVariable UUID newPositionId
+    ) {
 
         EmploymentDetailResponseDto result = employeeTransferService
                 .transferPosition(employeeId, newPositionId);
@@ -53,10 +67,10 @@ public class EmployeeTransferController {
      * @param newRoleId  ID của role mới
      * @return Thông tin chi tiết việc làm sau khi cập nhật
      */
-    @PostMapping("/role")
+    @PostMapping("/{employeeId}/role/{newRoleId}")
     public ResponseEntity<EmploymentDetailResponseDto> transferEmployeeRole(
-            @RequestParam UUID employeeId,
-            @RequestParam UUID newRoleId) {
+            @PathVariable UUID employeeId,
+            @PathVariable UUID newRoleId) {
 
         EmploymentDetailResponseDto result = employeeTransferService
                 .transferEmployeeRole(employeeId, newRoleId);

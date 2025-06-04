@@ -38,61 +38,86 @@ public class EmployeeTransferServiceImpl implements EmployeeTransferService {
 
     @Override
     public EmploymentDetailResponseDto transferDepartment(UUID employeeId, UUID newDepartmentId) {
+        logger.info("Bắt đầu chuyển phòng ban cho nhân viên {} sang phòng ban {}", employeeId, newDepartmentId);
+
         EmploymentDetailEntity employmentDetail = getEmploymentDetail(employeeId);
         DepartmentEntity oldDepartment = employmentDetail.getDepartment();
         DepartmentEntity newDepartment = departmentRepository.findById(newDepartmentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban mới"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban mới với ID: " + newDepartmentId));
 
-        String reason = "Chuyển phòng ban từ " + oldDepartment.getName() + " sang " + newDepartment.getName();
+        String reason = oldDepartment != null
+                ? "Chuyển phòng ban từ " + oldDepartment.getName() + " sang " + newDepartment.getName()
+                : "Gán vào phòng ban " + newDepartment.getName();
+
         saveEmploymentHistory(employmentDetail, reason);
 
+        // Xử lý chuyển group chat phòng ban
         handleDepartmentChatTransfer(employeeId, oldDepartment, newDepartment);
 
         employmentDetail.setDepartment(newDepartment);
         employmentDetail.setUpdatedAt(LocalDateTime.now());
 
         employmentDetail = employmentDetailRepository.save(employmentDetail);
+
+        logger.info("Đã chuyển phòng ban cho nhân viên {} thành công", employeeId);
         return employmentDetailMapper.entityToDto(employmentDetail);
     }
 
     @Override
     public EmploymentDetailResponseDto transferTeam(UUID employeeId, UUID newTeamId) {
+        logger.info("Bắt đầu chuyển team cho nhân viên {} sang team {}", employeeId, newTeamId);
+
         EmploymentDetailEntity employmentDetail = getEmploymentDetail(employeeId);
         TeamEntity oldTeam = employmentDetail.getTeam();
         TeamEntity newTeam = teamRepository.findById(newTeamId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy team mới"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy team mới với ID: " + newTeamId));
 
-        String reason = "Chuyển team từ " + oldTeam.getName() + " sang " + newTeam.getName();
+        String reason = oldTeam != null
+                ? "Chuyển team từ " + oldTeam.getName() + " sang " + newTeam.getName()
+                : "Gán vào team " + newTeam.getName();
+
         saveEmploymentHistory(employmentDetail, reason);
 
+        // Xử lý chuyển group chat team
         handleTeamChatTransfer(employeeId, oldTeam, newTeam);
 
         employmentDetail.setTeam(newTeam);
         employmentDetail.setUpdatedAt(LocalDateTime.now());
 
         employmentDetail = employmentDetailRepository.save(employmentDetail);
+
+        logger.info("Đã chuyển team cho nhân viên {} thành công", employeeId);
         return employmentDetailMapper.entityToDto(employmentDetail);
     }
 
     @Override
     public EmploymentDetailResponseDto transferPosition(UUID employeeId, UUID newPositionId) {
+        logger.info("Bắt đầu chuyển vị trí cho nhân viên {} sang vị trí {}", employeeId, newPositionId);
+
         EmploymentDetailEntity employmentDetail = getEmploymentDetail(employeeId);
         PositionEntity oldPosition = employmentDetail.getPosition();
         PositionEntity newPosition = positionRepository.findById(newPositionId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí mới"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí mới với ID: " + newPositionId));
 
-        String reason = "Chuyển vị trí từ " + oldPosition.getName() + " sang " + newPosition.getName();
+        String reason = oldPosition != null
+                ? "Chuyển vị trí từ " + oldPosition.getName() + " sang " + newPosition.getName()
+                : "Gán vào vị trí " + newPosition.getName();
+
         saveEmploymentHistory(employmentDetail, reason);
 
         employmentDetail.setPosition(newPosition);
         employmentDetail.setUpdatedAt(LocalDateTime.now());
 
         employmentDetail = employmentDetailRepository.save(employmentDetail);
+
+        logger.info("Đã chuyển vị trí cho nhân viên {} thành công", employeeId);
         return employmentDetailMapper.entityToDto(employmentDetail);
     }
 
     @Override
     public EmploymentDetailResponseDto transferEmployeeRole(UUID employeeId, UUID newRoleId) {
+        logger.info("Bắt đầu chuyển role cho nhân viên {} sang role {}", employeeId, newRoleId);
+
         UserEntity employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
 
@@ -121,12 +146,16 @@ public class EmployeeTransferServiceImpl implements EmployeeTransferService {
 
         employmentDetail = employmentDetailRepository.save(employmentDetail);
 
-        // Phát sự kiện cập nhật RBAC
+        // Phát sự kiện cập nhật RBAC bất đồng bộ
         CompletableFuture.runAsync(() -> {
-            if (currentRole != null) {
-                eventPublisher.publishEvent(new RBACEvent(this, currentRole.getId(), RBACEvent.EventType.ROLE_UPDATED));
+            try {
+                if (currentRole != null) {
+                    eventPublisher.publishEvent(new RBACEvent(this, currentRole.getId(), RBACEvent.EventType.ROLE_UPDATED));
+                }
+                eventPublisher.publishEvent(new RBACEvent(this, newRoleId, RBACEvent.EventType.ROLE_UPDATED));
+            } catch (Exception e) {
+                logger.error("Lỗi khi phát sự kiện RBAC: {}", e.getMessage());
             }
-            eventPublisher.publishEvent(new RBACEvent(this, newRoleId, RBACEvent.EventType.ROLE_UPDATED));
         });
 
         logger.info("Đã chuyển role cho nhân viên {} thành công", employee.getEmail());
@@ -135,59 +164,75 @@ public class EmployeeTransferServiceImpl implements EmployeeTransferService {
 
     private EmploymentDetailEntity getEmploymentDetail(UUID employeeId) {
         UserEntity employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
 
         return employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin công việc của nhân viên"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin công việc của nhân viên với ID: " + employeeId));
     }
 
     private void saveEmploymentHistory(EmploymentDetailEntity employmentDetail, String reason) {
-        EmploymentHistoryEntity history = EmploymentHistoryEntity.builder()
-                .user(employmentDetail.getUser())
-                .position(employmentDetail.getPosition())
-                .department(employmentDetail.getDepartment())
-                .team(employmentDetail.getTeam())
-                .role(employmentDetail.getRole())
-                .startDate(employmentDetail.getStartDate())
-                .endDate(LocalDate.now())
-                .salary(employmentDetail.getSalary())
-                .description(reason)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+        try {
+            EmploymentHistoryEntity history = EmploymentHistoryEntity.builder()
+                    .user(employmentDetail.getUser())
+                    .position(employmentDetail.getPosition())
+                    .department(employmentDetail.getDepartment())
+                    .team(employmentDetail.getTeam())
+                    .role(employmentDetail.getRole())
+                    .startDate(employmentDetail.getStartDate())
+                    .endDate(LocalDate.now())
+                    .salary(employmentDetail.getSalary())
+                    .description(reason)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
 
-        employmentHistoryRepository.save(history);
+            employmentHistoryRepository.save(history);
+            logger.debug("Đã lưu lịch sử việc làm: {}", reason);
+        } catch (Exception e) {
+            logger.error("Lỗi khi lưu lịch sử việc làm: {}", e.getMessage());
+            throw new RuntimeException("Không thể lưu lịch sử việc làm: " + e.getMessage());
+        }
     }
 
     private void handleDepartmentChatTransfer(UUID employeeId, DepartmentEntity oldDepartment, DepartmentEntity newDepartment) {
         try {
             // Xóa khỏi group chat phòng ban cũ
-            if (oldDepartment != null) {
-                conversationService.removeMember(oldDepartment.getId(), employeeId);
+            if (oldDepartment != null && oldDepartment.getGroupChatId() != null) {
+                logger.debug("Xóa nhân viên {} khỏi group chat phòng ban cũ: {}", employeeId, oldDepartment.getName());
+                conversationService.removeMember(oldDepartment.getGroupChatId(), employeeId);
             }
 
             // Thêm vào group chat phòng ban mới
-            if (newDepartment != null) {
-                conversationService.addMember(newDepartment.getId(), employeeId);
+            if (newDepartment != null && newDepartment.getGroupChatId() != null) {
+                logger.debug("Thêm nhân viên {} vào group chat phòng ban mới: {}", employeeId, newDepartment.getName());
+                conversationService.addMember(newDepartment.getGroupChatId(), employeeId);
+            } else if (newDepartment != null) {
+                logger.warn("Phòng ban {} chưa có group chat được thiết lập", newDepartment.getName());
             }
         } catch (Exception e) {
-            logger.error("Lỗi khi chuyển group chat phòng ban: {}", e.getMessage());
+            logger.error("Lỗi khi chuyển group chat phòng ban cho nhân viên {}: {}", employeeId, e.getMessage());
+            // Không throw exception để không làm fail toàn bộ transaction chuyển phòng ban
         }
     }
 
     private void handleTeamChatTransfer(UUID employeeId, TeamEntity oldTeam, TeamEntity newTeam) {
         try {
             // Xóa khỏi group chat team cũ
-            if (oldTeam != null) {
-                conversationService.removeMember(oldTeam.getId(), employeeId);
+            if (oldTeam != null && oldTeam.getGroupChatId() != null) {
+                logger.debug("Xóa nhân viên {} khỏi group chat team cũ: {}", employeeId, oldTeam.getName());
+                conversationService.removeMember(oldTeam.getGroupChatId(), employeeId);
             }
 
             // Thêm vào group chat team mới
-            if (newTeam != null) {
-                conversationService.addMember(newTeam.getId(), employeeId);
+            if (newTeam != null && newTeam.getGroupChatId() != null) {
+                logger.debug("Thêm nhân viên {} vào group chat team mới: {}", employeeId, newTeam.getName());
+                conversationService.addMember(newTeam.getGroupChatId(), employeeId);
+            } else if (newTeam != null) {
+                logger.warn("Team {} chưa có group chat được thiết lập", newTeam.getName());
             }
         } catch (Exception e) {
-            logger.error("Lỗi khi chuyển group chat team: {}", e.getMessage());
+            logger.error("Lỗi khi chuyển group chat team cho nhân viên {}: {}", employeeId, e.getMessage());
+            // Không throw exception để không làm fail toàn bộ transaction chuyển team
         }
     }
 }

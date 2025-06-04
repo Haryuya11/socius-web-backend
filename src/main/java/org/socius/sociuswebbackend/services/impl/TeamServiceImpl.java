@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.TeamMapper;
+import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
@@ -73,14 +74,19 @@ public class TeamServiceImpl implements TeamService {
                     .leader(leader)
                     .build();
 
+            HashSet<UUID> initialMembers = new HashSet<>();
+            initialMembers.add(leader.getId());
+
+            ConversationResponseDto groupChat = conversationService.createGroupConversation(
+                    team.getName(),
+                    creator.getId(),
+                    initialMembers
+            );
+
+            team.setGroupChatId(groupChat.getId());
+
             TeamEntity savedTeam = teamRepository.save(team);
 
-            conversationService.createGroupConversation(
-                    savedTeam.getId(),
-                    "Team " + savedTeam.getName(),
-                    creator.getId(),
-                    new HashSet<>()
-            );
             return teamMapper.entityToDto(savedTeam);
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo team do vi phạm ràng buộc dữ liệu", e);

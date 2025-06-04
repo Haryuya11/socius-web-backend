@@ -16,4 +16,6 @@ public interface AccountRepository extends JpaRepository<AccountEntity, UUID> {
      * @return Optional chứa tài khoản nếu tìm thấy, empty nếu không tìm thấy
      */
     Optional<AccountEntity> findByUser(UserEntity user);
+
+    Optional<AccountEntity> findByUser_Id(UUID userId);
 }

@@ -8,6 +8,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "departments")
@@ -25,6 +26,9 @@ public class DepartmentEntity extends BaseEntity {
 
     @Column(name = "description")
     private String description;
+
+    @Column(name = "group_chat_id")
+    private UUID groupChatId;
 
     @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
     @JsonIgnore

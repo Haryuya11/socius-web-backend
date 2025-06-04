@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.DepartmentMapper;
+import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
 import org.socius.sociuswebbackend.model.entities.DepartmentEntity;
@@ -72,15 +73,15 @@ public class DepartmentServiceImpl implements DepartmentService {
                     .build();
 
 
-            DepartmentEntity savedDepartment = departmentRepository.save(department);
-
-            conversationService.createGroupConversation(
-                    savedDepartment.getId(),
-                    "Phòng " + savedDepartment.getName(),
+            ConversationResponseDto groupChat = conversationService.createGroupConversation(
+                    department.getName(),
                     creator.getId(),
                     new HashSet<>()
             );
 
+            department.setGroupChatId(groupChat.getId());
+
+            DepartmentEntity savedDepartment = departmentRepository.save(department);
             return departmentMapper.entityToDto(savedDepartment);
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo phòng ban vì ràng buộc dữ liệu", e);

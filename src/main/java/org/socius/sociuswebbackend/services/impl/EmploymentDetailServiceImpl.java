@@ -780,9 +780,15 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
     private void addToGroupChatAsync(UUID assignmentId, UUID employeeId, AssignmentType type) {
         CompletableFuture.runAsync(() -> {
             try {
-                conversationService.addMember(assignmentId, employeeId);
-                String entityType = getEntityTypeName(type);
-                logger.info("Đã thêm nhân viên {} vào group chat của {} {}", employeeId, entityType, assignmentId);
+                UUID groupChatId = getGroupChatId(assignmentId, type);
+                if (groupChatId != null) {
+                    conversationService.addMember(groupChatId, employeeId);
+                    String entityType = getEntityTypeName(type);
+                    logger.info("Đã thêm nhân viên {} vào group chat {} của {} {}",
+                            employeeId, groupChatId, entityType, assignmentId);
+                } else {
+                    logger.warn("Không tìm thấy group chat ID cho {} {}", getEntityTypeName(type), assignmentId);
+                }
             } catch (Exception e) {
                 String entityType = getEntityTypeName(type);
                 logger.error("Không thể thêm nhân viên {} vào group chat của {} {}: {}",
@@ -794,14 +800,39 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
     private void removeFromGroupChatAsync(UUID assignmentId, UUID employeeId, AssignmentType type) {
         CompletableFuture.runAsync(() -> {
             try {
-                conversationService.removeMember(assignmentId, employeeId);
-                String entityType = getEntityTypeName(type);
-                logger.info("Đã xóa nhân viên {} khỏi group chat của {} {}", employeeId, entityType, assignmentId);
+                UUID groupChatId = getGroupChatId(assignmentId, type);
+                if (groupChatId != null) {
+                    conversationService.removeMember(groupChatId, employeeId);
+                    String entityType = getEntityTypeName(type);
+                    logger.info("Đã xóa nhân viên {} khỏi group chat {} của {} {}",
+                            employeeId, groupChatId, entityType, assignmentId);
+                } else {
+                    logger.warn("Không tìm thấy group chat ID cho {} {}", getEntityTypeName(type), assignmentId);
+                }
             } catch (Exception e) {
                 String entityType = getEntityTypeName(type);
                 logger.error("Không thể xóa nhân viên {} khỏi group chat của {} {}: {}",
                         employeeId, entityType, assignmentId, e.getMessage());
             }
         });
+    }
+
+    private UUID getGroupChatId(UUID assignmentId, AssignmentType type) {
+        try {
+            return switch (type) {
+                case TEAM -> {
+                    TeamEntity team = teamRepository.findById(assignmentId).orElse(null);
+                    yield team != null ? team.getGroupChatId() : null;
+                }
+                case DEPARTMENT -> {
+                    DepartmentEntity department = departmentRepository.findById(assignmentId).orElse(null);
+                    yield department != null ? department.getGroupChatId() : null;
+                }
+                default -> null;
+            };
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy group chat ID cho {} {}: {}", getEntityTypeName(type), assignmentId, e.getMessage());
+            return null;
+        }
     }
 }

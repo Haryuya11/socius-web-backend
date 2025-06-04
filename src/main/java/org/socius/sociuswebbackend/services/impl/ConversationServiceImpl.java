@@ -42,12 +42,8 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     @Transactional
-    public ConversationResponseDto createGroupConversation(UUID groupId, String name, UUID creatorId, Set<UUID> memberIds) {
-        logger.info("Tạo group chat với ID: {}", groupId);
+    public ConversationResponseDto createGroupConversation(String name, UUID creatorId, Set<UUID> memberIds) {
 
-        if (groupId == null) {
-            throw new RuntimeException("Group ID không thể null");
-        }
         if (creatorId == null) {
             throw new RuntimeException("Creator ID không thể null");
         }
@@ -75,7 +71,6 @@ public class ConversationServiceImpl implements ConversationService {
                 .build();
 
         conversation = conversationRepository.save(conversation);
-
         conversationRepository.flush();
 
         List<ConversationMemberEntity> members = new ArrayList<>();
@@ -95,7 +90,6 @@ public class ConversationServiceImpl implements ConversationService {
 
         unreadCountRepository.saveAll(unreadCounts);
 
-        logger.info("Đã tạo group chat thành công với ID: {}", groupId);
         return conversationMapper.entityToDto(conversation);
     }
 
@@ -236,7 +230,7 @@ public class ConversationServiceImpl implements ConversationService {
 
         if (existingConversation.isPresent()) {
             logger.info("Đã tìm thấy cuộc trò chuyện trực tiếp giữa {} và {}", userId1, userId2);
-            return getConversation(userId1, existingConversation.get().getId());
+            return conversationMapper.entityToDto(existingConversation.get());
         }
 
         // Lấy thông tin người dùng
@@ -248,12 +242,12 @@ public class ConversationServiceImpl implements ConversationService {
 
         // Tạo cuộc trò chuyện mới
         ConversationEntity conversation = ConversationEntity.builder()
-                .name(user2.getFirstName())
+                .name(generateDirectConversationName(user1, user2))
                 .type(ConversationType.DIRECT)
                 .createdByUser(user1)
                 .build();
 
-        conversation = conversationRepository.save(conversation);
+        ConversationEntity savedConversation = conversationRepository.save(conversation);
 
         // Thêm cả 2 người dùng vào cuộc trò chuyện
         List<ConversationMemberEntity> members = Arrays.asList(
@@ -272,7 +266,7 @@ public class ConversationServiceImpl implements ConversationService {
         unreadCountRepository.saveAll(unreadCounts);
         logger.info("Đã tạo cuộc trò chuyện trực tiếp giữa {} và {}", userId1, userId2);
 
-        return getConversation(userId1, conversation.getId());
+        return conversationMapper.entityToDto(savedConversation);
     }
 
     @Override
@@ -280,7 +274,7 @@ public class ConversationServiceImpl implements ConversationService {
         logger.info("Lấy danh sách thành viên của cuộc trò chuyện: {} bởi user: {}", conversationId, userId);
 
         // Kiểm tra cuộc trò chuyện có tồn tại không
-        ConversationEntity conversation = conversationRepository.findById(conversationId)
+        conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
 
         // Kiểm tra người dùng có phải là thành viên không
@@ -414,18 +408,7 @@ public class ConversationServiceImpl implements ConversationService {
         chatMessageProducerService.sendChatMessage(messageDto, conversation.getType(), conversation.getId());
     }
 
-    private ConversationResponseDto getConversation(UUID userId, UUID conversationId) {
-        // Kiểm tra cuộc trò chuyện có tồn tại không
-        ConversationEntity conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
-
-        // Kiểm tra người dùng có phải là thành viên không
-        boolean isMember = conversationMemberRepository.findActiveMember(conversationId, userId)
-                .isPresent();
-        if (!isMember) {
-            throw new RuntimeException("Người dùng không phải là thành viên của cuộc trò chuyện");
-        }
-
-        return mapToConversationDto(conversation, userId);
+    private String generateDirectConversationName(UserEntity user1, UserEntity user2) {
+        return user1.getFullName() + " & " + user2.getFullName();
     }
 }

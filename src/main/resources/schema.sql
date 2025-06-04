@@ -374,7 +374,7 @@ CREATE TABLE messages
     conversation_id    UUID NOT NULL REFERENCES conversations (id),
     sender_id          UUID NOT NULL REFERENCES users (id),
     content            TEXT NOT NULL,
-    message_type       VARCHAR(20)      DEFAULT 'TEXT' CHECK (message_type IN ('TEXT', 'IMAGE', 'FILE', 'AUDIO', 'VIDEO')),
+    message_type       VARCHAR(20)      DEFAULT 'TEXT' CHECK (message_type IN ('TEXT', 'IMAGE', 'FILE', 'AUDIO', 'VIDEO', 'SYSTEM')),
     file_url           TEXT,
     created_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
@@ -510,3 +510,15 @@ COMMENT ON COLUMN employment_details.version IS 'Optimistic locking version for 
 COMMENT ON COLUMN account.version IS 'Optimistic locking version for concurrent updates';
 COMMENT ON COLUMN login_history.version IS 'Optimistic locking version for concurrent updates';
 COMMENT ON COLUMN tasks.version IS 'Optimistic locking version for concurrent updates';
+
+
+ALTER TABLE departments
+    ADD COLUMN group_chat_id UUID REFERENCES conversations (id) ON DELETE SET NULL;
+
+-- Thêm comment
+COMMENT ON COLUMN departments.group_chat_id IS 'ID of the group chat conversation for this department';
+
+ALTER TABLE teams
+    ADD COLUMN group_chat_id UUID REFERENCES conversations (id) ON DELETE SET NULL;
+
+COMMENT ON COLUMN teams.group_chat_id IS 'ID of the group chat conversation for this team';
