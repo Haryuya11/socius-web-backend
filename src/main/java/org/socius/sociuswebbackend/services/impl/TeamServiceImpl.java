@@ -1,5 +1,4 @@
 package org.socius.sociuswebbackend.services.impl;
-
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +37,8 @@ public class TeamServiceImpl implements TeamService {
     final private EmploymentDetailRepository employmentDetailRepository;
     final private ConversationService conversationService;
     final private EntityMappingUtil entityMappingUtil;
+    final private TaskRepository taskRepository;
+    final private TaskMapper taskMapper;
 
     @Override
     public List<TeamResponseDto> findAll() {
@@ -144,5 +145,36 @@ public class TeamServiceImpl implements TeamService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Team not found with ID: " + teamId));
         return teamMapper.entityToTeamWithMembers(team, pageable);
+    }
+
+    @Override
+    public Map<String, Object> getTasksByTeamId(UUID teamId, Pageable pageable) {
+
+        TeamEntity team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found with ID: " + teamId));
+        List<UUID> memberIds = teamMapper.getMemberIds(team);
+        // Kiểm tra danh sách memberIds không rỗng
+        if (memberIds == null || memberIds.isEmpty()) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("task", new ArrayList<>());
+            result.put("totalTaskCount", 0);
+            result.put("totalPages", 0);
+            result.put("totalElements", 0L);
+            return result;
+        }
+
+        Page<TaskEntity> taskPage = taskRepository.findByManyAssignedToId(memberIds, pageable);
+
+        List<TaskResponseDto> task = taskPage.getContent().stream()
+                .map(taskMapper::entityToLimitedDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("task", task);
+        result.put("totalTaskCount", task.size());
+        result.put("totalPages", taskPage.getTotalPages());
+        result.put("totalElements", taskPage.getTotalElements());
+
+        return result;
     }
 }

@@ -24,10 +24,11 @@ public class EmploymentDetailController {
     private final EmploymentDetailService employmentDetailService;
 
     /**
-     * Lấy danh sách tất cả nhân viên
+     * Lấy danh sách tất cả nhân viên với phân trang
      *
-     * @param pageable Thông tin phân trang
-     * @return Danh sách nhân viên cùng với thông tin phân trang
+     * @param pageable Đối tượng chứa thông tin phân trang (page, size)
+     * @return ResponseEntity chứa Map với danh sách nhân viên và metadata phân trang,
+     *         với mã trạng thái HTTP 200 (OK)
      */
     @GetMapping("/all")
     public ResponseEntity<Map<String, Object>> getAllEmployees(Pageable pageable) {
@@ -35,10 +36,11 @@ public class EmploymentDetailController {
     }
 
     /**
-     * Lấy danh sách tất cả nhân viên cho trang quản trị
+     * Lấy danh sách tất cả nhân viên dành cho admin với phân trang
      *
-     * @param pageable Thông tin phân trang
-     * @return Danh sách nhân viên cùng với thông tin phân trang
+     * @param pageable Đối tượng chứa thông tin phân trang (page, size)
+     * @return ResponseEntity chứa Map với danh sách nhân viên và metadata phân trang,
+     *         với mã trạng thái HTTP 200 (OK), chỉ dành cho người dùng có quyền admin
      */
     @GetMapping("/admin/all")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
