@@ -50,41 +50,6 @@ public interface DepartmentService {
      */
     void delete(UUID id);
 
-
-    /**
-     * Thêm nhân viên vào phòng ban
-     *
-     * @param departmentId ID của phòng ban
-     * @param employeeId   ID của nhân viên cần thêm
-     */
-    void addEmployee(UUID departmentId, UUID employeeId);
-
-
-    /**
-     * Thêm nhiều nhân viên vào phòng ban
-     *
-     * @param departmentId ID của phòng ban
-     * @param employeeIds  Danh sách ID của các nhân viên cần thêm
-     */
-    List<DepartmentResponseDto> addEmployees(UUID departmentId, List<UUID> employeeIds);
-
-    /**
-     * Xóa nhân viên khỏi phòng ban
-     *
-     * @param departmentId ID của phòng ban
-     * @param employeeId   ID của nhân viên cần xóa
-     */
-    void removeEmployee(UUID departmentId, UUID employeeId);
-
-    /**
-     * Xóa nhiều nhân viên khỏi phòng ban
-     *
-     * @param departmentId ID của phòng ban
-     * @param employeeIds  Danh sách ID của các nhân viên cần xóa
-     * @return Danh sách thông tin phòng ban sau khi xóa nhân viên
-     */
-    List<DepartmentResponseDto> removeEmployees(UUID departmentId, List<UUID> employeeIds);
-
     /**
      * Lấy thông tin phòng ban cùng với danh sách thành viên
      *

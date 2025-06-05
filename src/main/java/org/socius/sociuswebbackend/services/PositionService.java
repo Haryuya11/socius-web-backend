@@ -49,41 +49,6 @@ public interface PositionService {
      */
     void delete(UUID id);
 
-
-    /**
-     * Thêm nhân viên vào vị trí
-     *
-     * @param positionId ID của vị trí
-     * @param employeeId ID của nhân viên cần thêm
-     */
-    void addEmployee(UUID positionId, UUID employeeId);
-
-    /**
-     * Thêm nhiều nhân viên vào vị trí
-     *
-     * @param positionId  ID của vị trí
-     * @param employeeIds Danh sách ID của các nhân viên cần thêm
-     * @return Danh sách thông tin vị trí sau khi thêm nhân viên
-     */
-    List<PositionResponseDto> addEmployees(UUID positionId, List<UUID> employeeIds);
-
-    /**
-     * Xóa nhân viên khỏi vị trí
-     *
-     * @param positionId ID của vị trí
-     * @param employeeId ID của nhân viên cần xóa
-     */
-    void removeEmployee(UUID positionId, UUID employeeId);
-
-    /**
-     * Xóa nhiều nhân viên khỏi vị trí
-     *
-     * @param positionId  ID của vị trí
-     * @param employeeIds Danh sách ID của các nhân viên cần xóa
-     * @return Danh sách thông tin vị trí sau khi xóa nhân viên
-     */
-    List<PositionResponseDto> removeEmployees(UUID positionId, List<UUID> employeeIds);
-
     /**
      * Lấy thông tin vị trí cùng với danh sách thành viên
      *

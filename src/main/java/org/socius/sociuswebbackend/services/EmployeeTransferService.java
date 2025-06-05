@@ -31,4 +31,13 @@ public interface EmployeeTransferService {
      * @return Thông tin chi tiết về việc làm sau khi chuyển
      */
     EmploymentDetailResponseDto transferPosition(UUID employeeId, UUID newPositionId);
+
+    /**
+     * Chuyển vai trò của nhân viên sang vai trò mới
+     *
+     * @param employeeId ID của nhân viên cần chuyển
+     * @param newRoleId  ID của vai trò mới
+     * @return Thông tin chi tiết về việc làm sau khi chuyển
+     */
+    EmploymentDetailResponseDto transferEmployeeRole(UUID employeeId, UUID newRoleId);
 }

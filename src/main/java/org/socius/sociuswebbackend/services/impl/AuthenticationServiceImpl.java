@@ -90,12 +90,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             if (userOptional.isEmpty()) {
                 responseDto.setAuthenticated(false);
-                responseDto.setMessage("Không tìm thấy người dùng");
                 return responseDto;
             }
 
             UserEntity user = userOptional.get();
             AccountEntity account = user.getAccount();
+
+            if (account != null && !account.getIsActive()) {
+                responseDto.setAuthenticated(false);
+                logger.warn("Tài khoản {} đã bị vô hiệu hóa", loginRequest.getEmail());
+                return responseDto;
+            }
 
             // 5. Kiểm tra nếu người dùng đang sử dụng mật khẩu mặc định
             if (account != null && account.getIsDefaultPassword() != null && account.getIsDefaultPassword()) {
@@ -186,17 +191,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             responseDto.setRole(roleDto);
             responseDto.setAuthenticated(true);
             responseDto.setSessionId(session.getId());
-            responseDto.setMessage("Đăng nhập thành công");
             return responseDto;
 
         } catch (AuthenticationException e) {
             logger.error("Lỗi khi đăng nhập: {}", e.getMessage());
             responseDto.setAuthenticated(false);
-            if (e.getMessage().contains("Bad credentials")) {
-                responseDto.setMessage("Sai mật khẩu");
-            } else {
-                responseDto.setMessage("Lỗi hệ thống");
-            }
             return responseDto;
         }
     }

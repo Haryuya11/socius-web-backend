@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.salary;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,6 +26,8 @@ public class SalaryHistoryResponseDto extends BaseDto {
     private BigDecimal newSalary;
     private BigDecimal changeAmount;
     private BigDecimal percentageChange;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate effectiveDate;
     private String reason;
 

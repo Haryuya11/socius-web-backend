@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
-import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.socius.sociuswebbackend.services.PositionService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +37,7 @@ public class PositionController {
      * Lấy thông tin một vị trí cùng với danh sách thành viên của nó
      *
      * @param positionId ID của vị trí cần tìm
-     * @param pageable     Thông tin phân trang
+     * @param pageable   Thông tin phân trang
      * @return Thông tin phòng ban cùng với danh sách thành viên nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{positionId}/members")
@@ -103,33 +102,5 @@ public class PositionController {
     public ResponseEntity<PositionResponseDto> updatePosition(@PathVariable UUID positionId, @Valid @RequestBody PositionRequestDto requestDto) {
         PositionResponseDto updatedPosition = positionService.update(positionId, requestDto);
         return ResponseEntity.ok(updatedPosition);
-    }
-
-    /**
-     * Thêm một nhân viên vào team
-     *
-     * @param positionId ID của team
-     * @param employeeId ID của nhân viên cần thêm vào team
-     * @return Thông tin team đã được cập nhật
-     */
-    @PostMapping("/add/{positionId}/employees/{employeeId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<TeamResponseDto> addEmployeeToPosition(@PathVariable UUID positionId, @PathVariable UUID employeeId) {
-        positionService.addEmployee(positionId, employeeId);
-        return ResponseEntity.ok().build();
-    }
-
-    /**
-     * Xóa một nhân viên khỏi team
-     *
-     * @param positionId ID của team
-     * @param employeeId ID của nhân viên cần xóa khỏi team
-     * @return Thông tin team đã được cập nhật
-     */
-    @DeleteMapping("/remove/{positionId}/employees/{employeeId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<?> removeEmployeeFromPosition(@PathVariable UUID positionId, @PathVariable UUID employeeId) {
-        positionService.removeEmployee(positionId, employeeId);
-        return ResponseEntity.noContent().build();
     }
 }

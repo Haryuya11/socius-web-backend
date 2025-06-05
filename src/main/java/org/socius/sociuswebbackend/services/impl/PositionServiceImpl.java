@@ -6,18 +6,15 @@ import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.PositionMapper;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
-import org.socius.sociuswebbackend.model.entities.*;
+import org.socius.sociuswebbackend.model.entities.PositionEntity;
 import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
-import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
 import org.socius.sociuswebbackend.repositories.PositionRepository;
-import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.PositionService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,8 +26,6 @@ public class PositionServiceImpl implements PositionService {
     private static final Logger logger = LoggerFactory.getLogger(PositionServiceImpl.class);
     final private PositionRepository positionRepository;
     final private EmploymentDetailRepository employmentDetailRepository;
-    final private UserRepository userRepository;
-    final private EmploymentHistoryRepository employmentHistoryRepository;
     final private PositionMapper positionMapper;
 
     @Override
@@ -96,135 +91,6 @@ public class PositionServiceImpl implements PositionService {
 
         positionRepository.deleteById(id);
         logger.info("Đã xóa vị trí với ID: {}", id);
-    }
-
-    @Override
-    public void addEmployee(UUID positionId, UUID employeeId) {
-        // Tìm vị trí theo ID
-        positionRepository.findById(positionId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + positionId));
-
-        // Tìm nhân viên theo ID
-        UserEntity employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
-
-        // Kiểm tra xem nhân viên đã thuộc vị trí chưa
-        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
-
-        // Kiểm tra xem nhân viên có thuộc vị trí không
-        if (employmentDetail.getPosition() != null &&
-                employmentDetail.getPosition().getId().equals(positionId)) {
-            throw new RuntimeException("Nhân viên đã thuộc vị trí này");
-        }
-
-        addEmployeeToDatabase(positionId, employeeId);
-    }
-
-    @Transactional
-    public void addEmployeeToDatabase(UUID positionId, UUID employeeId) {
-        // Logic thêm nhân viên vào database
-        PositionEntity position = positionRepository.findById(positionId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + positionId));
-
-        UserEntity employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
-
-        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
-
-        if (employmentDetail.getPosition() != null &&
-                !employmentDetail.getPosition().getId().equals(positionId)) {
-            throw new RuntimeException("Nhân viên đã thuộc vị trí khác");
-        }
-
-        employmentDetail.setPosition(position);
-        employmentDetailRepository.save(employmentDetail);
-
-        logger.info("Đã thêm nhân viên {} vào vị trí {}", employee.getEmail(), position.getName());
-        positionMapper.entityToDto(position);
-    }
-
-    @Override
-    public void removeEmployee(UUID positionId, UUID employeeId) {
-        // Kiểm tra điều kiện trước khi thực hiện
-        positionRepository.findById(positionId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + positionId));
-
-        UserEntity employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
-
-        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
-
-        // Kiểm tra xem nhân viên có thuộc vị trí không
-        if (employmentDetail.getPosition() == null || !employmentDetail.getPosition().getId().equals(positionId)) {
-            throw new RuntimeException("Nhân viên không thuộc vị trí này");
-        }
-
-        // Thực hiện cập nhật database
-        removeEmployeeFromDatabase(positionId, employeeId);
-    }
-
-    @Transactional
-    public void removeEmployeeFromDatabase(UUID positionId, UUID employeeId) {
-        try {
-            // Tìm vị trí theo ID
-            PositionEntity position = positionRepository.findById(positionId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + positionId));
-
-            // Tìm nhân viên theo ID
-            UserEntity employee = userRepository.findById(employeeId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
-
-            // Tìm chi tiết việc làm của nhân viên
-            EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
-
-            // Lưu lịch sử làm việc
-            EmploymentHistoryEntity history = EmploymentHistoryEntity.builder()
-                    .user(employee)
-                    .position(employmentDetail.getPosition())
-                    .department(employmentDetail.getDepartment())
-                    .team(employmentDetail.getTeam())
-                    .role(employmentDetail.getRole())
-                    .startDate(employmentDetail.getStartDate())
-                    .endDate(LocalDate.now())
-                    .salary(employmentDetail.getSalary())
-                    .description("Đã rời khỏi vị trí " + position.getName())
-                    .build();
-
-            employmentHistoryRepository.save(history);
-
-            // Xóa nhân viên khỏi vị trí
-            employmentDetail.setPosition(null);
-            employmentDetailRepository.save(employmentDetail);
-
-            logger.info("Đã xóa nhân viên {} khỏi vị trí {}", employee.getEmail(), position.getName());
-            positionMapper.entityToDto(position);
-        } catch (Exception e) {
-            logger.error("Lỗi khi xóa nhân viên {} khỏi vị trí {}: {}",
-                    employeeId, positionId, e.getMessage());
-            throw new RuntimeException("Không thể xóa nhân viên khỏi vị trí: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    @Transactional
-    public List<PositionResponseDto> addEmployees(UUID positionId, List<UUID> employeeIds) {
-        for (UUID employeeId : employeeIds) {
-            addEmployee(positionId, employeeId);
-        }
-        return findAll();
-    }
-
-    @Override
-    @Transactional
-    public List<PositionResponseDto> removeEmployees(UUID positionId, List<UUID> employeeIds) {
-        for (UUID employeeId : employeeIds) {
-            removeEmployee(positionId, employeeId);
-        }
-        return findAll();
     }
 
     @Override
