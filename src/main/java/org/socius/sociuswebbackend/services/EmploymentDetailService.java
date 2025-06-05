@@ -1,8 +1,9 @@
 package org.socius.sociuswebbackend.services;
 
+import org.socius.sociuswebbackend.model.dtos.employee.EmployeeUpdateRequestDto;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
+import org.socius.sociuswebbackend.model.dtos.salary.SalaryUpdateRequestDto;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -48,9 +49,8 @@ public interface EmploymentDetailService {
      * Xóa role khỏi nhân viên (set về null)
      *
      * @param employeeId ID của nhân viên
-     * @return Thông tin chi tiết việc làm sau khi cập nhật
      */
-    EmploymentDetailResponseDto removeRoleFromEmployee(UUID employeeId);
+    void removeRoleFromEmployee(UUID employeeId);
 
     /**
      * Xóa role khỏi nhiều nhân viên
@@ -142,7 +142,6 @@ public interface EmploymentDetailService {
      * @param positionId  ID của vị trí công việc
      * @param employeeIds Danh sách ID của các nhân viên cần thêm
      */
-    @Transactional
     void addEmployeesToPosition(UUID positionId, List<UUID> employeeIds);
 
     /**
@@ -157,6 +156,51 @@ public interface EmploymentDetailService {
      *
      * @param employeeIds Danh sách ID của các nhân viên cần xóa
      */
-    @Transactional
     void removeEmployeesFromPosition(List<UUID> employeeIds);
+
+    /**
+     * Cập nhật lương của nhân viên
+     *
+     * @param requestDto Thông tin yêu cầu cập nhật lương
+     */
+    EmploymentDetailResponseDto updateEmployeeSalary(SalaryUpdateRequestDto requestDto, UUID employeeId);
+
+    /**
+     * Cập nhật thông tin nhân viên
+     *
+     * @param employeeId ID của nhân viên cần cập nhật
+     * @param requestDto Thông tin yêu cầu cập nhật
+     * @return Thông tin chi tiết việc làm sau khi cập nhật
+     */
+    EmploymentDetailResponseDto updateEmployee(UUID employeeId, EmployeeUpdateRequestDto requestDto);
+
+    /**
+     * Xóa nhân viên (soft delete) - chuyển trạng thái thành terminated
+     * và xóa khỏi các assignment hiện tại
+     *
+     * @param employeeId ID của nhân viên cần xóa
+     */
+    void terminateEmployee(UUID employeeId);
+
+    /**
+     * Xóa nhiều nhân viên cùng lúc
+     *
+     * @param employeeIds Danh sách ID của các nhân viên cần xóa
+     */
+    void terminateEmployees(List<UUID> employeeIds);
+
+    /**
+     * Khôi phục nhân viên đã bị terminate
+     *
+     * @param employeeId ID của nhân viên cần khôi phục
+     */
+    void restoreEmployee(UUID employeeId);
+
+    /**
+     * Lấy danh sách nhân viên đã bị terminate
+     *
+     * @param pageable Thông tin phân trang
+     * @return Danh sách nhân viên đã bị terminate cùng với thông tin phân trang
+     */
+    Map<String, Object> getTerminatedEmployees(Pageable pageable);
 }

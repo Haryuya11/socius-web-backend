@@ -16,6 +16,5 @@ public class LoginResponseDto {
     private RoleResponseDto role;
     private String sessionId;
     private boolean authenticated;
-    private String message;
     private boolean passwordChangeRequired;
 }

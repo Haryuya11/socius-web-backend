@@ -42,12 +42,9 @@ public class AuthController {
         LoginResponseDto result = authenticationService.login(loginRequest, request, response);
         if (result.isAuthenticated()) {
             return ResponseEntity.ok(result);
-        } else if (result.getMessage().contains("Không tìm thấy người dùng")) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result.getMessage());
-        } else if (result.getMessage().contains("Sai mật khẩu")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result.getMessage());
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Đăng nhập không thành công, vui lòng kiểm tra email và mật khẩu"));
         }
     }
 

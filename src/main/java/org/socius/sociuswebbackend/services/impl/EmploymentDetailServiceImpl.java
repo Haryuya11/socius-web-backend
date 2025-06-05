@@ -5,18 +5,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.events.RBACEvent;
 import org.socius.sociuswebbackend.mappers.EmploymentDetailMapper;
+import org.socius.sociuswebbackend.model.dtos.employee.EmployeeUpdateRequestDto;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
+import org.socius.sociuswebbackend.model.dtos.salary.SalaryUpdateRequestDto;
 import org.socius.sociuswebbackend.model.entities.*;
+import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.EmploymentDetailService;
+import org.socius.sociuswebbackend.services.SessionManagementService;
+import org.socius.sociuswebbackend.services.SessionValidationService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -27,23 +34,21 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmploymentDetailServiceImpl.class);
 
-    // Repositories
-    private final EmploymentDetailRepository employmentDetailRepository;
     private final EmploymentHistoryRepository employmentHistoryRepository;
+    private final EmploymentDetailRepository employmentDetailRepository;
+    private final SalaryHistoryRepository salaryHistoryRepository;
+    private final DepartmentRepository departmentRepository;
+    private final PositionRepository positionRepository;
+    private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final TeamRepository teamRepository;
-    private final DepartmentRepository departmentRepository;
-    private final PositionRepository positionRepository;
-
-    // Services and Publishers
     private final ApplicationEventPublisher eventPublisher;
     private final ConversationService conversationService;
-
-    // Mappers
+    private final SessionManagementService sessionManagementService;
+    private final SessionValidationService sessionValidationService;
     private final EmploymentDetailMapper employmentDetailMapper;
 
-    // Enum để phân biệt loại assignment
     protected enum AssignmentType {
         TEAM, DEPARTMENT, POSITION
     }
@@ -168,7 +173,7 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
 
     @Override
     @Transactional
-    public EmploymentDetailResponseDto removeRoleFromEmployee(UUID employeeId) {
+    public void removeRoleFromEmployee(UUID employeeId) {
         UserEntity employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
 
@@ -192,7 +197,7 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
             logger.warn("Nhân viên {} không có role để xóa", employee.getEmail());
         }
 
-        return employmentDetailMapper.entityToDto(employmentDetail);
+        employmentDetailMapper.entityToDto(employmentDetail);
     }
 
     @Override
@@ -649,6 +654,258 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
         logger.info("Đã xóa {}/{} nhân viên khỏi vị trí thành công", successfulEmployees.size(), employeeIds.size());
     }
 
+    @Override
+    @Transactional
+    public EmploymentDetailResponseDto updateEmployeeSalary(SalaryUpdateRequestDto requestDto, UUID employeeId) {
+        try {
+            UserEntity employee = userRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
+
+            EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
+
+
+            BigDecimal previousSalary = employmentDetail.getSalary();
+
+            // Validate lương mới khác lương hiện tại
+            if (requestDto.getNewSalary().compareTo(previousSalary) == 0) {
+                throw new IllegalArgumentException("Mức lương mới phải khác mức lương hiện tại");
+            }
+
+            EmploymentHistoryEntity employmentHistory = EmploymentHistoryEntity.builder()
+                    .user(employee)
+                    .position(employmentDetail.getPosition())
+                    .department(employmentDetail.getDepartment())
+                    .team(employmentDetail.getTeam())
+                    .role(employmentDetail.getRole())
+                    .startDate(employmentDetail.getStartDate())
+                    .endDate(requestDto.getEffectiveDate().minusDays(1)) // Kết thúc 1 ngày trước ngày hiệu lực
+                    .salary(previousSalary)
+                    .description("Cập nhật lương từ " + previousSalary + " thành " + requestDto.getNewSalary() +
+                            " hiệu lực từ " + requestDto.getEffectiveDate())
+                    .build();
+
+            employmentHistoryRepository.save(employmentHistory);
+
+            SalaryHistoryEntity salaryHistory = SalaryHistoryEntity.builder()
+                    .user(employee)
+                    .previousSalary(previousSalary)
+                    .newSalary(requestDto.getNewSalary())
+                    .effectiveDate(requestDto.getEffectiveDate())
+                    .reason(requestDto.getReason())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            salaryHistoryRepository.save(salaryHistory);
+
+            employmentDetail.setSalary(requestDto.getNewSalary());
+            employmentDetailRepository.save(employmentDetail);
+
+            return employmentDetailMapper.entityToDto(employmentDetail);
+
+        } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật lương cho nhân viên {}: {}", employeeId, e.getMessage());
+            throw new RuntimeException("Không thể cập nhật lương cho nhân viên: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public EmploymentDetailResponseDto updateEmployee(UUID employeeId, EmployeeUpdateRequestDto requestDto) {
+        try {
+            UserEntity employee = userRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
+
+            EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
+
+            UUID oldDepartmentId = employmentDetail.getDepartment() != null ? employmentDetail.getDepartment().getId() : null;
+            UUID oldTeamId = employmentDetail.getTeam() != null ? employmentDetail.getTeam().getId() : null;
+            BigDecimal oldSalary = employmentDetail.getSalary();
+
+            // Cập nhật thông tin nhân viên
+            updateUserInfo(employee, requestDto);
+
+            updateEmploymentInfo(employmentDetail, requestDto);
+
+            handleDepartmentChange(employeeId, oldDepartmentId, requestDto.getDepartmentId());
+            handleTeamChange(employeeId, oldTeamId, requestDto.getTeamId());
+            handleSalaryChange(employee, oldSalary, requestDto.getSalary());
+
+            userRepository.save(employee);
+            employmentDetailRepository.save(employmentDetail);
+
+            saveEmploymentHistory(employmentDetail, "Cập nhật thông tin nhân viên");
+
+            return employmentDetailMapper.entityToDto(employmentDetail);
+        } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật thông tin nhân viên {}: {}", employeeId, e.getMessage());
+            throw new RuntimeException("Không thể cập nhật thông tin nhân viên: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void terminateEmployee(UUID employeeId) {
+        UserEntity employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
+
+        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
+
+        saveEmploymentHistory(employmentDetail, "Chấm dứt hợp đồng");
+
+        UUID oldDepartmentId = employmentDetail.getDepartment() != null ? employmentDetail.getDepartment().getId() : null;
+        UUID oldTeamId = employmentDetail.getTeam() != null ? employmentDetail.getTeam().getId() : null;
+
+        employmentDetail.setDepartment(null);
+        employmentDetail.setTeam(null);
+        employmentDetail.setPosition(null);
+        employmentDetail.setRole(null);
+        employmentDetail.setWorkingStatus(WorkingStatus.terminated);
+
+        employmentDetailRepository.save(employmentDetail);
+
+        if (oldDepartmentId != null) {
+            removeFromGroupChatAsync(oldDepartmentId, employeeId, AssignmentType.DEPARTMENT);
+        }
+        if (oldTeamId != null) {
+            removeFromGroupChatAsync(oldTeamId, employeeId, AssignmentType.TEAM);
+        }
+
+        // Vô hiệu hóa tài khoản nhân viên
+        deactivateEmployeeAccount(employeeId);
+
+        // Hủy session hiện tại
+        invalidateEmployeeSession(employeeId);
+
+        logger.info("Đã chấm dứt hợp đồng nhân viên {} thành công", employee.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public void terminateEmployees(List<UUID> employeeIds) {
+        List<String> successfulEmployees = new ArrayList<>();
+        Map<UUID, String> departmentChatsToUpdate = new HashMap<>();
+        Map<UUID, String> teamChatsToUpdate = new HashMap<>();
+
+        for (UUID employeeId : employeeIds) {
+            try {
+                UserEntity employee = userRepository.findById(employeeId).orElse(null);
+                if (employee != null) {
+                    EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee).orElse(null);
+                    if (employmentDetail != null && employmentDetail.getWorkingStatus() != WorkingStatus.terminated) {
+
+                        // Lưu thông tin hiện tại vào lịch sử
+                        saveEmploymentHistory(employmentDetail, "Chấm dứt hợp đồng");
+
+                        // Lưu thông tin để xử lý group chat
+                        if (employmentDetail.getDepartment() != null) {
+                            UUID deptId = employmentDetail.getDepartment().getId();
+                            String deptName = employmentDetail.getDepartment().getName();
+                            departmentChatsToUpdate.put(deptId, deptName);
+                        }
+
+                        if (employmentDetail.getTeam() != null) {
+                            UUID teamId = employmentDetail.getTeam().getId();
+                            String teamName = employmentDetail.getTeam().getName();
+                            teamChatsToUpdate.put(teamId, teamName);
+                        }
+
+                        // Terminate nhân viên
+                        employmentDetail.setDepartment(null);
+                        employmentDetail.setTeam(null);
+                        employmentDetail.setPosition(null);
+                        employmentDetail.setRole(null);
+                        employmentDetail.setWorkingStatus(WorkingStatus.terminated);
+
+                        employmentDetailRepository.save(employmentDetail);
+
+                        // Vô hiệu hóa tài khoản
+                        deactivateEmployeeAccount(employeeId);
+
+                        successfulEmployees.add(employee.getEmail());
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Lỗi khi terminate nhân viên {}: {}", employeeId, e.getMessage());
+            }
+        }
+
+        // Xóa khỏi group chats bất đồng bộ
+        departmentChatsToUpdate.forEach((deptId, deptName) ->
+                successfulEmployees.forEach(email -> {
+                    try {
+                        userRepository.findByEmail(email).ifPresent(emp ->
+                                removeFromGroupChatAsync(deptId, emp.getId(), AssignmentType.DEPARTMENT));
+                    } catch (Exception e) {
+                        logger.error("Lỗi khi xóa {} khỏi department chat {}: {}", email, deptName, e.getMessage());
+                    }
+                }));
+
+        teamChatsToUpdate.forEach((teamId, teamName) ->
+                successfulEmployees.forEach(email -> {
+                    try {
+                        userRepository.findByEmail(email).ifPresent(emp ->
+                                removeFromGroupChatAsync(teamId, emp.getId(), AssignmentType.TEAM));
+                    } catch (Exception e) {
+                        logger.error("Lỗi khi xóa {} khỏi team chat {}: {}", email, teamName, e.getMessage());
+                    }
+                }));
+
+        // Hủy session của tất cả nhân viên đã terminate
+        invalidateEmployeeSessions(successfulEmployees);
+
+        logger.info("Đã terminate {}/{} nhân viên thành công", successfulEmployees.size(), employeeIds.size());
+    }
+
+    @Override
+    @Transactional
+    public void restoreEmployee(UUID employeeId) {
+        UserEntity employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + employeeId));
+
+        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(employee)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết việc làm cho nhân viên: " + employeeId));
+
+        if (employmentDetail.getWorkingStatus() != WorkingStatus.terminated) {
+            throw new RuntimeException("Nhân viên chưa bị terminate, không thể khôi phục");
+        }
+
+        // Chỉ khôi phục trạng thái, không tự động gán lại department/team/position/role
+        employmentDetail.setWorkingStatus(WorkingStatus.inactive);
+
+        employmentDetailRepository.save(employmentDetail);
+
+        // Kích hoạt lại tài khoản
+        activateEmployeeAccount(employeeId);
+
+        // Lưu lịch sử khôi phục
+        saveEmploymentHistory(employmentDetail, "Nhân viên được khôi phục từ trạng thái terminated");
+
+        logger.info("Đã khôi phục nhân viên {}", employee.getEmail());
+    }
+
+    @Override
+    public Map<String, Object> getTerminatedEmployees(Pageable pageable) {
+        Page<EmploymentDetailEntity> terminatedEmployees = employmentDetailRepository
+                .findByWorkingStatus(WorkingStatus.terminated, pageable);
+
+        List<EmploymentDetailResponseDto> employeeDtos = terminatedEmployees.getContent()
+                .stream()
+                .map(employmentDetailMapper::entityToDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("employees", employeeDtos);
+        result.put("currentPage", terminatedEmployees.getNumber());
+        result.put("totalItems", terminatedEmployees.getTotalElements());
+        result.put("totalPages", terminatedEmployees.getTotalPages());
+        result.put("pageSize", terminatedEmployees.getSize());
+
+        return result;
+    }
     // ===================== VALIDATION METHODS =====================
 
     private void validateTeamAssignment(UUID teamId, UUID employeeId) {
@@ -834,5 +1091,146 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
             logger.error("Lỗi khi lấy group chat ID cho {} {}: {}", getEntityTypeName(type), assignmentId, e.getMessage());
             return null;
         }
+    }
+
+    private void updateUserInfo(UserEntity employee, EmployeeUpdateRequestDto requestDto) {
+        if (requestDto.getFirstName() != null) {
+            employee.setFirstName(requestDto.getFirstName());
+        }
+        if (requestDto.getLastName() != null) {
+            employee.setLastName(requestDto.getLastName());
+        }
+        if (requestDto.getBirthDate() != null) {
+            employee.setBirthDate(requestDto.getBirthDate());
+        }
+        if (requestDto.getGender() != null) {
+            employee.setGender(requestDto.getGender());
+        }
+        if (requestDto.getPhoneNumber() != null) {
+            employee.setPhoneNumber(requestDto.getPhoneNumber());
+        }
+        if (requestDto.getNationality() != null) {
+            employee.setNationality(requestDto.getNationality());
+        }
+        if (requestDto.getHireDate() != null) {
+            employee.setHireDate(requestDto.getHireDate());
+        }
+        if (requestDto.getAddress() != null) {
+            employee.setAddress(requestDto.getAddress());
+        }
+    }
+
+    private void updateEmploymentInfo(EmploymentDetailEntity employmentDetail, EmployeeUpdateRequestDto requestDto) {
+        // Cập nhật position
+        if (requestDto.getPositionId() != null) {
+            PositionEntity position = positionRepository.findById(requestDto.getPositionId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + requestDto.getPositionId()));
+            employmentDetail.setPosition(position);
+        }
+
+        // Cập nhật department
+        if (requestDto.getDepartmentId() != null) {
+            DepartmentEntity department = departmentRepository.findById(requestDto.getDepartmentId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + requestDto.getDepartmentId()));
+            employmentDetail.setDepartment(department);
+        }
+
+        // Cập nhật team
+        if (requestDto.getTeamId() != null) {
+            TeamEntity team = teamRepository.findById(requestDto.getTeamId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + requestDto.getTeamId()));
+            employmentDetail.setTeam(team);
+        }
+
+        // Cập nhật role
+        if (requestDto.getRoleId() != null) {
+            RoleEntity role = roleRepository.findById(requestDto.getRoleId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy role với ID: " + requestDto.getRoleId()));
+            employmentDetail.setRole(role);
+        }
+
+        // Cập nhật lương
+        if (requestDto.getSalary() != null) {
+            employmentDetail.setSalary(requestDto.getSalary());
+        }
+    }
+
+    private void handleDepartmentChange(UUID employeeId, UUID oldDepartmentId, UUID newDepartmentId) {
+        if (newDepartmentId != null && !newDepartmentId.equals(oldDepartmentId)) {
+            // Xóa khỏi group chat phòng ban cũ
+            if (oldDepartmentId != null) {
+                removeFromGroupChatAsync(oldDepartmentId, employeeId, AssignmentType.DEPARTMENT);
+            }
+            addToGroupChatAsync(newDepartmentId, employeeId, AssignmentType.DEPARTMENT);
+
+            logger.info("Đã chuyển nhân viên {} sang phòng ban mới", employeeId);
+        }
+    }
+
+    private void handleTeamChange(UUID employeeId, UUID oldTeamId, UUID newTeamId) {
+        if (newTeamId != null && !newTeamId.equals(oldTeamId)) {
+            if (oldTeamId != null) {
+                removeFromGroupChatAsync(oldTeamId, employeeId, AssignmentType.TEAM);
+            }
+            addToGroupChatAsync(newTeamId, employeeId, AssignmentType.TEAM);
+
+            logger.info("Đã chuyển nhân viên {} sang team mới", employeeId);
+        }
+    }
+
+    private void handleSalaryChange(UserEntity employee, BigDecimal oldSalary, BigDecimal newSalary) {
+        if (newSalary != null && newSalary.compareTo(oldSalary) != 0) {
+
+            // Lưu lịch sử lương
+            SalaryHistoryEntity salaryHistory = SalaryHistoryEntity.builder()
+                    .user(employee)
+                    .previousSalary(oldSalary)
+                    .newSalary(newSalary)
+                    .effectiveDate(LocalDate.now())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            salaryHistoryRepository.save(salaryHistory);
+
+            logger.info("Đã lưu lịch sử thay đổi lương cho nhân viên {} từ {} thành {}",
+                    employee.getEmail(), oldSalary, newSalary);
+        }
+    }
+
+    private void deactivateEmployeeAccount(UUID employeeId) {
+        accountRepository.findByUser_Id(employeeId).ifPresent(account -> {
+            account.setIsActive(false);
+            accountRepository.save(account);
+        });
+    }
+
+    private void activateEmployeeAccount(UUID employeeId) {
+        accountRepository.findByUser_Id(employeeId).ifPresent(account -> {
+            account.setIsActive(true);
+            accountRepository.save(account);
+        });
+    }
+
+    private void invalidateEmployeeSession(UUID employeeId) {
+        try {
+            String sessionId = sessionValidationService.getUserSessionId(employeeId);
+            if (sessionId != null) {
+                sessionManagementService.invalidateSession(sessionId);
+            }
+        } catch (Exception e) {
+            logger.error("Lỗi khi hủy session cho nhân viên {}: {}", employeeId, e.getMessage());
+        }
+    }
+
+    private void invalidateEmployeeSessions(List<String> employeeEmails) {
+        employeeEmails.forEach(email -> {
+            try {
+                userRepository.findByEmail(email).ifPresent(user ->
+                        invalidateEmployeeSession(user.getId()));
+            } catch (Exception e) {
+                logger.error("Lỗi khi hủy session cho nhân viên {}: {}", email, e.getMessage());
+            }
+        });
     }
 }

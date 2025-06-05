@@ -2,16 +2,19 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.model.dtos.employee.EmployeeTerminationResponseDto;
+import org.socius.sociuswebbackend.model.dtos.employee.EmployeeUpdateRequestDto;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
+import org.socius.sociuswebbackend.model.dtos.salary.SalaryUpdateRequestDto;
 import org.socius.sociuswebbackend.services.EmploymentDetailService;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/employee")
@@ -184,4 +187,131 @@ public class EmploymentDetailController {
         employmentDetailService.removeEmployeeFromDepartment(employeeId);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Cập nhật lương của nhân viên
+     *
+     * @param requestDto Thông tin yêu cầu cập nhật lương
+     * @param employeeId ID của nhân viên cần cập nhật lương
+     * @return Thông tin chi tiết việc làm sau khi cập nhật lương
+     */
+    @PostMapping("/update-salary/{employeeId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<?> updateEmployeeSalary(
+            @RequestBody @Valid SalaryUpdateRequestDto requestDto, @PathVariable UUID employeeId) {
+
+        EmploymentDetailResponseDto updatedEmployee = employmentDetailService.updateEmployeeSalary(requestDto, employeeId);
+
+        return ResponseEntity.ok(updatedEmployee);
+    }
+
+    /**
+     * Cập nhật thông tin nhân viên
+     *
+     * @param employeeId ID của nhân viên cần cập nhật
+     * @param requestDto Thông tin yêu cầu cập nhật
+     * @return Thông tin chi tiết việc làm sau khi cập nhật
+     */
+    @PutMapping("/update/{employeeId}")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<EmploymentDetailResponseDto> updateEmployee(
+            @PathVariable UUID employeeId,
+            @RequestBody @Valid EmployeeUpdateRequestDto requestDto) {
+
+        EmploymentDetailResponseDto updatedEmployee = employmentDetailService.updateEmployee(employeeId, requestDto);
+        return ResponseEntity.ok(updatedEmployee);
+    }
+
+    @PostMapping("/terminate")
+    public ResponseEntity<?> terminateEmployees(
+            @Valid @RequestBody List<UUID> employeeIds) {
+        try {
+            List<UUID> successfulIds = new ArrayList<>();
+            List<UUID> failedIds = new ArrayList<>();
+
+            for (UUID employeeId : employeeIds) {
+                try {
+                    employmentDetailService.terminateEmployee(employeeId);
+                    successfulIds.add(employeeId);
+                } catch (Exception e) {
+                    failedIds.add(employeeId);
+                }
+            }
+
+            EmployeeTerminationResponseDto response = EmployeeTerminationResponseDto.builder()
+                    .successfulEmployeeIds(successfulIds)
+                    .failedEmployeeIds(failedIds)
+                    .terminationDate(LocalDateTime.now())
+                    .totalProcessed(employeeIds.size())
+                    .successCount(successfulIds.size())
+                    .failureCount(failedIds.size())
+                    .build();
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/terminate/single/{employeeId}")
+    public ResponseEntity<Map<String, Object>> terminateEmployee(
+            @PathVariable UUID employeeId) {
+        try {
+            employmentDetailService.terminateEmployee(employeeId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Nhân viên đã được terminate thành công");
+            response.put("employeeId", employeeId);
+            response.put("terminationDate", LocalDateTime.now());
+
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi terminate nhân viên");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @PostMapping("/restore/{employeeId}")
+    public ResponseEntity<Map<String, Object>> restoreEmployee(@PathVariable UUID employeeId) {
+        try {
+            employmentDetailService.restoreEmployee(employeeId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Nhân viên đã được khôi phục thành công");
+            response.put("employeeId", employeeId);
+            response.put("restoreDate", LocalDateTime.now());
+
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi khôi phục nhân viên");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @GetMapping("/terminated")
+    public ResponseEntity<Map<String, Object>> getTerminatedEmployees(Pageable pageable) {
+        try {
+            Map<String, Object> result = employmentDetailService.getTerminatedEmployees(pageable);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }

@@ -171,7 +171,7 @@ public class AdminServiceImpl implements AdminService {
             return;
         }
 
-        String defaultPassword = configService.getString("default.password", "Password123!");
+        String defaultPassword = configService.getString("default.password", "1");
 
         AccountEntity account = AccountEntity.builder()
                 .user(user)
