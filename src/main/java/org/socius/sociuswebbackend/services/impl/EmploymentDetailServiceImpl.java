@@ -66,44 +66,32 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
 
     @Override
     public Map<String, Object> getAllActiveEmployees(Pageable pageable) {
-        Page<EmploymentDetailEntity> employeePage = employmentDetailRepository.findByWorkingStatus(WorkingStatus.active, pageable);
-        List<EmploymentDetailEntity> filteredEmployees = employeePage.getContent().stream()
-                .filter(employee -> employee.getTeam() == null)
-                .collect(Collectors.toList());
-
-        Page<EmploymentDetailEntity> filteredPage = new PageImpl<>(filteredEmployees, pageable, filteredEmployees.size());
-
-        List<EmploymentDetailResponseDto> employees = filteredEmployees.stream()
+        Page<EmploymentDetailEntity> employeePage = employmentDetailRepository.findAll(pageable);
+        List<EmploymentDetailResponseDto> employees = employeePage.getContent().stream()
                 .map(employmentDetailMapper::entityToLimitedDto)
                 .collect(Collectors.toList());
 
         Map<String, Object> result = new HashMap<>();
         result.put("employees", employees);
         result.put("employeeCount", employees.size());
-        result.put("totalPages", filteredPage.getTotalPages());
-        result.put("totalElements", filteredPage.getTotalElements());
+        result.put("totalPages", employeePage.getTotalPages());
+        result.put("totalElements", employeePage.getTotalElements());
 
         return result;
     }
 
     @Override
     public Map<String, Object> getAllActiveEmployeesForAdmin(Pageable pageable) {
-        Page<EmploymentDetailEntity> employeePage = employmentDetailRepository.findByWorkingStatus(WorkingStatus.active, pageable);
-        List<EmploymentDetailEntity> filteredEmployees = employeePage.getContent().stream()
-                .filter(employee -> employee.getTeam() == null)
-                .collect(Collectors.toList());
-
-        Page<EmploymentDetailEntity> filteredPage = new PageImpl<>(filteredEmployees, pageable, filteredEmployees.size());
-
-        List<EmploymentDetailResponseDto> employees = filteredEmployees.stream()
+        Page<EmploymentDetailEntity> employeePage = employmentDetailRepository.findAll(pageable);
+        List<EmploymentDetailResponseDto> employees = employeePage.getContent().stream()
                 .map(employmentDetailMapper::entityToLimitedDtoForAdmin)
                 .collect(Collectors.toList());
 
         Map<String, Object> result = new HashMap<>();
         result.put("employees", employees);
         result.put("employeeCount", employees.size());
-        result.put("totalPages", filteredPage.getTotalPages());
-        result.put("totalElements", filteredPage.getTotalElements());
+        result.put("totalPages", employeePage.getTotalPages());
+        result.put("totalElements", employeePage.getTotalElements());
 
         return result;
     }

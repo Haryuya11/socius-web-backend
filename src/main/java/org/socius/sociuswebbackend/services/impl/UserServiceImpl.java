@@ -70,7 +70,7 @@ public class UserServiceImpl implements UserService {
         List<UserEntity> users = userRepository.findUsersNotInAnyTeam();
         return users.stream()
                 .filter(user -> employmentDetailRepository.findByUserId(user.getId())
-                        .map(detail -> detail.getWorkingStatus() == WorkingStatus.active)
+                        .map(detail -> detail.getWorkingStatus() != WorkingStatus.terminated)
                         .orElse(false))
                 .map(userMapper::entityToDto)
                 .collect(Collectors.toList());
@@ -134,7 +134,7 @@ public class UserServiceImpl implements UserService {
         List<UserEntity> users = userRepository.findUsersNotInAnyDepartment();
         return users.stream()
                 .filter(user -> employmentDetailRepository.findByUserId(user.getId())
-                        .map(detail -> detail.getWorkingStatus() == WorkingStatus.active)
+                        .map(detail -> detail.getWorkingStatus() != WorkingStatus.terminated)
                         .orElse(false))
                 .map(userMapper::entityToDto)
                 .collect(Collectors.toList());
@@ -145,7 +145,7 @@ public class UserServiceImpl implements UserService {
         List<UserEntity> users = userRepository.findUsersNotInAnyPosition();
         return users.stream()
                 .filter(user -> employmentDetailRepository.findByUserId(user.getId())
-                        .map(detail -> detail.getWorkingStatus() == WorkingStatus.active)
+                        .map(detail -> detail.getWorkingStatus() != WorkingStatus.terminated)
                         .orElse(false))
                 .map(userMapper::entityToDto)
                 .collect(Collectors.toList());
