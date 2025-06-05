@@ -12,7 +12,7 @@ public interface EmploymentDetailService {
      * @param pageable Đối tượng chứa thông tin phân trang (page, size, sort)
      * @return Map chứa danh sách nhân viên và metadata phân trang
      */
-    Map<String, Object> getAllEmployees(Pageable pageable);
+    Map<String, Object> getAllActiveEmployees(Pageable pageable);
 
     /**
      * Lấy danh sách tất cả nhân viên dành cho admin với phân trang
@@ -20,5 +20,5 @@ public interface EmploymentDetailService {
      * @param pageable Đối tượng chứa thông tin phân trang (page, size, sort)
      * @return Map chứa danh sách nhân viên và metadata phân trang dành cho admin
      */
-    Map<String, Object> getAllEmployeesForAdmin(Pageable pageable);
+    Map<String, Object> getAllActiveEmployeesForAdmin(Pageable pageable);
 }

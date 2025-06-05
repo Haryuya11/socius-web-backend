@@ -116,7 +116,7 @@ public class UserController {
     @GetMapping("/not-in-any-team")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<?> getUsersNotInAnyTeam(HttpServletRequest request) {
-        List<UserResponseDto> users = userService.getUsersNotInAnyTeam(request);
+        List<UserResponseDto> users = userService.getActiveUsersNotInAnyTeam(request);
         if (users != null && !users.isEmpty()) {
             return ResponseEntity.ok(users);
         } else {
@@ -133,7 +133,7 @@ public class UserController {
     @GetMapping("/not-in-any-department")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<?> getUsersNotInAnyDepartment(HttpServletRequest request) {
-        List<UserResponseDto> users = userService.getUsersNotInAnyDepartment(request);
+        List<UserResponseDto> users = userService.getActiveUsersNotInAnyDepartment(request);
         if (users != null && !users.isEmpty()) {
             return ResponseEntity.ok(users);
         } else {
@@ -150,7 +150,7 @@ public class UserController {
     @GetMapping("/not-in-any-position")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<?> getUsersNotInAnyPosition(HttpServletRequest request) {
-        List<UserResponseDto> users = userService.getUsersNotInAnyPosition(request);
+        List<UserResponseDto> users = userService.getActiveUsersNotInAnyPosition(request);
         if (users != null && !users.isEmpty()) {
             return ResponseEntity.ok(users);
         } else {
