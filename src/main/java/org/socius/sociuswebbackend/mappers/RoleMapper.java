@@ -34,8 +34,8 @@ public abstract class RoleMapper extends BaseEntityMapper implements
 
         RoleResponseDto dto = new RoleResponseDto();
         dto.setId(entity.getId());
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setUpdatedAt(entity.getUpdatedAt());
+//        dto.setCreatedAt(entity.getCreatedAt());
+//        dto.setUpdatedAt(entity.getUpdatedAt());
         dto.setName(entity.getName());
         dto.setDescription(entity.getDescription());
 
@@ -93,24 +93,22 @@ public abstract class RoleMapper extends BaseEntityMapper implements
             dto.setPermissions(permissionMapper.rolePermissionsToPermissionDtos(entity.getRolePermissions()));
         }
     }*/
-
     @Override
-    @Mapping(target = "rolePermissions", ignore = true)
-    public RoleEntity requestDtoToEntity(RoleRequestDto dto){
+    public RoleEntity requestDtoToEntity(RoleRequestDto dto) {
         if (dto == null) {
             return null;
         }
 
         return RoleEntity.builder()
-            .name(dto.getName())
-            .description(dto.getDescription())
-            .build();
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .build();
     }
 
     @Override
     @Mapping(target = "rolePermissions", ignore = true)
-    public void updateEntityFromDto(RoleRequestDto dto, @MappingTarget RoleEntity entity){
-        if( dto == null) {
+    public void updateEntityFromDto(RoleRequestDto dto, @MappingTarget RoleEntity entity) {
+        if (dto == null) {
             return;
         }
         if (dto.getName() != null) {

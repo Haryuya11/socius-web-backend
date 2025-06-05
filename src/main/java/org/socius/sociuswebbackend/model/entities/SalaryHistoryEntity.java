@@ -26,18 +26,18 @@ public class SalaryHistoryEntity extends BaseEntity {
 
     @NotNull(message = "Previous salary must not be null")
     @Column(name = "previous_salary", nullable = false, precision = 10, scale = 2)
-    @DecimalMin(value = "0.0", inclusive = true, message = "Previous salary cannot be negative")
+    @DecimalMin(value = "0.0", message = "Previous salary cannot be negative")
     private BigDecimal previousSalary;
 
     @NotNull(message = "New salary must not be null")
     @Column(name = "new_salary", nullable = false, precision = 10, scale = 2)
-    @DecimalMin(value = "0.0", inclusive = true, message = "New salary cannot be negative")
+    @DecimalMin(value = "0.0", message = "New salary cannot be negative")
     private BigDecimal newSalary;
 
     @NotNull(message = "Effective date must not be null")
     @Column(name = "effective_date", nullable = false)
     private LocalDate effectiveDate;
 
-    @Column(name = "reason", length = 255)
+    @Column(name = "reason")
     private String reason;
 }
