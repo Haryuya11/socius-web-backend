@@ -32,7 +32,7 @@ public class EmploymentDetailController {
      */
     @GetMapping("/all")
     public ResponseEntity<Map<String, Object>> getAllEmployees(Pageable pageable) {
-        return ResponseEntity.ok(employmentDetailService.getAllEmployees(pageable));
+        return ResponseEntity.ok(employmentDetailService.getAllActiveEmployees(pageable));
     }
 
     /**
@@ -45,7 +45,7 @@ public class EmploymentDetailController {
     @GetMapping("/admin/all")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<Map<String, Object>> getAllEmployeesForAdmin(Pageable pageable) {
-        return ResponseEntity.ok(employmentDetailService.getAllEmployeesForAdmin(pageable));
+        return ResponseEntity.ok(employmentDetailService.getAllActiveEmployeesForAdmin(pageable));
     }
 
     /**

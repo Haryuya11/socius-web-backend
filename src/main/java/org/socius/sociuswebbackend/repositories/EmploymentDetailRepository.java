@@ -10,6 +10,7 @@ import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.lang.NonNull;
 
 public interface EmploymentDetailRepository extends JpaRepository<EmploymentDetailEntity, UUID> {
@@ -63,6 +64,15 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      * @return Page chứa danh sách EmploymentDetailEntity
      */
     Page<EmploymentDetailEntity> findAll(@NonNull Pageable pageable);
+
+    /**
+     * Lấy danh sách thông tin chi tiết của nhân viên theo trạng thái làm việc với phân trang
+     *
+     * @param workingStatus Trạng thái làm việc (active, inactive, terminated)
+     * @param pageable Thông tin phân trang
+     * @return Page chứa danh sách EmploymentDetailEntity
+     */
+    Page<EmploymentDetailEntity> findByWorkingStatus(WorkingStatus workingStatus, @NonNull Pageable pageable);
 
     List<EmploymentDetailEntity> findByTeam_Id(UUID teamId);
 

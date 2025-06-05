@@ -32,7 +32,7 @@ public interface UserService {
      * @param request Request HTTP hiện tại
      * @return Danh sách người dùng không thuộc bất kỳ team nào
      */
-    List<UserResponseDto> getUsersNotInAnyTeam(HttpServletRequest request);
+    List<UserResponseDto> getActiveUsersNotInAnyTeam(HttpServletRequest request);
 
     /**
      * Lấy danh sách người dùng theo phân trang
@@ -65,7 +65,7 @@ public interface UserService {
      * @param request Request HTTP hiện tại
      * @return Danh sách người dùng không thuộc bất kỳ phòng ban nào
      */
-    List<UserResponseDto> getUsersNotInAnyDepartment(HttpServletRequest request);
+    List<UserResponseDto> getActiveUsersNotInAnyDepartment(HttpServletRequest request);
 
     /**
      * Lấy danh sách người dùng không thuộc bất kỳ vị trí nào
@@ -73,7 +73,7 @@ public interface UserService {
      * @param request Request HTTP hiện tại
      * @return Danh sách người dùng không thuộc bất kỳ vị trí nào
      */
-    List<UserResponseDto> getUsersNotInAnyPosition(HttpServletRequest request);
+    List<UserResponseDto> getActiveUsersNotInAnyPosition(HttpServletRequest request);
 
     /**
      * Lấy danh sách task của một người dùng theo ID

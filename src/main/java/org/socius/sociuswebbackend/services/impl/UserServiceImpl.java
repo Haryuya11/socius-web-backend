@@ -12,6 +12,7 @@ import org.socius.sociuswebbackend.model.dtos.salary.SalaryHistoryResponseDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.*;
+import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.services.UserService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
@@ -65,9 +66,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponseDto> getUsersNotInAnyTeam(HttpServletRequest request) {
+    public List<UserResponseDto> getActiveUsersNotInAnyTeam(HttpServletRequest request) {
         List<UserEntity> users = userRepository.findUsersNotInAnyTeam();
         return users.stream()
+                .filter(user -> employmentDetailRepository.findByUserId(user.getId())
+                        .map(detail -> detail.getWorkingStatus() == WorkingStatus.active)
+                        .orElse(false))
                 .map(userMapper::entityToDto)
                 .collect(Collectors.toList());
     }
@@ -126,17 +130,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponseDto> getUsersNotInAnyDepartment(HttpServletRequest request) {
+    public List<UserResponseDto> getActiveUsersNotInAnyDepartment(HttpServletRequest request) {
         List<UserEntity> users = userRepository.findUsersNotInAnyDepartment();
         return users.stream()
+                .filter(user -> employmentDetailRepository.findByUserId(user.getId())
+                        .map(detail -> detail.getWorkingStatus() == WorkingStatus.active)
+                        .orElse(false))
                 .map(userMapper::entityToDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<UserResponseDto> getUsersNotInAnyPosition(HttpServletRequest request) {
+    public List<UserResponseDto> getActiveUsersNotInAnyPosition(HttpServletRequest request) {
         List<UserEntity> users = userRepository.findUsersNotInAnyPosition();
         return users.stream()
+                .filter(user -> employmentDetailRepository.findByUserId(user.getId())
+                        .map(detail -> detail.getWorkingStatus() == WorkingStatus.active)
+                        .orElse(false))
                 .map(userMapper::entityToDto)
                 .collect(Collectors.toList());
     }

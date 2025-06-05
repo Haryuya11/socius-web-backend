@@ -44,4 +44,9 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     @Query("SELECT u FROM UserEntity u join EmploymentDetailEntity e ON u.id = e.user.id " +
             "WHERE e.position IS NULL")
     List<UserEntity> findUsersNotInAnyPosition();
+
+    @Query("SELECT u FROM UserEntity u " +
+            "INNER JOIN EmploymentDetailEntity ed ON u.id = ed.user.id " +
+            "WHERE ed.workingStatus = 'active'")
+    List<UserEntity> findAllActiveUsers();
 }
