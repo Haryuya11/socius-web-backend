@@ -9,6 +9,7 @@ import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.lang.NonNull;
 
 public interface EmploymentDetailRepository extends JpaRepository<EmploymentDetailEntity, UUID> {
@@ -36,6 +37,7 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      * @param departmentId ID của phòng ban
      * @return Số lượng nhân viên
      */
+    @Query("SELECT COUNT(e) FROM EmploymentDetailEntity e WHERE e.department.id = :departmentId AND e.workingStatus = 'active'")
     long countByDepartmentId(UUID departmentId);
 
     /**
@@ -44,6 +46,7 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      * @param teamId ID của team
      * @return Số lượng nhân viên
      */
+    @Query("SELECT COUNT(e) FROM EmploymentDetailEntity e WHERE e.team.id = :teamId AND e.workingStatus = 'active'")
     long countByTeamId(UUID teamId);
 
     /**
@@ -52,6 +55,7 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      * @param positionId ID của vị trí
      * @return Số lượng nhân viên
      */
+    @Query("SELECT COUNT(e) FROM EmploymentDetailEntity e WHERE e.position.id = :positionId AND e.workingStatus = 'active'")
     long countByPositionId(UUID positionId);
 
 
@@ -61,6 +65,7 @@ public interface EmploymentDetailRepository extends JpaRepository<EmploymentDeta
      * @param pageable Thông tin phân trang
      * @return Page chứa danh sách EmploymentDetailEntity
      */
+    @Query("SELECT e FROM EmploymentDetailEntity e WHERE e.workingStatus = 'active'")
     Page<EmploymentDetailEntity> findAll(@NonNull Pageable pageable);
 
     List<EmploymentDetailEntity> findByTeam_Id(UUID teamId);

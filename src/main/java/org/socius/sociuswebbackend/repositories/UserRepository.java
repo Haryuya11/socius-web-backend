@@ -24,7 +24,7 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
      * @return Danh sách người dùng không thuộc bất kỳ team nào
      */
     @Query("SELECT u FROM UserEntity u join EmploymentDetailEntity e ON u.id = e.user.id " +
-            "WHERE e.team IS NULL")
+            "WHERE e.team IS NULL + e.workingStatus = 'active'")
     List<UserEntity> findUsersNotInAnyTeam();
 
     /**
@@ -33,7 +33,7 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
      * @return Danh sách người dùng không thuộc bất kỳ phòng ban nào
      */
     @Query("SELECT u FROM UserEntity u join EmploymentDetailEntity e ON u.id = e.user.id " +
-            "WHERE e.department IS NULL")
+            "WHERE e.department IS NULL + e.workingStatus = 'active'")
     List<UserEntity> findUsersNotInAnyDepartment();
 
     /**
@@ -42,6 +42,11 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
      * @return Danh sách người dùng không thuộc bất kỳ vị trí nào
      */
     @Query("SELECT u FROM UserEntity u join EmploymentDetailEntity e ON u.id = e.user.id " +
-            "WHERE e.position IS NULL")
+            "WHERE e.position IS NULL + e.workingStatus = 'active'")
     List<UserEntity> findUsersNotInAnyPosition();
+
+    @Query("SELECT u FROM UserEntity u " +
+            "INNER JOIN EmploymentDetailEntity ed ON u.id = ed.user.id " +
+            "WHERE ed.workingStatus = 'active'")
+    List<UserEntity> findAllActiveUsers();
 }
