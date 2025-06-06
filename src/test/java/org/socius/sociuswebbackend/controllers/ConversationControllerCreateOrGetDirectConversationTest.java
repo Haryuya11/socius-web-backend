@@ -2,6 +2,7 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,14 +15,20 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
+import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,7 +43,7 @@ class ConversationControllerCreateOrGetDirectConversationTest {
     private ConversationService conversationService;
 
     @Mock
-    private HttpServletRequest request;
+    private UserRepository userRepository;
 
     @Mock
     private HttpSession session;
@@ -51,239 +58,93 @@ class ConversationControllerCreateOrGetDirectConversationTest {
 
     @BeforeEach
     void setUp() {
-        userId = UUID.randomUUID();
-        otherUserId = UUID.randomUUID();
-        userKey = "spring:session:user:id";
+        // Setup SecurityContext cho test
+        UserEntity mockUser = new UserEntity();
+        mockUser.setId(UUID.randomUUID());
+        mockUser.setEmail("test@example.com");
 
-        // Setup ConversationResponseDto
-        UserResponseDto createdBy = UserResponseDto.builder()
-                .id(userId)
-                .firstName("John")
-                .lastName("Doe")
-                .email("john.doe@example.com")
-                .build();
+        // Mock authentication
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn("test@example.com");
 
-        conversationResponseDto = ConversationResponseDto.builder()
-                .id(UUID.randomUUID())
-                .name("Direct Conversation")
-                .type(ConversationType.DIRECT)
-                .createdByUser(createdBy)
-                .createdAt(LocalDateTime.now())
-                .build();
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // Mock UserRepository
+        when(userRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(mockUser));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
-    @DisplayName("Tạo cuộc trò chuyện trực tiếp thành công")
+    @DisplayName("Tạo conversation thành công")
     void createOrGetDirectConversation_Success() {
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            // Arrange
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getOrCreateDirectConversation(userId, otherUserId))
-                    .thenReturn(conversationResponseDto);
+        // Given
+        UUID otherUserId = UUID.randomUUID();
+        ConversationResponseDto expectedConversation = ConversationResponseDto.builder()
+                .id(UUID.randomUUID())
+                .type(ConversationType.DIRECT)
+                .build();
 
-            // Act
-            ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId, request);
+        when(conversationService.getOrCreateDirectConversation(otherUserId))
+                .thenReturn(expectedConversation);
 
-            // Assert
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertEquals(conversationResponseDto, response.getBody());
+        // When
+        ResponseEntity<?> response = conversationController
+                .createOrGetDirectConversation(otherUserId);
 
-            // Verify interactions
-            verify(request).getSession(false);
-            verify(session).getAttribute(userKey);
-            verify(conversationService).getOrCreateDirectConversation(userId, otherUserId);
-        }
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(expectedConversation, response.getBody());
+        verify(conversationService).getOrCreateDirectConversation(otherUserId);
     }
 
     @Test
-    @DisplayName("Thất bại khi session null")
-    void createOrGetDirectConversation_SessionNull_ReturnsUnauthorized() {
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            // Arrange
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-            when(request.getSession(false)).thenReturn(null);
+    @DisplayName("User không tồn tại - trả về 400")
+    void createOrGetDirectConversation_UserNotFound_ReturnsBadRequest() {
+        // Given
+        UUID otherUserId = UUID.randomUUID();
 
-            // Act
-            ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId, request);
+        // Mock user không tồn tại
+        when(userRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.empty());
 
-            // Assert
-            assertNotNull(response);
-            assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        when(conversationService.getOrCreateDirectConversation(otherUserId))
+                .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
 
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseBody = (Map<String, String>) response.getBody();
-            assertNotNull(responseBody);
-            assertEquals("Session không hợp lệ hoặc đã hết hạn", responseBody.get("error"));
+        // When
+        ResponseEntity<?> response = conversationController
+                .createOrGetDirectConversation(otherUserId);
 
-            // Verify interactions
-            verify(request).getSession(false);
-            verify(conversationService, never()).getOrCreateDirectConversation(any(UUID.class), any(UUID.class));
-        }
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertEquals("Người dùng không tồn tại", body.get("error"));
     }
 
     @Test
-    @DisplayName("Thất bại khi userId null trong session")
-    void createOrGetDirectConversation_UserIdNull_ReturnsUnauthorized() {
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            // Arrange
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(null);
+    @DisplayName("Authentication null - trả về 400")
+    void createOrGetDirectConversation_NoAuthentication_ReturnsBadRequest() {
+        // Given
+        UUID otherUserId = UUID.randomUUID();
 
-            // Act
-            ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId, request);
+        // Clear SecurityContext
+        SecurityContextHolder.clearContext();
 
-            // Assert
-            assertNotNull(response);
-            assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        when(conversationService.getOrCreateDirectConversation(otherUserId))
+                .thenThrow(new IllegalArgumentException("User không được xác thực"));
 
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseBody = (Map<String, String>) response.getBody();
-            assertNotNull(responseBody);
-            assertEquals("User ID không hợp lệ trong session", responseBody.get("error"));
+        // When
+        ResponseEntity<?> response = conversationController
+                .createOrGetDirectConversation(otherUserId);
 
-            // Verify interactions
-            verify(request).getSession(false);
-            verify(session).getAttribute(userKey);
-            verify(conversationService, never()).getOrCreateDirectConversation(any(UUID.class), any(UUID.class));
-        }
-    }
-
-    @Test
-    @DisplayName("Thất bại khi service throw RuntimeException")
-    void createOrGetDirectConversation_ServiceThrowsException_ReturnsBadRequest() {
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            // Arrange
-            String errorMessage = "Không thể tạo cuộc trò chuyện với chính mình";
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getOrCreateDirectConversation(userId, otherUserId))
-                    .thenThrow(new RuntimeException(errorMessage));
-
-            // Act
-            ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId, request);
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseBody = (Map<String, String>) response.getBody();
-            assertNotNull(responseBody);
-            assertEquals(errorMessage, responseBody.get("error"));
-
-            // Verify interactions
-            verify(request).getSession(false);
-            verify(session).getAttribute(userKey);
-            verify(conversationService).getOrCreateDirectConversation(userId, otherUserId);
-        }
-    }
-
-    @Test
-    @DisplayName("Thất bại khi service throw IllegalArgumentException")
-    void createOrGetDirectConversation_ServiceThrowsIllegalArgumentException_ReturnsBadRequest() {
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            // Arrange
-            String errorMessage = "Không thể tạo cuộc trò chuyện với chính mình";
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getOrCreateDirectConversation(userId, otherUserId))
-                    .thenThrow(new IllegalArgumentException(errorMessage));
-
-            // Act
-            ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId, request);
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseBody = (Map<String, String>) response.getBody();
-            assertNotNull(responseBody);
-            assertEquals(errorMessage, responseBody.get("error"));
-
-            // Verify interactions
-            verify(request).getSession(false);
-            verify(session).getAttribute(userKey);
-            verify(conversationService).getOrCreateDirectConversation(userId, otherUserId);
-        }
-    }
-
-    @Test
-    @DisplayName("Kiểm tra tham số otherUserId được truyền đúng")
-    void createOrGetDirectConversation_CorrectParametersPassed() {
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            // Arrange
-            UUID specificOtherUserId = UUID.fromString("12345678-1234-1234-1234-123456789012");
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getOrCreateDirectConversation(userId, specificOtherUserId))
-                    .thenReturn(conversationResponseDto);
-
-            // Act
-            ResponseEntity<?> response = conversationController.createOrGetDirectConversation(specificOtherUserId, request);
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-
-            // Verify exact parameters
-            verify(conversationService).getOrCreateDirectConversation(
-                    eq(userId),
-                    eq(specificOtherUserId)
-            );
-        }
-    }
-
-    @Test
-    @DisplayName("Kiểm tra response body structure cho trường hợp thành công")
-    void createOrGetDirectConversation_Success_ResponseBodyStructure() {
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            // Arrange
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getOrCreateDirectConversation(userId, otherUserId))
-                    .thenReturn(conversationResponseDto);
-
-            // Act
-            ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId, request);
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-
-            ConversationResponseDto responseBody = (ConversationResponseDto) response.getBody();
-            assertNotNull(responseBody);
-            assertEquals(conversationResponseDto.getId(), responseBody.getId());
-            assertEquals(conversationResponseDto.getName(), responseBody.getName());
-            assertEquals(conversationResponseDto.getType(), responseBody.getType());
-            assertEquals(conversationResponseDto.getCreatedByUser().getId(), responseBody.getCreatedByUser().getId());
-        }
-    }
-
-    @Test
-    @DisplayName("Kiểm tra RedisKeyBuilder được gọi đúng")
-    void createOrGetDirectConversation_RedisKeyBuilderCalled() {
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            // Arrange
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getOrCreateDirectConversation(userId, otherUserId))
-                    .thenReturn(conversationResponseDto);
-
-            // Act
-            conversationController.createOrGetDirectConversation(otherUserId, request);
-
-            // Assert
-            mockedRedisKeyBuilder.verify(RedisKeyBuilder::userIdAttributeKey, times(1));
-        }
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 }

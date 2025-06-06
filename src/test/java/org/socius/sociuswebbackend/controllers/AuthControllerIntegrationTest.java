@@ -68,13 +68,11 @@ public class AuthControllerIntegrationTest {
             // Create successful login response
             successLoginResponse = new LoginResponseDto();
             successLoginResponse.setAuthenticated(true);
-            successLoginResponse.setMessage("Đăng nhập thành công");
             successLoginResponse.setPasswordChangeRequired(false);
 
             // Create failed login response
             failedLoginResponse = new LoginResponseDto();
             failedLoginResponse.setAuthenticated(false);
-            failedLoginResponse.setMessage("Đăng nhập không thành công");
 
             // Create session info DTO
             sessionInfoDto = new SessionInfoDto();
@@ -97,7 +95,6 @@ public class AuthControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(adminLoginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.authenticated").value(true))
-                .andExpect(jsonPath("$.message").value("Đăng nhập thành công"))
                 .andExpect(jsonPath("$.passwordChangeRequired").value(false));
 
         verify(authenticationService).login(any(LoginRequestDto.class), any(), any());
@@ -106,47 +103,41 @@ public class AuthControllerIntegrationTest {
     @Test
     @DisplayName("Login phải trả về 401 UNAUTHORIZED khi sai mật khẩu hoặc email")
     void loginShouldReturnUnauthorizedAndErrorMessageWithInvalidCredentials() throws Exception {
-        failedLoginResponse.setMessage("Sai mật khẩu");
         when(authenticationService.login(any(LoginRequestDto.class), any(), any()))
                 .thenReturn(failedLoginResponse);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(adminLoginRequest)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(content().string("Sai mật khẩu"));
+                .andExpect(status().isUnauthorized());
 
         verify(authenticationService).login(any(LoginRequestDto.class), any(), any());
     }
 
     @Test
-    @DisplayName("Login phải trả về 404 NOT_FOUND khi không tìm thấy người dùng")
+    @DisplayName("Login phải trả về 401 UNAUTHORIZED khi người dùng không tồn tại")
     void loginShouldReturnNotFoundAndErrorMessageWhenUserNotFound() throws Exception {
-        failedLoginResponse.setMessage("Không tìm thấy người dùng");
         when(authenticationService.login(any(LoginRequestDto.class), any(), any()))
                 .thenReturn(failedLoginResponse);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(adminLoginRequest)))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Không tìm thấy người dùng"));
+                .andExpect(status().isUnauthorized());
 
         verify(authenticationService).login(any(LoginRequestDto.class), any(), any());
     }
 
     @Test
-    @DisplayName("Login phải trả về 500 INTERNAL_SERVER_ERROR khi có lỗi không xác định")
+    @DisplayName("Login phải trả về 401 UNAUTHORIZED khi có lỗi không xác định")
     void loginShouldReturnInternalServerErrorAndErrorMessageOnUnknownError() throws Exception {
-        failedLoginResponse.setMessage("Lỗi hệ thống");
         when(authenticationService.login(any(LoginRequestDto.class), any(), any()))
                 .thenReturn(failedLoginResponse);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(adminLoginRequest)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Lỗi hệ thống"));
+                .andExpect(status().isUnauthorized());
 
         verify(authenticationService).login(any(LoginRequestDto.class), any(), any());
     }

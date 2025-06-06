@@ -2,29 +2,32 @@ package org.socius.sociuswebbackend.services.impl;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.socius.sociuswebbackend.mappers.TaskMapper;
 import org.socius.sociuswebbackend.mappers.TeamMapper;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
+import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
+import org.socius.sociuswebbackend.model.entities.TaskEntity;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
+import org.socius.sociuswebbackend.repositories.TaskRepository;
 import org.socius.sociuswebbackend.repositories.TeamRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.TeamService;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

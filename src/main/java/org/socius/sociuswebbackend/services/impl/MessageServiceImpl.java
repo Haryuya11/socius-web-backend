@@ -290,9 +290,6 @@ public class MessageServiceImpl implements MessageService {
         UserEntity user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
         UUID userId = user.getId();
-        // Kiểm tra người gửi có tồn tại không
-        userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId));
 
         // Kiểm tra cuộc trò chuyện có tồn tại không
         ConversationEntity conversation = conversationRepository.findById(conversationId)

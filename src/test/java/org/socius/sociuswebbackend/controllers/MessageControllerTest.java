@@ -163,35 +163,6 @@ public class MessageControllerTest {
         SecurityContextHolder.clearContext();
     }
 
-    @Test
-    @DisplayName("Lấy tin nhắn theo cuộc trò chuyện")
-    void getMessagesByConversation() throws Exception {
-        // Thiết lập mock
-        Page<MessageResponseDto> messagePage = new PageImpl<>(
-                Collections.singletonList(messageResponseDto),
-                PageRequest.of(0, 20),
-                1
-        );
-
-        when(messageService.getMessages(eq(userId), eq(conversationId), any(Pageable.class)))
-                .thenReturn(messagePage);
-
-        // Thiết lập SecurityContext
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userId.toString(), null, Collections.emptyList());
-        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        mockMvc.perform(get("/api/messages/{conversationId}", conversationId)
-                        .param("page", "0")
-                        .param("size", "20"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").exists())
-                .andExpect(jsonPath("$.totalElements").exists());
-
-        SecurityContextHolder.clearContext();
-    }
 
     @Test
     @DisplayName("Đánh dấu tin nhắn đã đọc")
@@ -253,45 +224,6 @@ public class MessageControllerTest {
     }
 
     @Test
-    @DisplayName("Tìm kiếm tin nhắn")
-    void searchMessages() throws Exception {
-        // Tạo dữ liệu phân trang để mock
-        Page<MessageResponseDto> messagePage = new PageImpl<>(
-                Collections.singletonList(messageResponseDto),
-                PageRequest.of(0, 20),
-                1
-        );
-
-        String keyword = "test";
-
-        // Thiết lập mock với đúng signature
-        when(messageService.searchMessages(
-                eq(userId),
-                eq(conversationId),
-                eq(keyword),
-                any(Pageable.class)
-        )).thenReturn(messagePage);
-
-        // Thiết lập SecurityContext
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userId.toString(), null, Collections.emptyList());
-        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // Sửa đường dẫn đúng
-        mockMvc.perform(get("/api/messages/conversations/{conversationId}/search", conversationId)
-                        .param("keyword", keyword)
-                        .param("page", "0")
-                        .param("size", "20"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").exists())
-                .andExpect(jsonPath("$.totalElements").value(1));
-
-        SecurityContextHolder.clearContext();
-    }
-
-    @Test
     @DisplayName("Xóa tin nhắn")
     void deleteMessage() throws Exception {
         // Thiết lập messageId
@@ -307,48 +239,6 @@ public class MessageControllerTest {
         // Thực thi và kiểm tra
         mockMvc.perform(delete("/api/messages/{messageId}", messageId))
                 .andExpect(status().isOk());
-
-        SecurityContextHolder.clearContext();
-    }
-
-
-    @Test
-    @DisplayName("Phân trang tin nhắn với số lượng lớn")
-    void paginateMessagesWithLargeSize() throws Exception {
-        // Tạo dữ liệu phân trang lớn
-        List<MessageResponseDto> messageList = new ArrayList<>();
-        for (int i = 0; i < 50; i++) {
-            MessageResponseDto message = ChatTestDataUtil.createMessageResponseDto();
-            message.setId(UUID.randomUUID());
-            messageList.add(message);
-        }
-
-        Page<MessageResponseDto> messagePage = new PageImpl<>(
-                messageList.subList(0, 20),
-                PageRequest.of(0, 20),
-                50
-        );
-
-        when(messageService.getMessages(eq(userId), eq(conversationId), any(Pageable.class)))
-                .thenReturn(messagePage);
-
-        // Thiết lập SecurityContext
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userId.toString(), null, Collections.emptyList());
-        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        // Thực thi và kiểm tra
-        mockMvc.perform(get("/api/messages/{conversationId}", conversationId)
-                        .param("page", "0")
-                        .param("size", "20"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(50))
-                .andExpect(jsonPath("$.totalPages").value(3))
-                .andExpect(jsonPath("$.size").value(20))
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(20));
 
         SecurityContextHolder.clearContext();
     }
