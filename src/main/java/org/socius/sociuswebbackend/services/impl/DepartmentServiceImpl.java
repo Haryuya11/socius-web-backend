@@ -58,7 +58,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     public DepartmentResponseDto create(DepartmentRequestDto requestDto) {
         try {
             if (departmentRepository.existsByName(requestDto.getName())) {
-                throw new RuntimeException("Phòng ban đã tồn tại");
+                throw new IllegalArgumentException("Phòng ban đã tồn tại");
             }
 
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -83,6 +83,8 @@ public class DepartmentServiceImpl implements DepartmentService {
 
             DepartmentEntity savedDepartment = departmentRepository.save(department);
             return departmentMapper.entityToDto(savedDepartment);
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo phòng ban vì ràng buộc dữ liệu", e);
         } catch (Exception e) {

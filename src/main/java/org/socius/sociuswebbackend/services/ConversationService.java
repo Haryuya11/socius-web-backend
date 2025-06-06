@@ -31,11 +31,10 @@ public interface ConversationService {
     /**
      * Lấy danh sách cuộc trò chuyện của người dùng với phân trang
      *
-     * @param userId   ID của người dùng hiện tại
      * @param pageable Thông tin phân trang
      * @return Trang cuộc trò chuyện
      */
-    Page<ConversationResponseDto> getUserConversations(UUID userId, Pageable pageable);
+    Page<ConversationResponseDto> getUserConversations(Pageable pageable);
 
     /**
      * Thêm thành viên vào cuộc trò chuyện
@@ -72,11 +71,10 @@ public interface ConversationService {
     /**
      * Tìm hoặc tạo cuộc trò chuyện trực tiếp giữa hai người dùng
      *
-     * @param userId1 ID của người dùng thứ nhất
-     * @param userId2 ID của người dùng thứ hai
+     * @param otherUserId ID của người dùng thứ hai
      * @return Cuộc trò chuyện
      */
-    ConversationResponseDto getOrCreateDirectConversation(UUID userId1, UUID userId2);
+    ConversationResponseDto getOrCreateDirectConversation(UUID otherUserId);
 
     /**
      * Tìm kiếm cuộc trò chuyện theo ID
@@ -90,17 +88,15 @@ public interface ConversationService {
      * Lấy danh sách thành viên trong cuộc trò chuyện
      *
      * @param conversationId ID của cuộc trò chuyện
-     * @param userId         ID của người dùng hiện tại (để kiểm tra quyền truy cập)
      * @return Danh sách thành viên
      */
-    List<ConversationMemberDto> getConversationMembers(UUID conversationId, UUID userId);
+    List<ConversationMemberDto> getConversationMembers(UUID conversationId);
 
     /**
      * Lấy tất cả cuộc trò chuyện của người dùng
      *
-     * @param userId ID của người dùng
      * @return Danh sách cuộc trò chuyện
      */
-    List<ConversationResponseDto> getAllUserConversations(UUID userId);
+    List<ConversationResponseDto> getAllUserConversations();
 
 }

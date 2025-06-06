@@ -25,12 +25,11 @@ public interface MessageService {
     /**
      * Lấy tin nhắn trong cuộc trò chuyện với phân trang
      *
-     * @param userId         ID của người dùng
      * @param conversationId ID của cuộc trò chuyện
      * @param pageable       Thông tin phân trang
      * @return Trang tin nhắn
      */
-    Page<MessageResponseDto> getMessages(UUID userId, UUID conversationId, Pageable pageable);
+    Page<MessageResponseDto> getMessages( UUID conversationId, Pageable pageable);
 
     /**
      * Đánh dấu tin nhắn đã đọc
@@ -73,12 +72,11 @@ public interface MessageService {
     /**
      * Tìm kiếm tin nhắn trong một cuộc trò chuyện theo từ khóa
      *
-     * @param userId         ID của người dùng hiện tại
      * @param conversationId ID của cuộc trò chuyện
      * @param keyword        Từ khóa tìm kiếm
      * @param pageable       Thông tin phân trang
      * @return Trang các tin nhắn tìm thấy
      */
-    Page<MessageResponseDto> searchMessages(UUID userId, UUID conversationId, String keyword, Pageable pageable);
+    Page<MessageResponseDto> searchMessages( UUID conversationId, String keyword, Pageable pageable);
 
 }

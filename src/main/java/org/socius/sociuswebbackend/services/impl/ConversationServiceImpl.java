@@ -18,6 +18,8 @@ import org.socius.sociuswebbackend.services.ChatMessageProducerService;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,7 +123,14 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public Page<ConversationResponseDto> getUserConversations(UUID userId, Pageable pageable) {
+    public Page<ConversationResponseDto> getUserConversations(Pageable pageable) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+        UUID userId = user.getId();
+
         // Kiểm tra người dùng có tồn tại không
         if (!userRepository.existsById(userId)) {
             logger.info("Không tìm thấy người dùng với ID: {}", userId);
@@ -220,58 +229,71 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     @Transactional
-    public ConversationResponseDto getOrCreateDirectConversation(UUID userId1, UUID userId2) {
-        if (userId1.equals(userId2)) {
+    public ConversationResponseDto getOrCreateDirectConversation(UUID otherUserId) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+        UUID userId = user.getId();
+
+        if (userId.equals(otherUserId)) {
             throw new IllegalArgumentException("Không thể tạo cuộc trò chuyện với chính mình");
         }
 
         // Kiểm tra xem đã có cuộc trò chuyện trực tiếp giữa 2 người dùng này chưa
-        Optional<ConversationEntity> existingConversation = conversationRepository.findDirectConversationBetweenUsers(userId1, userId2);
+        Optional<ConversationEntity> existingConversation = conversationRepository.findDirectConversationBetweenUsers(userId, otherUserId);
 
         if (existingConversation.isPresent()) {
-            logger.info("Đã tìm thấy cuộc trò chuyện trực tiếp giữa {} và {}", userId1, userId2);
+            logger.info("Đã tìm thấy cuộc trò chuyện trực tiếp giữa {} và {}", userId, otherUserId);
             return conversationMapper.entityToDto(existingConversation.get());
         }
 
-        // Lấy thông tin người dùng
-        UserEntity user1 = userRepository.findById(userId1)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId1));
-
-        UserEntity user2 = userRepository.findById(userId2)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId2));
+        UserEntity otherUser = userRepository.findById(otherUserId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + otherUserId));
 
         // Tạo cuộc trò chuyện mới
         ConversationEntity conversation = ConversationEntity.builder()
-                .name(generateDirectConversationName(user1, user2))
+                .name(generateDirectConversationName(user, otherUser))
                 .type(ConversationType.DIRECT)
-                .createdByUser(user1)
+                .createdByUser(user)
                 .build();
 
         ConversationEntity savedConversation = conversationRepository.save(conversation);
 
         // Thêm cả 2 người dùng vào cuộc trò chuyện
         List<ConversationMemberEntity> members = Arrays.asList(
-                createMemberEntity(conversation, user1, MemberRole.ADMIN),
-                createMemberEntity(conversation, user2, MemberRole.ADMIN)
+                createMemberEntity(conversation, user, MemberRole.ADMIN),
+                createMemberEntity(conversation, otherUser, MemberRole.ADMIN)
         );
 
         conversationMemberRepository.saveAll(members);
 
         // Khởi tạo unread counts
         List<UnreadCountEntity> unreadCounts = Arrays.asList(
-                createUnreadCountEntity(conversation, user1),
-                createUnreadCountEntity(conversation, user2)
+                createUnreadCountEntity(conversation, user),
+                createUnreadCountEntity(conversation, otherUser)
         );
 
         unreadCountRepository.saveAll(unreadCounts);
-        logger.info("Đã tạo cuộc trò chuyện trực tiếp giữa {} và {}", userId1, userId2);
+        logger.info("Đã tạo cuộc trò chuyện trực tiếp giữa {} và {}", userId, otherUserId);
 
         return conversationMapper.entityToDto(savedConversation);
     }
 
     @Override
-    public List<ConversationMemberDto> getConversationMembers(UUID conversationId, UUID userId) {
-        logger.info("Lấy danh sách thành viên của cuộc trò chuyện: {} bởi user: {}", conversationId, userId);
+    public List<ConversationMemberDto> getConversationMembers(UUID conversationId) {
+        logger.info("Lấy danh sách thành viên của cuộc trò chuyện: {} ", conversationId);
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        if (user.getId() == null) {
+            throw new IllegalArgumentException("User ID không hợp lệ trong session");
+        }
 
         // Kiểm tra cuộc trò chuyện có tồn tại không
         conversationRepository.findById(conversationId)
@@ -279,7 +301,7 @@ public class ConversationServiceImpl implements ConversationService {
 
         // Kiểm tra người dùng có phải là thành viên không
         ConversationMemberEntity requesterMember = conversationMemberRepository
-                .findById(new ConversationMemberId(conversationId, userId))
+                .findById(new ConversationMemberId(conversationId, user.getId()))
                 .orElseThrow(() -> new RuntimeException("Bạn không phải là thành viên của cuộc trò chuyện này"));
 
         if (requesterMember.getLeftAt() != null) {
@@ -296,8 +318,14 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public List<ConversationResponseDto> getAllUserConversations(UUID userId) {
-        logger.info("Lấy tất cả cuộc trò chuyện của user: {}", userId);
+    public List<ConversationResponseDto> getAllUserConversations() {
+        logger.info("Lấy tất cả cuộc trò chuyện của người dùng");
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
 
         // Kiểm tra người dùng có tồn tại không
         if (!userRepository.existsById(userId)) {

@@ -15,6 +15,8 @@ import org.socius.sociuswebbackend.services.ChatMessageProducerService;
 import org.socius.sociuswebbackend.services.MessageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -115,9 +117,16 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public Page<MessageResponseDto> getMessages(UUID userId, UUID conversationId, Pageable pageable) {
+    public Page<MessageResponseDto> getMessages(UUID conversationId, Pageable pageable) {
 
-        if (!isUserMemberOfConversation(userId, conversationId)) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+
+        if (!isUserMemberOfConversation(user.getId(), conversationId)) {
             throw new RuntimeException("Bạn không có quyền xem cuộc trò chuyện này");
         }
 
@@ -131,7 +140,7 @@ public class MessageServiceImpl implements MessageService {
 
             // Kiểm tra trạng thái tin nhắn cho người dùng hiện tại
             Optional<MessageStatusEntity> messageStatus = messageStatusRepository.findById(
-                    new MessageStatusId(message.getId(), userId));
+                    new MessageStatusId(message.getId(), user.getId()));
             responseDto.setRead(messageStatus.map(MessageStatusEntity::getIsRead).orElse(false));
             return responseDto;
         });
@@ -274,7 +283,13 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public Page<MessageResponseDto> searchMessages(UUID userId, UUID conversationId, String keyword, Pageable pageable) {
+    public Page<MessageResponseDto> searchMessages(UUID conversationId, String keyword, Pageable pageable) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+        UUID userId = user.getId();
         // Kiểm tra người gửi có tồn tại không
         userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId));
