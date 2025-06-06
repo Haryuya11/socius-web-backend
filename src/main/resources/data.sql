@@ -533,7 +533,7 @@ VALUES ('Thiết kế UI', 'Thiết kế layout cho trang dashboard quản trị
         'cc33dd44-ee55-ff66-7788-99001122aa44', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
        ('Cập nhật UI', 'Nâng cấp hiển thị danh sách sản phẩm và hiệu ứng hover', '2025-06-20', 'pending',
         'ee55ff66-7788-9900-1122-aa44bb55cc66', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       ('Tài liệu SD', 'Soạn thảo tài liệu user manual cho khách hàng', '2025-06-05', 'completed',
+       ('Tài liệu SD', 'Soạn thảo tài liệu user manual cho khách hàng', '2025-06-11', 'completed',
         'ee55ff66-7788-9900-1122-aa44bb55cc66', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
        ('Refactor TT', 'Tối ưu mã nguồn xử lý thanh toán và giảm lỗi timeout', '2025-06-17', 'in_progress',
         'cc33dd44-ee55-ff66-7788-99001122aa44', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

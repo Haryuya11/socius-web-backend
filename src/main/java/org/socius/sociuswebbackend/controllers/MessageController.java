@@ -199,20 +199,5 @@ public class MessageController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/conversations/{conversationId}/search")
-    public ResponseEntity<Page<MessageResponseDto>> searchMessages(
-            @PathVariable UUID conversationId,
-            @RequestParam String keyword,
-            @PageableDefault(size = 20) Pageable pageable) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
 
-        UserEntity user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
-
-        UUID userId = user.getId();
-
-        Page<MessageResponseDto> messages = messageService.searchMessages(userId, conversationId, keyword, pageable);
-        return ResponseEntity.ok(messages);
-    }
 }

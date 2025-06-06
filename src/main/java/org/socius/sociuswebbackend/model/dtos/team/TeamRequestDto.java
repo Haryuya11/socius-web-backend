@@ -14,9 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class TeamRequestDto {
-    @NotBlank(message = "Tên nhóm không được để trống")
     private String name;
 
-    @NotNull(message = "ID của người đứng đầu nhóm không được để trống")
     private UUID leaderId;
 }

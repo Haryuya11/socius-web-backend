@@ -1,11 +1,13 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -21,9 +23,14 @@ import org.socius.sociuswebbackend.model.enums.MemberRole;
 import org.socius.sociuswebbackend.model.enums.MessageType;
 import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.services.ChatMessageProducerService;
+import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
+import org.socius.sociuswebbackend.utils.ChatTestDataUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -63,6 +70,13 @@ public class ConversationServiceImplTest {
     @Mock
     private ChatMessageProducerService chatMessageProducerService;
 
+    @Mock
+    private Authentication authentication;
+
+    @Mock
+    private SecurityContext securityContext;
+
+
     @InjectMocks
     private ConversationServiceImpl conversationService;
 
@@ -74,40 +88,75 @@ public class ConversationServiceImplTest {
     private ConversationEntity conversation;
     private ConversationResponseDto conversationResponseDto;
     private ConversationMemberEntity userMember;
+    private MockedStatic<SecurityContextHolder> securityContextHolder;
 
     @BeforeEach
     void setUp() {
+        try {
+            if (securityContextHolder != null) {
+                securityContextHolder.close();
+            }
+        } catch (Exception e) {
+            // Ignore nếu chưa có static mock nào
+        }
+
+        // Setup SecurityContext
+        securityContextHolder = mockStatic(SecurityContextHolder.class);
+        securityContextHolder.when(SecurityContextHolder::getContext)
+                .thenReturn(securityContext);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("test@example.com");
+
+        // Initialize test data
         userId = UUID.randomUUID();
         otherUserId = UUID.randomUUID();
         conversationId = UUID.randomUUID();
 
-        user = new UserEntity();
+        // Create test entities - QUAN TRỌNG: Khởi tạo đầy đủ
+        user = AuthTestDataUtil.createTestAdminUser();
         user.setId(userId);
-        user.setFirstName("Test");
-        user.setLastName("User");
+        user.setEmail("test@example.com");
 
-        otherUser = new UserEntity();
+        otherUser = AuthTestDataUtil.createTestAdminUser();
         otherUser.setId(otherUserId);
-        otherUser.setFirstName("Other");
-        otherUser.setLastName("User");
+        otherUser.setEmail("other@example.com");
 
-        conversation = new ConversationEntity();
+        conversation = ChatTestDataUtil.createConversationEntity();
         conversation.setId(conversationId);
-        conversation.setName("Test Conversation");
         conversation.setType(ConversationType.GROUP);
-        conversation.setCreatedByUser(user);
+        conversation.setCreatedByUser(user); // QUAN TRỌNG: Set creator
 
-        conversationResponseDto = ConversationResponseDto.builder()
-                .id(conversationId)
-                .name("Test Conversation")
-                .type(ConversationType.GROUP)
-                .build();
-
+        // Create conversation member
         userMember = new ConversationMemberEntity();
         userMember.setUser(user);
         userMember.setConversation(conversation);
         userMember.setRole(MemberRole.ADMIN);
-        userMember.setJoinedAt(LocalDateTime.now());
+
+        // Create response DTO
+        conversationResponseDto = ConversationResponseDto.builder()
+                .id(conversationId)
+                .name("Test Conversation")
+                .type(ConversationType.GROUP)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // Mock repository calls - SỬA CHÍNH TẠI ĐÂY
+        when(userRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(user)); // Đảm bảo user không null
+
+        when(userRepository.existsById(userId))
+                .thenReturn(true);
+
+        when(conversationRepository.findById(conversationId))
+                .thenReturn(Optional.of(conversation));
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (securityContextHolder != null) {
+            securityContextHolder.close();
+            securityContextHolder = null;
+        }
     }
 
     @Test
@@ -244,7 +293,7 @@ public class ConversationServiceImplTest {
                         .role(MemberRole.ADMIN)
                         .build());
 
-        Page<ConversationResponseDto> result = conversationService.getUserConversations(userId, pageable);
+        Page<ConversationResponseDto> result = conversationService.getUserConversations(pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
@@ -259,7 +308,7 @@ public class ConversationServiceImplTest {
         when(userRepository.existsById(userId)).thenReturn(false);
 
         assertThrows(RuntimeException.class, () ->
-                conversationService.getUserConversations(userId, pageable));
+                conversationService.getUserConversations(pageable));
     }
 
     @Test
@@ -306,7 +355,7 @@ public class ConversationServiceImplTest {
         when(conversationMapper.entityToDto(any(ConversationEntity.class)))
                 .thenReturn(conversationResponseDto);
 
-        ConversationResponseDto result = conversationService.getOrCreateDirectConversation(userId, otherUserId);
+        ConversationResponseDto result = conversationService.getOrCreateDirectConversation(otherUserId);
 
         assertNotNull(result);
         verify(conversationRepository).save(any(ConversationEntity.class));
@@ -318,7 +367,7 @@ public class ConversationServiceImplTest {
     @DisplayName("Lỗi khi tạo cuộc trò chuyện trực tiếp với chính mình")
     void failToCreateDirectConversationWithSameUser() {
         assertThrows(IllegalArgumentException.class, () ->
-                conversationService.getOrCreateDirectConversation(userId, userId));
+                conversationService.getOrCreateDirectConversation(userId));
     }
 
     @Test
@@ -387,7 +436,7 @@ public class ConversationServiceImplTest {
         when(conversationMemberMapper.entityToDto(any(ConversationMemberEntity.class)))
                 .thenReturn(ConversationMemberDto.builder().build());
 
-        List<ConversationMemberDto> result = conversationService.getConversationMembers(conversationId, userId);
+        List<ConversationMemberDto> result = conversationService.getConversationMembers(conversationId);
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -406,7 +455,7 @@ public class ConversationServiceImplTest {
         when(conversationMemberMapper.entityToDto(userMember))
                 .thenReturn(ConversationMemberDto.builder().build());
 
-        List<ConversationResponseDto> result = conversationService.getAllUserConversations(userId);
+        List<ConversationResponseDto> result = conversationService.getAllUserConversations();
 
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -436,5 +485,62 @@ public class ConversationServiceImplTest {
 
         assertThrows(RuntimeException.class, () ->
                 conversationService.deleteGroupConversation(conversationId));
+    }
+
+    @Test
+    @DisplayName("Cập nhật tên group conversation thành công")
+    void updateConversationNameSuccessfully() {
+        // Given
+        UUID conversationId = UUID.randomUUID();
+        String oldName = "Old Group Name";
+        String newName = "New Group Name";
+
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(conversationId)
+                .name(oldName)
+                .type(ConversationType.GROUP)
+                .build();
+
+        MessageEntity systemMessage = MessageEntity.builder()
+                .id(UUID.randomUUID())
+                .conversation(conversation)
+                .content(String.format("Tên nhóm đã được thay đổi từ '%s' thành '%s'", oldName, newName))
+                .messageType(MessageType.SYSTEM)
+                .build();
+
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
+        when(messageRepository.save(any(MessageEntity.class))).thenReturn(systemMessage);
+        when(messageMapper.entityToDto(any(MessageEntity.class))).thenReturn(MessageResponseDto.builder().build());
+
+        // When
+        conversationService.updateConversationName(conversationId, newName);
+
+        // Then
+        assertEquals(newName, conversation.getName());
+        verify(conversationRepository).save(conversation);
+        verify(messageRepository).save(any(MessageEntity.class));
+        verify(chatMessageProducerService).sendChatMessage(any(), eq(ConversationType.GROUP), eq(conversationId));
+    }
+
+    @Test
+    @DisplayName("Lỗi khi cập nhật tên direct conversation")
+    void failToUpdateDirectConversationName() {
+        // Given
+        UUID conversationId = UUID.randomUUID();
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(conversationId)
+                .type(ConversationType.DIRECT)
+                .build();
+
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> conversationService.updateConversationName(conversationId, "New Name")
+        );
+
+        assertEquals("Chỉ có thể cập nhật tên cho group conversation", exception.getMessage());
+        verify(conversationRepository, never()).save(any());
     }
 }

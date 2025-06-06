@@ -1,37 +1,49 @@
 package org.socius.sociuswebbackend.controllers;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationMemberDto;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
+import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
-import org.socius.sociuswebbackend.model.enums.MemberRole;
+import org.socius.sociuswebbackend.model.enums.MessageType;
+import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConversationService;
-import org.socius.sociuswebbackend.util.RedisKeyBuilder;
+import org.socius.sociuswebbackend.services.MessageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -41,460 +53,461 @@ class ConversationControllerTest {
     private ConversationService conversationService;
 
     @Mock
-    private HttpServletRequest request;
+    private MessageService messageService;
 
     @Mock
-    private HttpSession session;
+    private UserRepository userRepository;
+
+    @Mock
+    private Authentication authentication;
+
+    @Mock
+    private SecurityContext securityContext;
+
+    @Mock
+    private MockMvc mockMvc;
 
     @InjectMocks
     private ConversationController conversationController;
 
     private UUID conversationId;
     private UUID userId;
-    private String userKey;
-    private List<ConversationMemberDto> mockMembers;
-    private Page<ConversationResponseDto> mockConversationsPage;
-    private List<ConversationResponseDto> mockConversationsList;
+    private UUID otherUserId;
+    private UserEntity mockUser;
+    private ConversationResponseDto conversationResponseDto;
+    private ConversationMemberDto memberDto;
+    private MessageResponseDto messageResponseDto;
 
     @BeforeEach
     void setUp() {
 
-        // Setup test data
+        PageableHandlerMethodArgumentResolver resolver = new PageableHandlerMethodArgumentResolver();
+
+        // Thiết lập MockMvc với resolver
+        mockMvc = MockMvcBuilders.standaloneSetup(conversationController)
+                .setCustomArgumentResolvers(resolver)
+                .build();
+
         conversationId = UUID.randomUUID();
         userId = UUID.randomUUID();
-        userKey = "test-user-key";
+        otherUserId = UUID.randomUUID();
 
-        setupMockData();
-    }
+        // Setup mock user
+        mockUser = new UserEntity();
+        mockUser.setId(userId);
+        mockUser.setEmail("test@example.com");
+        mockUser.setFirstName("Test");
+        mockUser.setLastName("User");
 
-    private void setupMockData() {
-        // Mock conversation members
-        UserResponseDto user1 = UserResponseDto.builder()
-                .id(UUID.randomUUID())
-                .firstName("John")
-                .lastName("Doe")
-                .email("john.doe@example.com")
+        // Setup mock DTOs
+        conversationResponseDto = ConversationResponseDto.builder()
+                .id(conversationId)
+                .name("Test Conversation")
+                .type(ConversationType.DIRECT)
+                .createdAt(LocalDateTime.now())
                 .build();
 
-        UserResponseDto user2 = UserResponseDto.builder()
-                .id(UUID.randomUUID())
-                .firstName("Jane")
-                .lastName("Smith")
-                .email("jane.smith@example.com")
+        UserResponseDto userResponseDto = UserResponseDto.builder()
+                .id(userId)
+                .firstName("Test")
+                .lastName("User")
+                .email("test@example.com")
                 .build();
 
-        ConversationMemberDto member1 = ConversationMemberDto.builder()
+        memberDto = ConversationMemberDto.builder()
                 .conversationId(conversationId)
-                .user(user1)
-                .role(MemberRole.ADMIN)
-                .joinedAt(LocalDateTime.now().minusDays(1))
-                .build();
-
-        ConversationMemberDto member2 = ConversationMemberDto.builder()
-                .conversationId(conversationId)
-                .user(user2)
-                .role(MemberRole.MEMBER)
+                .user(userResponseDto)
                 .joinedAt(LocalDateTime.now())
                 .build();
 
-        mockMembers = Arrays.asList(member1, member2);
-
-        // Mock conversations
-        ConversationResponseDto conversation1 = ConversationResponseDto.builder()
+        messageResponseDto = MessageResponseDto.builder()
                 .id(UUID.randomUUID())
-                .name("Team Discussion")
-                .type(ConversationType.GROUP)
-                .createdByUser(user1)
-                .createdAt(LocalDateTime.now().minusDays(2))
+                .conversationId(conversationId)
+                .sender(userResponseDto)
+                .content("Test message")
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void setupValidAuthentication() {
+        when(authentication.getName()).thenReturn("test@example.com");
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
+    }
+
+    private void setupInvalidAuthentication() {
+        when(authentication.getName()).thenReturn("test@example.com");
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
+    }
+
+    private void setupNoAuthentication() {
+        SecurityContextHolder.clearContext();
+    }
+
+    // Test getConversationMembers
+    @Test
+    @DisplayName("Lấy thành viên conversation thành công")
+    void getConversationMembers_ValidRequest_ShouldReturnMembers() {
+        // Given
+        setupValidAuthentication();
+        List<ConversationMemberDto> members = List.of(memberDto);
+        when(conversationService.getConversationMembers(conversationId)).thenReturn(members);
+
+        // When
+        ResponseEntity<?> response = conversationController.getConversationMembers(conversationId);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(members, response.getBody());
+        verify(conversationService).getConversationMembers(conversationId);
+    }
+
+    @Test
+    @DisplayName("Lấy thành viên conversation - không có authentication")
+    void getConversationMembers_NoAuthentication_ShouldReturnBadRequest() {
+        // Given
+        setupNoAuthentication();
+        when(conversationService.getConversationMembers(conversationId))
+                .thenThrow(new IllegalArgumentException("User không được xác thực"));
+
+        // When
+        ResponseEntity<?> response = conversationController.getConversationMembers(conversationId);
+
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertTrue(body.containsKey("error"));
+    }
+
+    @Test
+    @DisplayName("Lấy thành viên conversation - user không tồn tại")
+    void getConversationMembers_UserNotFound_ShouldReturnBadRequest() {
+        // Given
+        setupInvalidAuthentication();
+        when(conversationService.getConversationMembers(conversationId))
+                .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
+
+        // When
+        ResponseEntity<?> response = conversationController.getConversationMembers(conversationId);
+
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertEquals("Người dùng không tồn tại", body.get("error"));
+    }
+
+    // Test getUserConversations
+    @Test
+    @DisplayName("Lấy conversations của user với phân trang thành công")
+    void getUserConversations_ValidRequest_ShouldReturnConversations() {
+        // Given
+        setupValidAuthentication();
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<ConversationResponseDto> conversations = new PageImpl<>(List.of(conversationResponseDto));
+        when(conversationService.getUserConversations(pageable)).thenReturn(conversations);
+
+        // When
+        ResponseEntity<?> response = conversationController.getUserConversations(pageable);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(conversations, response.getBody());
+        verify(conversationService).getUserConversations(pageable);
+    }
+
+    @Test
+    @DisplayName("Lấy conversations - không có authentication")
+    void getUserConversations_NoAuthentication_ShouldReturnBadRequest() {
+        // Given
+        setupNoAuthentication();
+        Pageable pageable = PageRequest.of(0, 10);
+        when(conversationService.getUserConversations(pageable))
+                .thenThrow(new IllegalArgumentException("User không được xác thực"));
+
+        // When
+        ResponseEntity<?> response = conversationController.getUserConversations(pageable);
+
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertTrue(body.containsKey("error"));
+    }
+
+    @Test
+    @DisplayName("Lấy conversations - user không tồn tại")
+    void getUserConversations_UserNotFound_ShouldReturnBadRequest() {
+        // Given
+        setupInvalidAuthentication();
+        Pageable pageable = PageRequest.of(0, 10);
+        when(conversationService.getUserConversations(pageable))
+                .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
+
+        // When
+        ResponseEntity<?> response = conversationController.getUserConversations(pageable);
+
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertEquals("Người dùng không tồn tại", body.get("error"));
+    }
+
+    // Test getAllUserConversations
+    @Test
+    @DisplayName("Lấy tất cả conversations của user thành công")
+    void getAllUserConversations_ValidRequest_ShouldReturnAllConversations() {
+        // Given
+        setupValidAuthentication();
+        List<ConversationResponseDto> conversations = List.of(conversationResponseDto);
+        when(conversationService.getAllUserConversations()).thenReturn(conversations);
+
+        // When
+        ResponseEntity<?> response = conversationController.getAllUserConversations();
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(conversations, response.getBody());
+        verify(conversationService).getAllUserConversations();
+    }
+
+    @Test
+    @DisplayName("Lấy tất cả conversations - không có authentication")
+    void getAllUserConversations_NoAuthentication_ShouldReturnBadRequest() {
+        // Given
+        setupNoAuthentication();
+        when(conversationService.getAllUserConversations())
+                .thenThrow(new IllegalArgumentException("User không được xác thực"));
+
+        // When
+        ResponseEntity<?> response = conversationController.getAllUserConversations();
+
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertTrue(body.containsKey("error"));
+    }
+
+    @Test
+    @DisplayName("Lấy tất cả conversations - user không tồn tại")
+    void getAllUserConversations_UserNotFound_ShouldReturnBadRequest() {
+        // Given
+        setupInvalidAuthentication();
+        when(conversationService.getAllUserConversations())
+                .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
+
+        // When
+        ResponseEntity<?> response = conversationController.getAllUserConversations();
+
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertEquals("Người dùng không tồn tại", body.get("error"));
+    }
+
+    // Test createOrGetDirectConversation
+    @Test
+    @DisplayName("Tạo hoặc lấy direct conversation thành công")
+    void createOrGetDirectConversation_ValidRequest_ShouldReturnConversation() {
+        // Given
+        setupValidAuthentication();
+        when(conversationService.getOrCreateDirectConversation(otherUserId))
+                .thenReturn(conversationResponseDto);
+
+        // When
+        ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(conversationResponseDto, response.getBody());
+        verify(conversationService).getOrCreateDirectConversation(otherUserId);
+    }
+
+    @Test
+    @DisplayName("Tạo direct conversation - không có authentication")
+    void createOrGetDirectConversation_NoAuthentication_ShouldReturnBadRequest() {
+        // Given
+        setupNoAuthentication();
+        when(conversationService.getOrCreateDirectConversation(otherUserId))
+                .thenThrow(new IllegalArgumentException("User không được xác thực"));
+
+        // When
+        ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId);
+
+        // Then
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertTrue(body.containsKey("error"));
+    }
+
+    // Test getMessages
+    @Test
+    @DisplayName("Lấy messages thành công")
+    void getMessages_ValidRequest_ShouldReturnMessages() {
+        // Given
+        setupValidAuthentication();
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<MessageResponseDto> messages = new PageImpl<>(List.of(messageResponseDto));
+        when(messageService.getMessages(conversationId, pageable)).thenReturn(messages);
+
+        // When
+        ResponseEntity<Page<MessageResponseDto>> response = conversationController.getMessages(conversationId, pageable);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(messages, response.getBody());
+        verify(messageService).getMessages(conversationId, pageable);
+    }
+
+    @Test
+    @DisplayName("Lấy messages - không có messages")
+    void getMessages_NoMessages_ShouldReturnEmptyPage() {
+        // Given
+        setupValidAuthentication();
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<MessageResponseDto> emptyPage = new PageImpl<>(Collections.emptyList());
+        when(messageService.getMessages(conversationId, pageable)).thenReturn(emptyPage);
+
+        // When
+        ResponseEntity<Page<MessageResponseDto>> response = conversationController.getMessages(conversationId, pageable);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().getContent().isEmpty());
+        verify(messageService).getMessages(conversationId, pageable);
+    }
+
+    @Test
+    @DisplayName("Lấy messages với phân trang lớn")
+    void getMessages_LargePagination_ShouldReturnPagedMessages() {
+        // Given
+        setupValidAuthentication();
+        Pageable pageable = PageRequest.of(0, 50);
+        Page<MessageResponseDto> messages = new PageImpl<>(List.of(messageResponseDto));
+        when(messageService.getMessages(conversationId, pageable)).thenReturn(messages);
+
+        // When
+        ResponseEntity<Page<MessageResponseDto>> response = conversationController.getMessages(conversationId, pageable);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        verify(messageService).getMessages(conversationId, pageable);
+    }
+
+    // Test searchMessages
+    @Test
+    @DisplayName("Tìm kiếm messages thành công")
+    void searchMessages_ValidRequest_ShouldReturnMessages() {
+        // Given
+        setupValidAuthentication();
+        String keyword = "test";
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<MessageResponseDto> messages = new PageImpl<>(List.of(messageResponseDto));
+        when(messageService.searchMessages(conversationId, keyword, pageable)).thenReturn(messages);
+
+        // When
+        ResponseEntity<Page<MessageResponseDto>> response = conversationController
+                .searchMessages(conversationId, keyword, pageable);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(messages, response.getBody());
+        verify(messageService).searchMessages(conversationId, keyword, pageable);
+    }
+
+    @Test
+    @DisplayName("Tìm kiếm messages - không tìm thấy")
+    void searchMessages_NotFound_ShouldReturnEmptyPage() {
+        // Given
+        setupValidAuthentication();
+        String keyword = "nonexistent";
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<MessageResponseDto> emptyPage = new PageImpl<>(Collections.emptyList());
+        when(messageService.searchMessages(conversationId, keyword, pageable)).thenReturn(emptyPage);
+
+        // When
+        ResponseEntity<Page<MessageResponseDto>> response = conversationController
+                .searchMessages(conversationId, keyword, pageable);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().getContent().isEmpty());
+        verify(messageService).searchMessages(conversationId, keyword, pageable);
+    }
+
+    @Test
+    @DisplayName("Tìm kiếm tin nhắn trong cuộc trò chuyện")
+    void searchMessages() throws Exception {
+        UUID conversationId = UUID.randomUUID();
+        String keyword = "test";
+
+        // Sử dụng ArrayList thay vì List.of()
+        List<MessageResponseDto> messageList = new ArrayList<>();
+        Page<MessageResponseDto> mockPage = new PageImpl<>(messageList, PageRequest.of(0, 20), 0);
+
+        when(messageService.searchMessages(eq(conversationId), eq(keyword), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/api/conversations/{conversationId}/search", conversationId)
+                        .param("keyword", keyword)
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.size").value(20));
+    }
+
+    @Test
+    @DisplayName("Tìm kiếm tin nhắn thành công với kết quả")
+    void searchMessagesWithResults() throws Exception {
+        UUID conversationId = UUID.randomUUID();
+        String keyword = "test";
+
+        // Tạo mock message response
+        MessageResponseDto messageDto = MessageResponseDto.builder()
+                .id(UUID.randomUUID())
+                .conversationId(conversationId)
+                .content("This is a test message")
+                .messageType(MessageType.TEXT)
+                .isEdited(false)
+                .isDeleted(false)
+                .isRead(false)
                 .build();
 
-        ConversationResponseDto conversation2 = ConversationResponseDto.builder()
-                .id(UUID.randomUUID())
-                .name("Project Chat")
-                .type(ConversationType.GROUP)
-                .createdByUser(user2)
-                .createdAt(LocalDateTime.now().minusDays(1))
-                .build();
-
-        mockConversationsList = Arrays.asList(conversation1, conversation2);
-        mockConversationsPage = new PageImpl<>(mockConversationsList, PageRequest.of(0, 10), 2);
-    }
-
-    @Test
-    @DisplayName("Phải trả về danh sách thành viên cuộc trò chuyện khi có session hợp lệ")
-    void getConversationMembers_ValidSession_ShouldReturnMembers() {
-        // Given
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getConversationMembers(conversationId, userId))
-                    .thenReturn(mockMembers);
-
-            // When
-            ResponseEntity<?> response = conversationController.getConversationMembers(conversationId, request);
-
-            // Then
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            List<ConversationMemberDto> responseBody = (List<ConversationMemberDto>) response.getBody();
-            assertEquals(2, responseBody.size());
-            assertEquals(mockMembers.getFirst().getUser().getEmail(), responseBody.getFirst().getUser().getEmail());
-
-            verify(conversationService).getConversationMembers(conversationId, userId);
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về UNAUTHORIZED khi session là null")
-    void getConversationMembers_NullSession_ShouldReturnUnauthorized() {
-        // Given
-        when(request.getSession(false)).thenReturn(null);
-
-        // When
-        ResponseEntity<?> response = conversationController.getConversationMembers(conversationId, request);
-
-        // Then
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        @SuppressWarnings("unchecked")
-        Map<String, String> responseBody = (Map<String, String>) response.getBody();
-        assertEquals("Session không hợp lệ hoặc đã hết hạn", responseBody.get("error"));
-
-        verify(conversationService, never()).getConversationMembers(any(UUID.class), any(UUID.class));
-    }
-
-    @Test
-    @DisplayName("Phải trả về UNAUTHORIZED khi userId là null")
-    void getConversationMembers_NullUserId_ShouldReturnUnauthorized() {
-        // Given
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(null);
-
-            // When
-            ResponseEntity<?> response = conversationController.getConversationMembers(conversationId, request);
-
-            // Then
-            assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseBody = (Map<String, String>) response.getBody();
-            assertEquals("User ID không hợp lệ trong session", responseBody.get("error"));
-
-            verify(conversationService, never()).getConversationMembers(any(UUID.class), any(UUID.class));
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về BAD_REQUEST khi service ném ra ngoại lệ")
-    void getConversationMembers_ServiceThrowsException_ShouldReturnBadRequest() {
-        // Given
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getConversationMembers(conversationId, userId))
-                    .thenThrow(new RuntimeException("Conversation not found"));
-
-            // When
-            ResponseEntity<?> response = conversationController.getConversationMembers(conversationId, request);
-
-            // Then
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-            verify(conversationService).getConversationMembers(conversationId, userId);
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về danh sách cuộc trò chuyện của người dùng với phân trang khi có session hợp lệ")
-    void getUserConversations_ValidSession_ShouldReturnPagedConversations() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getUserConversations(userId, pageable))
-                    .thenReturn(mockConversationsPage);
-
-            // When
-            ResponseEntity<?> response = conversationController.getUserConversations(pageable, request);
-
-            // Then
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            Page<ConversationResponseDto> responseBody = (Page<ConversationResponseDto>) response.getBody();
-            assertEquals(2, responseBody.getContent().size());
-            assertEquals(2, responseBody.getTotalElements());
-            assertEquals("Team Discussion", responseBody.getContent().getFirst().getName());
-
-            verify(conversationService).getUserConversations(userId, pageable);
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về UNAUTHORIZED khi session là null cho getUserConversations")
-    void getUserConversations_NullSession_ShouldReturnUnauthorized() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-        when(request.getSession(false)).thenReturn(null);
-
-        // When
-        ResponseEntity<?> response = conversationController.getUserConversations(pageable, request);
-
-        // Then
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        @SuppressWarnings("unchecked")
-        Map<String, String> responseBody = (Map<String, String>) response.getBody();
-        assertEquals("Session không hợp lệ hoặc đã hết hạn", responseBody.get("error"));
-
-        verify(conversationService, never()).getUserConversations(any(UUID.class), any(Pageable.class));
-    }
-
-    @Test
-    @DisplayName("Phải trả về UNAUTHORIZED khi userId là null cho getUserConversations")
-    void getUserConversations_NullUserId_ShouldReturnUnauthorized() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(null);
-
-            // When
-            ResponseEntity<?> response = conversationController.getUserConversations(pageable, request);
-
-            // Then
-            assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseBody = (Map<String, String>) response.getBody();
-            assertEquals("User ID không hợp lệ trong session", responseBody.get("error"));
-
-            verify(conversationService, never()).getUserConversations(any(UUID.class), any(Pageable.class));
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về BAD_REQUEST khi service ném ra ngoại lệ cho getUserConversations")
-    void getUserConversations_ServiceThrowsException_ShouldReturnBadRequest() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getUserConversations(userId, pageable))
-                    .thenThrow(new RuntimeException("Database error"));
-
-            // When
-            ResponseEntity<?> response = conversationController.getUserConversations(pageable, request);
-
-            // Then
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-            verify(conversationService).getUserConversations(userId, pageable);
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về danh sách tất cả cuộc trò chuyện của người dùng khi có session hợp lệ")
-    void getAllUserConversations_ValidSession_ShouldReturnAllConversations() {
-        // Given
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getAllUserConversations(userId))
-                    .thenReturn(mockConversationsList);
-
-            // When
-            ResponseEntity<?> response = conversationController.getAllUserConversations(request);
-
-            // Then
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            List<ConversationResponseDto> responseBody = (List<ConversationResponseDto>) response.getBody();
-            assertEquals(2, responseBody.size());
-            assertEquals("Team Discussion", responseBody.get(0).getName());
-            assertEquals("Project Chat", responseBody.get(1).getName());
-
-            verify(conversationService).getAllUserConversations(userId);
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về UNAUTHORIZED khi session là null cho getAllUserConversations")
-    void getAllUserConversations_NullSession_ShouldReturnUnauthorized() {
-        // Given
-        when(request.getSession(false)).thenReturn(null);
-
-        // When
-        ResponseEntity<?> response = conversationController.getAllUserConversations(request);
-
-        // Then
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        @SuppressWarnings("unchecked")
-        Map<String, String> responseBody = (Map<String, String>) response.getBody();
-        assertEquals("Session không hợp lệ hoặc đã hết hạn", responseBody.get("error"));
-
-        verify(conversationService, never()).getAllUserConversations(any(UUID.class));
-    }
-
-    @Test
-    @DisplayName("Phải trả về UNAUTHORIZED khi userId là null cho getAllUserConversations")
-    void getAllUserConversations_NullUserId_ShouldReturnUnauthorized() {
-        // Given
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(null);
-
-            // When
-            ResponseEntity<?> response = conversationController.getAllUserConversations(request);
-
-            // Then
-            assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            Map<String, String> responseBody = (Map<String, String>) response.getBody();
-            assertEquals("User ID không hợp lệ trong session", responseBody.get("error"));
-
-            verify(conversationService, never()).getAllUserConversations(any(UUID.class));
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về BAD_REQUEST khi service ném ra ngoại lệ cho getAllUserConversations")
-    void getAllUserConversations_ServiceThrowsException_ShouldReturnBadRequest() {
-        // Given
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getAllUserConversations(userId))
-                    .thenThrow(new RuntimeException("Service unavailable"));
-
-            // When
-            ResponseEntity<?> response = conversationController.getAllUserConversations(request);
-
-            // Then
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-            verify(conversationService).getAllUserConversations(userId);
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về danh sách rỗng khi không có cuộc trò chuyện nào cho người dùng")
-    void getAllUserConversations_EmptyList_ShouldReturnEmptyList() {
-        // Given
-        List<ConversationResponseDto> emptyList = new ArrayList<>();
-
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getAllUserConversations(userId)).thenReturn(emptyList);
-
-            // When
-            ResponseEntity<?> response = conversationController.getAllUserConversations(request);
-
-            // Then
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            List<ConversationResponseDto> responseBody = (List<ConversationResponseDto>) response.getBody();
-            assertTrue(responseBody.isEmpty());
-
-            verify(conversationService).getAllUserConversations(userId);
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về trang rỗng khi không có cuộc trò chuyện nào cho người dùng với phân trang")
-    void getUserConversations_EmptyPage_ShouldReturnEmptyPage() {
-        // Given
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<ConversationResponseDto> emptyPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
-
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getUserConversations(userId, pageable)).thenReturn(emptyPage);
-
-            // When
-            ResponseEntity<?> response = conversationController.getUserConversations(pageable, request);
-
-            // Then
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            Page<ConversationResponseDto> responseBody = (Page<ConversationResponseDto>) response.getBody();
-            assertTrue(responseBody.getContent().isEmpty());
-            assertEquals(0, responseBody.getTotalElements());
-
-            verify(conversationService).getUserConversations(userId, pageable);
-        }
-    }
-
-    @Test
-    @DisplayName("Phải trả về danh sách thành viên rỗng khi không có thành viên nào trong cuộc trò chuyện")
-    void getConversationMembers_EmptyMembersList_ShouldReturnEmptyList() {
-        // Given
-        List<ConversationMemberDto> emptyMembers = new ArrayList<>();
-
-        try (MockedStatic<RedisKeyBuilder> mockedRedisKeyBuilder = mockStatic(RedisKeyBuilder.class)) {
-            mockedRedisKeyBuilder.when(RedisKeyBuilder::userIdAttributeKey).thenReturn(userKey);
-
-            when(request.getSession(false)).thenReturn(session);
-            when(session.getAttribute(userKey)).thenReturn(userId);
-            when(conversationService.getConversationMembers(conversationId, userId))
-                    .thenReturn(emptyMembers);
-
-            // When
-            ResponseEntity<?> response = conversationController.getConversationMembers(conversationId, request);
-
-            // Then
-            assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertNotNull(response.getBody());
-
-            @SuppressWarnings("unchecked")
-            List<ConversationMemberDto> responseBody = (List<ConversationMemberDto>) response.getBody();
-            assertTrue(responseBody.isEmpty());
-
-            verify(conversationService).getConversationMembers(conversationId, userId);
-        }
+        List<MessageResponseDto> messageList = new ArrayList<>();
+        messageList.add(messageDto);
+
+        Page<MessageResponseDto> mockPage = new PageImpl<>(messageList, PageRequest.of(0, 20), 1);
+
+        when(messageService.searchMessages(eq(conversationId), eq(keyword), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/api/conversations/{conversationId}/search", conversationId)
+                        .param("keyword", keyword)
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").exists())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].content").value("This is a test message"))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 }

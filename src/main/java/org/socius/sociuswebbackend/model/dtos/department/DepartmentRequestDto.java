@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class DepartmentRequestDto {
-    @NotBlank(message = "Department name must not be empty")
     private String name;
     
     private String description;

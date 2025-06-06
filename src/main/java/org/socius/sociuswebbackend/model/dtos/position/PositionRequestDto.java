@@ -12,7 +12,6 @@ import jakarta.validation.constraints.NotBlank;
 @AllArgsConstructor
 @Builder
 public class PositionRequestDto {
-    @NotBlank(message = "Position name must not be empty")
     private String name;
     
     private String description;

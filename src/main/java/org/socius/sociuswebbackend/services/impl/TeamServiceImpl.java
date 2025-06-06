@@ -1,4 +1,5 @@
 package org.socius.sociuswebbackend.services.impl;
+
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,13 +106,28 @@ public class TeamServiceImpl implements TeamService {
         TeamEntity team = teamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + id));
 
-        if (!team.getName().equals(requestDto.getName()) &&
-                teamRepository.existsByName(requestDto.getName())) {
+        String oldName = team.getName();
+        boolean nameChanged = !oldName.equals(requestDto.getName());
+
+        if (nameChanged && teamRepository.existsByName(requestDto.getName())) {
             throw new IllegalArgumentException("Team với tên này đã tồn tại");
         }
 
         teamMapper.updateEntityFromDto(requestDto, team);
         team = teamRepository.save(team);
+
+        // Cập nhật tên group chat nếu tên team thay đổi
+        if (nameChanged && team.getGroupChatId() != null) {
+            try {
+                conversationService.updateConversationName(team.getGroupChatId(), requestDto.getName());
+                logger.info("Đã cập nhật tên group chat của team {} từ '{}' sang '{}'",
+                        id, oldName, requestDto.getName());
+            } catch (Exception e) {
+                logger.error("Lỗi khi cập nhật tên group chat của team {}: {}", id, e.getMessage());
+                throw new RuntimeException("Lỗi khi cập nhật tên nhóm trò chuyện của team: " + e.getMessage(), e);
+            }
+        }
+
         return teamMapper.entityToDto(team);
     }
 
