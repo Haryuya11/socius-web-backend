@@ -5,22 +5,14 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.socius.sociuswebbackend.mappers.EmploymentDetailMapper;
-import org.socius.sociuswebbackend.mappers.EmploymentHistoryMapper;
-import org.socius.sociuswebbackend.mappers.SalaryHistoryMapper;
-import org.socius.sociuswebbackend.mappers.UserMapper;
+import org.socius.sociuswebbackend.mappers.*;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentHistoryResponseDto;
 import org.socius.sociuswebbackend.model.dtos.salary.SalaryHistoryResponseDto;
+import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
-import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
-import org.socius.sociuswebbackend.model.entities.EmploymentHistoryEntity;
-import org.socius.sociuswebbackend.model.entities.SalaryHistoryEntity;
-import org.socius.sociuswebbackend.model.entities.UserEntity;
-import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
-import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
-import org.socius.sociuswebbackend.repositories.SalaryHistoryRepository;
-import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.socius.sociuswebbackend.model.entities.*;
+import org.socius.sociuswebbackend.repositories.*;
 import org.socius.sociuswebbackend.services.UserService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.domain.Page;
@@ -42,6 +34,8 @@ public class UserServiceImpl implements UserService {
     final private SalaryHistoryRepository salaryHistoryRepository;
     final private SalaryHistoryMapper salaryHistoryMapper;
     final private EmploymentDetailMapper employmentDetailMapper;
+    final private TaskRepository taskRepository;
+    final private TaskMapper taskMapper;
 
     @Override
     public UserResponseDto findById(UUID userId) {
@@ -145,5 +139,22 @@ public class UserServiceImpl implements UserService {
         return users.stream()
                 .map(userMapper::entityToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> getTasksByUserId(UUID userId, Pageable pageable) {
+        Page<TaskEntity> taskPage = taskRepository.findByAssignedToId(userId, pageable);
+
+        List<TaskResponseDto> task = taskPage.getContent().stream()
+                .map(taskMapper::entityToLimitedDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("task", task);
+        result.put("totalTaskCount", task.size());
+        result.put("totalPages", taskPage.getTotalPages());
+        result.put("totalElements", taskPage.getTotalElements());
+
+        return result;
     }
 }
