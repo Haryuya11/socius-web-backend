@@ -210,14 +210,14 @@ public class MessageServiceImplTest {
         // Setup existing mocks
         when(conversationMemberRepository.findActiveMember(eq(conversationId), eq(senderId)))
                 .thenReturn(Optional.of(mock(ConversationMemberEntity.class)));
-        when(messageRepository.findByConversationIdOrderByCreatedAtDesc(eq(conversationId), any(Pageable.class)))
+        when(messageRepository.findByConversationIdOrderByCreatedAtAsc(eq(conversationId), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
         // Execute
         assertDoesNotThrow(() -> messageService.getMessages(conversationId, Pageable.unpaged()));
 
         // Verify
-        verify(messageRepository).findByConversationIdOrderByCreatedAtDesc(eq(conversationId), any(Pageable.class));
+        verify(messageRepository).findByConversationIdOrderByCreatedAtAsc(eq(conversationId), any(Pageable.class));
         verify(userRepository).findByEmail("test@example.com");
 
         // Cleanup

@@ -486,4 +486,61 @@ public class ConversationServiceImplTest {
         assertThrows(RuntimeException.class, () ->
                 conversationService.deleteGroupConversation(conversationId));
     }
+
+    @Test
+    @DisplayName("Cập nhật tên group conversation thành công")
+    void updateConversationNameSuccessfully() {
+        // Given
+        UUID conversationId = UUID.randomUUID();
+        String oldName = "Old Group Name";
+        String newName = "New Group Name";
+
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(conversationId)
+                .name(oldName)
+                .type(ConversationType.GROUP)
+                .build();
+
+        MessageEntity systemMessage = MessageEntity.builder()
+                .id(UUID.randomUUID())
+                .conversation(conversation)
+                .content(String.format("Tên nhóm đã được thay đổi từ '%s' thành '%s'", oldName, newName))
+                .messageType(MessageType.SYSTEM)
+                .build();
+
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
+        when(messageRepository.save(any(MessageEntity.class))).thenReturn(systemMessage);
+        when(messageMapper.entityToDto(any(MessageEntity.class))).thenReturn(MessageResponseDto.builder().build());
+
+        // When
+        conversationService.updateConversationName(conversationId, newName);
+
+        // Then
+        assertEquals(newName, conversation.getName());
+        verify(conversationRepository).save(conversation);
+        verify(messageRepository).save(any(MessageEntity.class));
+        verify(chatMessageProducerService).sendChatMessage(any(), eq(ConversationType.GROUP), eq(conversationId));
+    }
+
+    @Test
+    @DisplayName("Lỗi khi cập nhật tên direct conversation")
+    void failToUpdateDirectConversationName() {
+        // Given
+        UUID conversationId = UUID.randomUUID();
+        ConversationEntity conversation = ConversationEntity.builder()
+                .id(conversationId)
+                .type(ConversationType.DIRECT)
+                .build();
+
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> conversationService.updateConversationName(conversationId, "New Name")
+        );
+
+        assertEquals("Chỉ có thể cập nhật tên cho group conversation", exception.getMessage());
+        verify(conversationRepository, never()).save(any());
+    }
 }

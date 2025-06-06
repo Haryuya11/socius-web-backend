@@ -266,4 +266,73 @@ public class DepartmentServiceImplTest {
         verify(employmentDetailRepository).countByDepartmentId(departmentId);
         verify(departmentRepository, never()).deleteById(any());
     }
+
+    @Test
+    @DisplayName("Cập nhật phòng ban với thay đổi tên phải cập nhật group chat")
+    void updateDepartmentWithNameChangeShouldUpdateGroupChat() {
+        // Given
+        UUID departmentId = UUID.randomUUID();
+        UUID groupChatId = UUID.randomUUID();
+
+        DepartmentRequestDto requestDto = DepartmentRequestDto.builder()
+                .name("New IT Department")
+                .description("Updated description")
+                .build();
+
+        DepartmentEntity existingDepartment = DepartmentEntity.builder()
+                .id(departmentId)
+                .name("Old IT Department")
+                .description("Old description")
+                .groupChatId(groupChatId)
+                .build();
+
+        DepartmentEntity updatedDepartment = DepartmentEntity.builder()
+                .id(departmentId)
+                .name("New IT Department")
+                .description("Updated description")
+                .groupChatId(groupChatId)
+                .build();
+
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(existingDepartment));
+        when(departmentRepository.existsByName("New IT Department")).thenReturn(false);
+        when(departmentRepository.save(any(DepartmentEntity.class))).thenReturn(updatedDepartment);
+        when(departmentMapper.entityToDto(updatedDepartment)).thenReturn(DepartmentResponseDto.builder().build());
+
+        // When
+        departmentService.update(departmentId, requestDto);
+
+        // Then
+        verify(conversationService).updateConversationName(groupChatId, "New IT Department");
+        verify(departmentRepository).save(existingDepartment);
+    }
+
+    @Test
+    @DisplayName("Cập nhật phòng ban không thay đổi tên không gọi update group chat")
+    void updateDepartmentWithoutNameChangeShouldNotUpdateGroupChat() {
+        // Given
+        UUID departmentId = UUID.randomUUID();
+        UUID groupChatId = UUID.randomUUID();
+
+        DepartmentRequestDto requestDto = DepartmentRequestDto.builder()
+                .name("IT Department")
+                .description("Updated description")
+                .build();
+
+        DepartmentEntity existingDepartment = DepartmentEntity.builder()
+                .id(departmentId)
+                .name("IT Department")
+                .description("Old description")
+                .groupChatId(groupChatId)
+                .build();
+
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(existingDepartment));
+        when(departmentRepository.save(any(DepartmentEntity.class))).thenReturn(existingDepartment);
+        when(departmentMapper.entityToDto(existingDepartment)).thenReturn(DepartmentResponseDto.builder().build());
+
+        // When
+        departmentService.update(departmentId, requestDto);
+
+        // Then
+        verify(conversationService, never()).updateConversationName(any(), any());
+    }
 }

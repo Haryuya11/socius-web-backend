@@ -363,6 +363,43 @@ public class ConversationServiceImpl implements ConversationService {
         return conversationMapper.entityToDto(conversation);
     }
 
+    @Override
+    @Transactional
+    public void updateConversationName(UUID conversationId, String newName) {
+        ConversationEntity conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
+
+        if (conversation.getType() != ConversationType.GROUP) {
+            throw new IllegalArgumentException("Chỉ có thể cập nhật tên cho group conversation");
+        }
+
+        String oldName = conversation.getName();
+        conversation.setName(newName);
+        conversation.setUpdatedAt(LocalDateTime.now());
+
+        conversationRepository.save(conversation);
+
+        // Gửi tin nhắn hệ thống thông báo về việc đổi tên
+        try {
+            MessageEntity systemMessage = MessageEntity.builder()
+                    .conversation(conversation)
+                    .content(String.format("Tên nhóm đã được thay đổi từ '%s' thành '%s'", oldName, newName))
+                    .messageType(MessageType.SYSTEM)
+                    .build();
+
+            messageRepository.save(systemMessage);
+
+            // Gửi thông báo qua WebSocket
+            MessageResponseDto messageDto = messageMapper.entityToDto(systemMessage);
+            chatMessageProducerService.sendChatMessage(messageDto, ConversationType.GROUP, conversationId);
+
+            logger.info("Đã cập nhật tên cuộc trò chuyện {} từ '{}' sang '{}'",
+                    conversationId, oldName, newName);
+        } catch (Exception e) {
+            logger.error("Lỗi khi gửi thông báo đổi tên group chat {}: {}", conversationId, e.getMessage());
+        }
+    }
+
     private ConversationMemberEntity createMemberEntity(ConversationEntity conversation, UserEntity user, MemberRole role) {
         return ConversationMemberEntity.builder()
                 .id(new ConversationMemberId(conversation.getId(), user.getId()))

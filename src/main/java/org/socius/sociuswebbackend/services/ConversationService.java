@@ -99,4 +99,11 @@ public interface ConversationService {
      */
     List<ConversationResponseDto> getAllUserConversations();
 
+    /**
+     * Cập nhật tên cuộc trò chuyện
+     *
+     * @param conversationId ID của cuộc trò chuyện
+     * @param newName Tên mới
+     */
+    void updateConversationName(UUID conversationId, String newName);
 }

@@ -98,13 +98,28 @@ public class DepartmentServiceImpl implements DepartmentService {
         DepartmentEntity department = departmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + id));
 
-        if (!department.getName().equals(requestDto.getName()) &&
-                departmentRepository.existsByName(requestDto.getName())) {
+        String oldName = department.getName();
+        boolean nameChanged = !oldName.equals(requestDto.getName());
+
+        if (nameChanged && departmentRepository.existsByName(requestDto.getName())) {
             throw new IllegalArgumentException("Phòng ban với tên này đã tồn tại");
         }
 
         departmentMapper.updateEntityFromDto(requestDto, department);
         department = departmentRepository.save(department);
+
+        // Cập nhật tên group chat nếu tên phòng ban thay đổi
+        if (nameChanged && department.getGroupChatId() != null) {
+            try {
+                conversationService.updateConversationName(department.getGroupChatId(), requestDto.getName());
+                logger.info("Đã cập nhật tên group chat của phòng ban {} từ '{}' sang '{}'",
+                        id, oldName, requestDto.getName());
+            } catch (Exception e) {
+                logger.error("Lỗi khi cập nhật tên group chat của phòng ban {}: {}", id, e.getMessage());
+                throw new RuntimeException("Không thể cập nhật tên group chat của phòng ban: " + e.getMessage(), e);
+            }
+        }
+
         return departmentMapper.entityToDto(department);
     }
 

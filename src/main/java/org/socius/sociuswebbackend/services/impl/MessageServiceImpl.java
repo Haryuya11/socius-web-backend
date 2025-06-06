@@ -131,7 +131,7 @@ public class MessageServiceImpl implements MessageService {
         }
 
         // Lấy danh sách tin nhắn trong cuộc trò chuyện
-        Page<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
+        Page<MessageEntity> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId, pageable);
 
 
         // Chuyển đổi danh sách tin nhắn thành danh sách DTO
