@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.repositories;
 
 import org.socius.sociuswebbackend.model.entities.ConversationEntity;
+import org.socius.sociuswebbackend.model.enums.ConversationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,15 +28,12 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
 
     @Query("""
                 SELECT c FROM ConversationEntity c 
-                WHERE c.type = 'DIRECT' 
-                AND c.id IN (
-                    SELECT m1.id.conversationId FROM ConversationMemberEntity m1 
-                    WHERE m1.id.userId = :userId1 AND m1.leftAt IS NULL
-                ) 
-                AND c.id IN (
-                    SELECT m2.id.conversationId FROM ConversationMemberEntity m2 
-                    WHERE m2.id.userId = :userId2 AND m2.leftAt IS NULL
-                )
+                JOIN c.members m1
+                JOIN c.members m2
+                WHERE c.type = 'DIRECT'   
+                AND m1.user.id = :userId1
+                AND m2.user.id = :userId2
+                AND m1.user.id != m2.user.id
             """)
     Optional<ConversationEntity> findDirectConversationBetweenUsers(
             @Param("userId1") UUID userId1,
@@ -87,4 +85,13 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
             @Param("userId") UUID userId,
             Pageable pageable
     );
+
+    /**
+     * Tìm cuộc trò chuyện theo tên và type
+     *
+     * @param groupChatName    Tên cuộc trò chuyện nhóm
+     * @param conversationType Loại cuộc trò chuyện
+     * @return Optional chứa cuộc trò chuyện nếu tìm thấy, empty nếu không tìm thấy
+     */
+    Optional<ConversationEntity> findByNameAndType(String groupChatName, ConversationType conversationType);
 }

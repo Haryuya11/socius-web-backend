@@ -1,15 +1,13 @@
 package org.socius.sociuswebbackend.mappers;
 
+import lombok.RequiredArgsConstructor;
 import org.mapstruct.*;
-import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamWithMembersDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
-import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
-import org.socius.sociuswebbackend.repositories.TaskRepository;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,13 +25,7 @@ public abstract class TeamMapper extends BaseEntityMapper implements
         GenericMapper<TeamEntity, TeamResponseDto, TeamRequestDto> {
 
     @Autowired
-    protected TaskRepository taskRepository;
-
-    @Autowired
     private UserMapper userMapper;
-
-    @Autowired
-    private TaskMapper taskMapper;
 
     @Override
     @Mapping(target = "createdAt", ignore = true)
@@ -47,37 +39,44 @@ public abstract class TeamMapper extends BaseEntityMapper implements
     public abstract TeamResponseDto entityToLimitedDto(TeamEntity entity);
 
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "id", ignore = true)
     public TeamEntity requestDtoToEntity(TeamRequestDto dto) {
         if (dto == null) {
             return null;
         }
-        
+
         EntityMappingUtil mappingUtil = getEntityMappingUtil();
-        UserEntity leader = dto.getLeaderId() != null ? 
-            mappingUtil.mapUserIdToEntity(dto.getLeaderId()) : null;
-        
+        UserEntity leader = dto.getLeaderId() != null ?
+                mappingUtil.mapUserIdToEntity(dto.getLeaderId()) : null;
+
         return TeamEntity.builder()
-            .name(dto.getName())
-            .leader(leader)
-            .build();
+                .name(dto.getName())
+                .leader(leader)
+                .build();
     }
-    
+
     @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     public void updateEntityFromDto(TeamRequestDto dto, @MappingTarget TeamEntity entity) {
         if (dto == null) {
             return;
         }
-        
+
         if (dto.getName() != null) {
             entity.setName(dto.getName());
         }
-        
+
         if (dto.getLeaderId() != null) {
             EntityMappingUtil mappingUtil = getEntityMappingUtil();
             entity.setLeader(mappingUtil.mapUserIdToEntity(dto.getLeaderId()));
         }
     }
-    
+
     /**
      * Map TeamEntity to TeamWithMembersDto
      */

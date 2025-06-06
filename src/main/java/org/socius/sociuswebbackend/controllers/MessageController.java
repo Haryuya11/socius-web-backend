@@ -96,8 +96,10 @@ public class MessageController {
                         type = MessageType.VIDEO;
                     } else if (contentType.startsWith("audio/")) {
                         type = MessageType.AUDIO;
-                    } else {
+                    } else if (contentType.startsWith("application/")) {
                         type = MessageType.FILE;
+                    } else {
+                        type = MessageType.SYSTEM;
                     }
                 }
             }
@@ -140,29 +142,6 @@ public class MessageController {
             logger.error("Lỗi không xác định khi gửi tin nhắn với tệp tin: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }
-
-    /**
-     * Lấy danh sách tin nhắn trong cuộc trò chuyện
-     *
-     * @param conversationId ID của cuộc trò chuyện
-     * @param pageable       Thông tin phân trang
-     * @return ResponseEntity chứa danh sách tin nhắn
-     */
-    @GetMapping("/{conversationId}")
-    public ResponseEntity<Page<MessageResponseDto>> getMessages(
-            @PathVariable UUID conversationId,
-            @PageableDefault(size = 20) Pageable pageable) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
-
-        UserEntity user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
-
-        UUID userId = user.getId();
-
-        Page<MessageResponseDto> messages = messageService.getMessages(userId, conversationId, pageable);
-        return ResponseEntity.ok(messages);
     }
 
     /**

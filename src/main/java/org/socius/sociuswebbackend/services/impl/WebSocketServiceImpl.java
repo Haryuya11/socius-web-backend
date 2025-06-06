@@ -59,12 +59,14 @@ public class WebSocketServiceImpl implements WebSocketService {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = headerAccessor.getSessionId();
 
+
         if (headerAccessor.getSessionAttributes() == null) {
             logger.warn("Không tìm thấy session attributes trong disconnect event");
             return;
         }
 
-        UUID userId = (UUID) headerAccessor.getSessionAttributes().get("userId");
+        String userAttributeKey = RedisKeyBuilder.userIdAttributeKey();
+        UUID userId = (UUID) headerAccessor.getSessionAttributes().get(userAttributeKey);
 
         if (userId != null && sessionId != null) {
             logger.info("WebSocket disconnect - user: {}, session: {}", userId, sessionId);
@@ -90,14 +92,28 @@ public class WebSocketServiceImpl implements WebSocketService {
         try {
             StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
             String sessionId = headerAccessor.getSessionId();
+            String userId = headerAccessor.getFirstNativeHeader("userId");
+            String userSessionId = headerAccessor.getFirstNativeHeader("sessionId");
 
-            if (headerAccessor.getSessionAttributes() == null) {
+            logger.info("WebSocket Session ID: {}", sessionId);
+            logger.info("User ID from header: {}", userId);
+            logger.info("User Session ID from header: {}", userSessionId);
+
+            Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
+
+
+            if (sessionAttributes == null || sessionAttributes.isEmpty()) {
                 logger.warn("Không tìm thấy thông tin phiên làm việc trong header");
                 return;
             }
 
-            UUID userId = (UUID) headerAccessor.getSessionAttributes().get("userId");
             if (userId != null) {
+
+                UUID userUUID = UUID.fromString(userId);
+
+                headerAccessor.getSessionAttributes().put("userId", userUUID);
+                headerAccessor.getSessionAttributes().put("userSessionId", userSessionId);
+
                 // Kiểm tra tính hợp lệ của phiên làm việc
                 if (!isValidSession(sessionId)) {
                     logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
@@ -106,14 +122,14 @@ public class WebSocketServiceImpl implements WebSocketService {
                 }
 
                 // Đánh dấu người dùng là online
-                onlineUserService.updateUserOnlineStatus(userId, sessionId);
+                onlineUserService.updateUserOnlineStatus(userUUID, sessionId);
 
                 // Gửi lại các tin nhắn offline nếu có
                 CompletableFuture.runAsync(() -> {
                     try {
-                        sendOfflineMessages(userId);
+                        sendOfflineMessages(userUUID);
                     } catch (Exception e) {
-                        logger.error("Lỗi khi gửi offline messages cho user {}: {}", userId, e.getMessage(), e);
+                        logger.error("Lỗi khi gửi offline messages cho user {}: {}", userUUID, e.getMessage(), e);
                     }
                 });
 
@@ -187,14 +203,6 @@ public class WebSocketServiceImpl implements WebSocketService {
         }
     }
 
-    private void publishUserStatusChange(UUID userId, String status) {
-        Map<String, Object> notification = new HashMap<>();
-        notification.put("type", status);
-        notification.put("userId", userId);
-        notification.put("timestamp", System.currentTimeMillis());
-        messagingTemplate.convertAndSend("/topic/user-status", notification);
-    }
-
     /**
      * Gửi thông báo chung cho tất cả người dùng
      */
@@ -245,7 +253,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             Boolean exists = redisTemplate.hasKey(sessionKey);
             Long expireTime = redisTemplate.getExpire(sessionKey);
 
-            return exists != null && exists && expireTime != null && expireTime > 0;
+            return exists && expireTime > 0;
         } catch (Exception e) {
             logger.error("Lỗi kiểm tra session validity: {}", e.getMessage(), e);
             return false;

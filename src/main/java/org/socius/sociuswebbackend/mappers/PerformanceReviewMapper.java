@@ -18,11 +18,15 @@ public abstract class PerformanceReviewMapper extends BaseEntityMapper implement
     @Override
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+//    @Mapping(target = "version", ignore = true)
+//    @Mapping(target = "createdBy", ignore = true)
+//    @Mapping(target = "updatedBy", ignore = true)
     public abstract PerformanceReviewResponseDto entityToDto(PerformanceReviewEntity entity);
 
     @Override
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     public PerformanceReviewEntity requestDtoToEntity(PerformanceReviewRequestDto dto) {
         if (dto == null) {
             return null;

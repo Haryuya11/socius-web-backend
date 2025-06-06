@@ -19,39 +19,32 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/task")
 @RequiredArgsConstructor
 public class TaskController {
     private final TaskService taskService;
 
-    @GetMapping("/user/{userId}/tasks")
-    public ResponseEntity<Map<String, Object>> getTasksByUserId(
-            @PathVariable UUID userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Map<String, Object> response = taskService.getTasksByUserId(userId, pageable);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/task/create")
+    /**
+     * Tạo một task mới
+     *
+     * @param dto Đối tượng chứa thông tin task cần tạo
+     * @return Thông tin task vừa tạo, hoặc 400 nếu dữ liệu không hợp lệ
+     */
+    @PostMapping("/create")
     public ResponseEntity<TaskResponseDto> createTask(
             @Valid @RequestBody TaskRequestDto dto
     ) {
         return ResponseEntity.ok(taskService.createTask(dto));
     }
 
-    @GetMapping("/team/{teamId}/tasks")
-    public ResponseEntity<Map<String, Object>> getTeamTasks(
-            @PathVariable UUID teamId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Map<String, Object> response = taskService.getTasksByTeamId(teamId, pageable);
-        return ResponseEntity.ok(response);
-    }
-
-    @PatchMapping("/task/{taskId}/update-status/{status}")
+    /**
+     * Cập nhật trạng thái của một task
+     *
+     * @param taskId ID của task cần cập nhật
+     * @param status Trạng thái mới của task
+     * @return Thông tin task đã cập nhật, hoặc 400 nếu taskId/status không hợp lệ
+     */
+    @PatchMapping("/{taskId}/update-status/{status}")
     public ResponseEntity<TaskResponseDto> updateTaskStatus(
             @PathVariable UUID taskId,
             @PathVariable String status) {

@@ -14,13 +14,12 @@ public interface ConversationService {
     /**
      * Tạo cuộc trò chuyện nhóm
      *
-     * @param groupId   ID của nhóm
      * @param name      Tên cuộc trò chuyện
      * @param creatorId ID của người tạo cuộc trò chuyện
      * @param memberIds Tập hợp các ID của thành viên trong cuộc trò chuyện
      * @return Cuộc trò chuyện đã được tạo
      */
-    ConversationResponseDto createGroupConversation(UUID groupId, String name, UUID creatorId, Set<UUID> memberIds);
+    ConversationResponseDto createGroupConversation(String name, UUID creatorId, Set<UUID> memberIds);
 
     /**
      * Xóa cuộc trò chuyện nhóm

@@ -21,7 +21,7 @@ import java.util.Set;
 public class ConversationResponseDto extends BaseDto {
     private String name;
     private ConversationType type;
-    private UserResponseDto createdBy;
+    private UserResponseDto createdByUser;
     private MessageResponseDto lastMessage;
     private int unreadCount;
     private String imageUrl;

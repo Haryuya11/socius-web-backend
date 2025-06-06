@@ -3,7 +3,6 @@ package org.socius.sociuswebbackend.services;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
 import org.springframework.data.domain.Pageable;
-import org.socius.sociuswebbackend.model.dtos.team.TeamWithMembersDto;
 
 import java.util.List;
 import java.util.Map;
@@ -51,42 +50,6 @@ public interface TeamService {
     void delete(UUID id);
 
     /**
-     * Thêm nhân viên vào team
-     *
-     * @param teamId     ID của team
-     * @param employeeId ID của nhân viên cần thêm
-     * @return Thông tin team sau khi thêm nhân viên
-     */
-    TeamResponseDto addEmployee(UUID teamId, UUID employeeId);
-
-    /**
-     * Thêm nhiều nhân viên vào team
-     *
-     * @param teamId      ID của team
-     * @param employeeIds Danh sách ID của các nhân viên cần thêm
-     * @return Danh sách thông tin team sau khi thêm nhân viên
-     */
-    List<TeamResponseDto> addEmployees(UUID teamId, List<UUID> employeeIds);
-
-    /**
-     * Xóa nhân viên khỏi team
-     *
-     * @param teamId     ID của team
-     * @param employeeId ID của nhân viên cần xóa
-     * @return Thông tin team sau khi xóa nhân viên
-     */
-    TeamResponseDto removeEmployee(UUID teamId, UUID employeeId);
-
-    /**
-     * Xóa nhiều nhân viên khỏi team
-     *
-     * @param teamId      ID của team
-     * @param employeeIds Danh sách ID của các nhân viên cần xóa
-     * @return Danh sách thông tin team sau khi xóa nhân viên
-     */
-    List<TeamResponseDto> removeEmployees(UUID teamId, List<UUID> employeeIds);
-
-    /**
      * Lấy thông tin team cùng với các thành viên của nó (không bao gồm task)
      *
      * @param teamId ID của team cần lấy thông tin
@@ -94,4 +57,13 @@ public interface TeamService {
      * @return Map chứa thông tin team và danh sách thành viên
      */
     Map<String, Object> getTeamWithMembers(UUID teamId, Pageable pageable);
+
+    /**
+     * Lấy danh sách task của một team theo ID
+     *
+     * @param teamId   ID của team cần lấy danh sách task
+     * @param pageable Thông tin phân trang (số trang, kích thước trang)
+     * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử
+     */
+    Map<String, Object> getTasksByTeamId(UUID teamId, Pageable pageable);
 }

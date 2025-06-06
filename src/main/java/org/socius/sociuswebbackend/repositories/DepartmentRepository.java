@@ -3,7 +3,10 @@ package org.socius.sociuswebbackend.repositories;
 import java.util.UUID;
 
 import org.socius.sociuswebbackend.model.entities.DepartmentEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface DepartmentRepository extends JpaRepository<DepartmentEntity, UUID> {
     /**
@@ -13,4 +16,14 @@ public interface DepartmentRepository extends JpaRepository<DepartmentEntity, UU
      * @return true nếu phòng ban tồn tại, false nếu không tồn tại
      */
     boolean existsByName(String name);
+
+    /**
+     * Tìm phòng ban cùng với các thành viên của nó
+     *
+     * @param departmentId ID của phòng ban cần tìm
+     * @param pageable     Thông tin phân trang
+     * @return Trang chứa thông tin phòng ban và các thành viên
+     */
+    @Query("SELECT d FROM DepartmentEntity d JOIN FETCH d.employmentDetails e WHERE d.id = :departmentId")
+    Page<DepartmentEntity> findDepartmentWithMembers(UUID departmentId, Pageable pageable);
 }

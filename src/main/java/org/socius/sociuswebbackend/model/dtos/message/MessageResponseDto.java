@@ -26,7 +26,6 @@ public class MessageResponseDto extends BaseDto {
     private boolean isEdited;
     private boolean isDeleted;
     private boolean isRead;
-
     private String fileUrl;
     private String fileOriginalName;
     private String fileContentType;

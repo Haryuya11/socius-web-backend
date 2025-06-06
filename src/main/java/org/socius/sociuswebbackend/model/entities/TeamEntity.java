@@ -8,6 +8,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "teams")
@@ -26,6 +27,9 @@ public class TeamEntity extends BaseEntity {
     @OneToOne
     @JoinColumn(name = "leader_id", unique = true)
     private UserEntity leader;
+
+    @Column(name = "group_chat_id")
+    private UUID groupChatId;
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
     @JsonIgnore

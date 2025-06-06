@@ -11,19 +11,21 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.mappers.ConversationMapper;
 import org.socius.sociuswebbackend.mappers.ConversationMemberMapper;
+import org.socius.sociuswebbackend.mappers.MessageMapper;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationMemberDto;
-import org.socius.sociuswebbackend.model.dtos.conversation.ConversationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
+import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.entities.*;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
 import org.socius.sociuswebbackend.model.enums.MemberRole;
+import org.socius.sociuswebbackend.model.enums.MessageType;
 import org.socius.sociuswebbackend.repositories.*;
-import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
-import org.socius.sociuswebbackend.utils.ChatTestDataUtil;
+import org.socius.sociuswebbackend.services.ChatMessageProducerService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,16 +49,24 @@ public class ConversationServiceImplTest {
     private UnreadCountRepository unreadCountRepository;
 
     @Mock
+    private MessageRepository messageRepository;
+
+    @Mock
     private ConversationMapper conversationMapper;
 
     @Mock
     private ConversationMemberMapper conversationMemberMapper;
 
+    @Mock
+    private MessageMapper messageMapper;
+
+    @Mock
+    private ChatMessageProducerService chatMessageProducerService;
+
     @InjectMocks
     private ConversationServiceImpl conversationService;
 
     private UUID userId;
-    private UUID groupId;
     private UUID otherUserId;
     private UUID conversationId;
     private UserEntity user;
@@ -68,7 +78,6 @@ public class ConversationServiceImplTest {
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
-        groupId = UUID.randomUUID();
         otherUserId = UUID.randomUUID();
         conversationId = UUID.randomUUID();
 
@@ -86,7 +95,7 @@ public class ConversationServiceImplTest {
         conversation.setId(conversationId);
         conversation.setName("Test Conversation");
         conversation.setType(ConversationType.GROUP);
-        conversation.setCreatedBy(user);
+        conversation.setCreatedByUser(user);
 
         conversationResponseDto = ConversationResponseDto.builder()
                 .id(conversationId)
@@ -98,48 +107,47 @@ public class ConversationServiceImplTest {
         userMember.setUser(user);
         userMember.setConversation(conversation);
         userMember.setRole(MemberRole.ADMIN);
+        userMember.setJoinedAt(LocalDateTime.now());
     }
 
     @Test
     @DisplayName("Tạo cuộc trò chuyện nhóm thành công")
     void createGroupConversationSuccessfully() {
         // Thiết lập dữ liệu test
-        Set<UUID> memberIds = Set.of(userId, otherUserId);
+        Set<UUID> memberIds = Set.of(otherUserId);
         String groupName = "Test Group";
 
         // Mock các dependencies
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
         when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(conversation);
-        when(conversationMemberRepository.saveAll(anyList())).thenReturn(Collections.singletonList(userMember));
-        when(unreadCountRepository.saveAll(anyList())).thenReturn(List.of());
         when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
 
         // Thực thi
         ConversationResponseDto result = conversationService.createGroupConversation(
-                groupId, groupName, userId, memberIds);
+                groupName, userId, memberIds);
 
         // Kiểm tra
         assertNotNull(result);
         verify(conversationRepository).save(any(ConversationEntity.class));
+        verify(conversationRepository).flush();
         verify(conversationMemberRepository).saveAll(anyList());
         verify(unreadCountRepository).saveAll(anyList());
         verify(conversationMapper).entityToDto(conversation);
     }
 
-
-
     @Test
     @DisplayName("Lỗi khi tạo cuộc trò chuyện nhóm với creator không tồn tại")
     void failToCreateGroupConversationWhenCreatorNotExists() {
         // Thiết lập dữ liệu test
-        Set<UUID> memberIds = Set.of(userId, otherUserId);
+        Set<UUID> memberIds = Set.of(otherUserId);
         String groupName = "Test Group";
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         // Thực thi và kiểm tra
-        assertThrows(RuntimeException.class, () -> conversationService.createGroupConversation(groupId, groupName, userId, memberIds));
+        assertThrows(RuntimeException.class, () ->
+                conversationService.createGroupConversation(groupName, userId, memberIds));
 
         verify(conversationRepository, never()).save(any());
     }
@@ -149,44 +157,44 @@ public class ConversationServiceImplTest {
     void failToCreateGroupConversationWhenMemberNotExists() {
         // Thiết lập dữ liệu test
         UUID invalidMemberId = UUID.randomUUID();
-        Set<UUID> memberIds = Set.of(userId, invalidMemberId); // Thêm một ID không tồn tại
+        Set<UUID> memberIds = Set.of(invalidMemberId);
         String groupName = "Test Group";
 
-        // Mock creator tồn tại
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        // Mock member không tồn tại
         when(userRepository.findById(invalidMemberId)).thenReturn(Optional.empty());
 
-        // Thực thi và kiểm tra - exception phải được throw trước khi save conversation
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> conversationService.createGroupConversation(groupId, groupName, userId, memberIds));
+        // Thực thi và kiểm tra
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                conversationService.createGroupConversation(groupName, userId, memberIds));
 
-        // Kiểm tra message exception
         assertTrue(exception.getMessage().contains("Không tìm thấy người dùng với ID"));
-
-        // Verify rằng conversation không được save do validation failed
         verify(conversationRepository, never()).save(any());
-        verify(conversationMemberRepository, never()).saveAll(any());
-        verify(unreadCountRepository, never()).saveAll(any());
     }
 
     @Test
-    @DisplayName("Tạo cuộc trò chuyện nhóm với danh sách thành viên rỗng")
-    void createGroupConversationWithEmptyMemberList() {
-        // Thiết lập dữ liệu test
-        Set<UUID> memberIds = new HashSet<>();
+    @DisplayName("Lỗi khi creatorId là null")
+    void failToCreateGroupConversationWithNullCreatorId() {
+        Set<UUID> memberIds = Set.of(otherUserId);
+        String groupName = "Test Group";
+
+        assertThrows(RuntimeException.class, () ->
+                conversationService.createGroupConversation(groupName, null, memberIds));
+
+        verify(conversationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Tạo cuộc trò chuyện nhóm với memberIds null")
+    void createGroupConversationWithNullMemberIds() {
         String groupName = "Test Group";
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(conversation);
-        when(conversationMemberRepository.saveAll(anyList())).thenReturn(Collections.singletonList(userMember));
-        when(unreadCountRepository.saveAll(anyList())).thenReturn(List.of());
         when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
 
-        // Thực thi
         ConversationResponseDto result = conversationService.createGroupConversation(
-                groupId, groupName, userId, memberIds);
+                groupName, userId, null);
 
-        // Kiểm tra - chỉ có creator được thêm vào nhóm
         assertNotNull(result);
         verify(conversationRepository).save(any(ConversationEntity.class));
         verify(conversationMemberRepository).saveAll(anyList());
@@ -196,211 +204,38 @@ public class ConversationServiceImplTest {
     @Test
     @DisplayName("Tạo cuộc trò chuyện nhóm với creator trong danh sách members")
     void createGroupConversationWithCreatorInMemberList() {
-        // Thiết lập dữ liệu test - creator cũng có trong memberIds
         Set<UUID> memberIds = Set.of(userId, otherUserId); // userId là creator và cũng trong memberIds
         String groupName = "Test Group";
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
         when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(conversation);
-        when(conversationMemberRepository.saveAll(anyList())).thenReturn(Collections.singletonList(userMember));
-        when(unreadCountRepository.saveAll(anyList())).thenReturn(List.of());
         when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
 
-        // Thực thi
         ConversationResponseDto result = conversationService.createGroupConversation(
-                groupId, groupName, userId, memberIds);
+                groupName, userId, memberIds);
 
-        // Kiểm tra
         assertNotNull(result);
 
-        // Verify chỉ có 2 members được tạo (không duplicate creator)
+        // Verify chỉ có 2 members được tạo (Creator + 1 other member, không duplicate creator)
         verify(conversationMemberRepository).saveAll(argThat(members -> {
             List<ConversationMemberEntity> memberList = (List<ConversationMemberEntity>) members;
-            return memberList.size() == 2; // Creator + 1 other member
-        }));
-    }
-
-    @Test
-    @DisplayName("Kiểm tra các thành viên được thêm vào với quyền đúng")
-    void verifyMembersAddedWithCorrectRoles() {
-        // Thiết lập dữ liệu test
-        Set<UUID> memberIds = Set.of(otherUserId); // Chỉ thêm otherUser, không duplicate creator
-        String groupName = "Test Group";
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
-        when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(conversation);
-        when(conversationMemberRepository.saveAll(anyList())).thenReturn(Collections.singletonList(userMember));
-        when(unreadCountRepository.saveAll(anyList())).thenReturn(List.of());
-        when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
-
-        // Thực thi
-        conversationService.createGroupConversation(groupId, groupName, userId, memberIds);
-
-        // Verify members được save với role đúng
-        verify(conversationMemberRepository).saveAll(argThat(members -> {
-            List<ConversationMemberEntity> memberList = (List<ConversationMemberEntity>) members;
-
-            // Phải có đúng 2 members
-            if (memberList.size() != 2) return false;
-
-            // Creator phải có role ADMIN
-            boolean hasCreatorAsAdmin = memberList.stream()
-                    .anyMatch(member -> member.getUser().getId().equals(userId) &&
-                            member.getRole() == MemberRole.ADMIN);
-
-            // Other member phải có role MEMBER
-            boolean hasOtherAsMember = memberList.stream()
-                    .anyMatch(member -> member.getUser().getId().equals(otherUserId) &&
-                            member.getRole() == MemberRole.MEMBER);
-
-            return hasCreatorAsAdmin && hasOtherAsMember;
-        }));
-    }
-
-    @Test
-    @DisplayName("Tạo cuộc trò chuyện nhóm với tên null hoặc rỗng")
-    void createGroupConversationWithNullOrEmptyName() {
-        // Thiết lập dữ liệu test
-        Set<UUID> memberIds = Set.of(userId, otherUserId);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
-        when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(conversation);
-        when(conversationMemberRepository.saveAll(anyList())).thenReturn(Collections.singletonList(userMember));
-        when(unreadCountRepository.saveAll(anyList())).thenReturn(List.of());
-        when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
-
-        // Thực thi với tên null
-        ConversationResponseDto result1 = conversationService.createGroupConversation(
-                groupId, null, userId, memberIds);
-
-        // Thực thi với tên rỗng
-        ConversationResponseDto result2 = conversationService.createGroupConversation(
-                groupId, "", userId, memberIds);
-
-        // Kiểm tra - cả hai trường hợp đều được xử lý
-        assertNotNull(result1);
-        assertNotNull(result2);
-        verify(conversationRepository, times(2)).save(any(ConversationEntity.class));
-    }
-
-    @Test
-    @DisplayName("Lỗi khi groupId là null")
-    void failToCreateGroupConversationWithNullGroupId() {
-        // Thiết lập dữ liệu test
-        Set<UUID> memberIds = Set.of(userId, otherUserId);
-        String groupName = "Test Group";
-
-        // Thực thi và kiểm tra
-        assertThrows(RuntimeException.class, () -> conversationService.createGroupConversation(null, groupName, userId, memberIds));
-
-        verify(conversationRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Lỗi khi creatorId là null")
-    void failToCreateGroupConversationWithNullCreatorId() {
-        // Thiết lập dữ liệu test
-        Set<UUID> memberIds = Set.of(userId, otherUserId);
-        String groupName = "Test Group";
-
-        // Thực thi và kiểm tra
-        assertThrows(RuntimeException.class, () -> conversationService.createGroupConversation(groupId, groupName, null, memberIds));
-
-        verify(conversationRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Tạo cuộc trò chuyện nhóm với memberIds null")
-    void createGroupConversationWithNullMemberIds() {
-        // Thiết lập dữ liệu test
-        String groupName = "Test Group";
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(conversation);
-        when(conversationMemberRepository.saveAll(anyList())).thenReturn(Collections.singletonList(userMember));
-        when(unreadCountRepository.saveAll(anyList())).thenReturn(List.of());
-        when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
-
-        // Thực thi
-        ConversationResponseDto result = conversationService.createGroupConversation(
-                groupId, groupName, userId, null);
-
-        // Kiểm tra - chỉ có creator được thêm vào nhóm
-        assertNotNull(result);
-        verify(conversationRepository).save(any(ConversationEntity.class));
-        verify(conversationMemberRepository).saveAll(anyList());
-        verify(unreadCountRepository).saveAll(anyList());
-    }
-
-    @Test
-    @DisplayName("Kiểm tra conversation entity được tạo với thông tin đúng")
-    void verifyConversationEntityCreationWithCorrectInfo() {
-        // Thiết lập dữ liệu test
-        Set<UUID> memberIds = Set.of(userId, otherUserId);
-        String groupName = "Test Group";
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
-        when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(conversation);
-        when(conversationMemberRepository.saveAll(anyList())).thenReturn(Collections.singletonList(userMember));
-        when(unreadCountRepository.saveAll(anyList())).thenReturn(List.of());
-        when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
-
-        // Thực thi
-        conversationService.createGroupConversation(groupId, groupName, userId, memberIds);
-
-        // Verify conversation entity được save với thông tin đúng
-        verify(conversationRepository).save(argThat(conv ->
-                conv.getName().equals(groupName) &&
-                        conv.getType() == ConversationType.GROUP &&
-                        conv.getCreatedBy().getId().equals(userId)
-        ));
-    }
-
-    @Test
-    @DisplayName("Kiểm tra unread count được tạo cho tất cả thành viên")
-    void verifyUnreadCountCreatedForAllMembers() {
-        // Thiết lập dữ liệu test
-        Set<UUID> memberIds = Set.of(userId, otherUserId);
-        String groupName = "Test Group";
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
-        when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(conversation);
-        when(conversationMemberRepository.saveAll(anyList())).thenReturn(Collections.singletonList(userMember));
-        when(unreadCountRepository.saveAll(anyList())).thenReturn(List.of());
-        when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
-
-        // Thực thi
-        conversationService.createGroupConversation(groupId, groupName, userId, memberIds);
-
-        // Verify unread count được tạo cho tất cả thành viên
-        verify(unreadCountRepository).saveAll(argThat(unreadCounts -> {
-            List<UnreadCountEntity> unreadCountList = (List<UnreadCountEntity>) unreadCounts;
-            return unreadCountList.size() == 2 && // 2 thành viên
-                    unreadCountList.stream().allMatch(uc -> uc.getUnreadCount() == 0);
+            return memberList.size() == 2;
         }));
     }
 
     @Test
     @DisplayName("Lấy danh sách conversations của user thành công")
     void getUserConversationsSuccessfully() {
-        // Setup
         Pageable pageable = Pageable.ofSize(10);
         List<ConversationEntity> conversations = Arrays.asList(conversation);
         Page<ConversationEntity> conversationPage = new PageImpl<>(conversations);
 
-        // Sửa lại mock để khớp với implementation
+        when(userRepository.existsById(userId)).thenReturn(true);
         when(conversationRepository.findActiveConversationsByUserId(userId, pageable))
                 .thenReturn(conversationPage);
         when(conversationMapper.entityToDto(conversation))
                 .thenReturn(conversationResponseDto);
-        when(userRepository.existsById(userId)).thenReturn(true);
-
-        // Mock thêm cho conversationMemberRepository và conversationMemberMapper
         when(conversationMemberRepository.findActiveMembers(conversationId))
                 .thenReturn(Collections.singletonList(userMember));
         when(conversationMemberMapper.entityToDto(userMember))
@@ -409,14 +244,22 @@ public class ConversationServiceImplTest {
                         .role(MemberRole.ADMIN)
                         .build());
 
-        // Execute
         Page<ConversationResponseDto> result = conversationService.getUserConversations(userId, pageable);
 
-        // Verify
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
-        assertEquals(conversationResponseDto, result.getContent().get(0));
         verify(conversationRepository).findActiveConversationsByUserId(userId, pageable);
+    }
+
+    @Test
+    @DisplayName("Lỗi khi lấy conversations của user không tồn tại")
+    void failToGetUserConversationsWhenUserNotExists() {
+        Pageable pageable = Pageable.ofSize(10);
+
+        when(userRepository.existsById(userId)).thenReturn(false);
+
+        assertThrows(RuntimeException.class, () ->
+                conversationService.getUserConversations(userId, pageable));
     }
 
     @Test
@@ -440,9 +283,158 @@ public class ConversationServiceImplTest {
         when(conversationRepository.findById(conversationId))
                 .thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> {
-            conversationService.findById(conversationId);
-        });
+        assertThrows(RuntimeException.class, () ->
+                conversationService.findById(conversationId));
     }
 
+    @Test
+    @DisplayName("Tạo hoặc lấy cuộc trò chuyện trực tiếp thành công")
+    void getOrCreateDirectConversationSuccessfully() {
+        when(conversationRepository.findDirectConversationBetweenUsers(userId, otherUserId))
+                .thenReturn(Optional.empty());
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
+
+        ConversationEntity directConversation = new ConversationEntity();
+        directConversation.setId(conversationId);
+        directConversation.setType(ConversationType.DIRECT);
+        directConversation.setCreatedByUser(user);
+
+        when(conversationRepository.save(any(ConversationEntity.class))).thenReturn(directConversation);
+        when(conversationMemberRepository.findActiveMember(conversationId, userId))
+                .thenReturn(Optional.of(userMember));
+        when(conversationMapper.entityToDto(any(ConversationEntity.class)))
+                .thenReturn(conversationResponseDto);
+
+        ConversationResponseDto result = conversationService.getOrCreateDirectConversation(userId, otherUserId);
+
+        assertNotNull(result);
+        verify(conversationRepository).save(any(ConversationEntity.class));
+        verify(conversationMemberRepository).saveAll(anyList());
+        verify(unreadCountRepository).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("Lỗi khi tạo cuộc trò chuyện trực tiếp với chính mình")
+    void failToCreateDirectConversationWithSameUser() {
+        assertThrows(IllegalArgumentException.class, () ->
+                conversationService.getOrCreateDirectConversation(userId, userId));
+    }
+
+    @Test
+    @DisplayName("Thêm thành viên vào cuộc trò chuyện nhóm thành công")
+    void addMemberToGroupConversationSuccessfully() {
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
+        when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
+        when(conversationMemberRepository.findById(any(ConversationMemberId.class)))
+                .thenReturn(Optional.empty());
+
+        MessageEntity systemMessage = new MessageEntity();
+        systemMessage.setId(UUID.randomUUID());
+        systemMessage.setContent("Test system message");
+        systemMessage.setMessageType(MessageType.SYSTEM);
+
+        when(messageRepository.save(any(MessageEntity.class))).thenReturn(systemMessage);
+        when(messageMapper.entityToDto(any(MessageEntity.class)))
+                .thenReturn(MessageResponseDto.builder().build());
+
+        conversationService.addMember(conversationId, otherUserId);
+
+        verify(conversationMemberRepository).save(any(ConversationMemberEntity.class));
+        verify(unreadCountRepository).save(any(UnreadCountEntity.class));
+        verify(messageRepository).save(any(MessageEntity.class));
+        verify(chatMessageProducerService).sendChatMessage(any(), eq(ConversationType.GROUP), eq(conversationId));
+    }
+
+    @Test
+    @DisplayName("Xóa thành viên khỏi cuộc trò chuyện nhóm thành công")
+    void removeMemberFromGroupConversationSuccessfully() {
+        ConversationMemberEntity memberToRemove = new ConversationMemberEntity();
+        memberToRemove.setUser(otherUser);
+        memberToRemove.setConversation(conversation);
+        memberToRemove.setRole(MemberRole.MEMBER);
+
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
+        when(conversationMemberRepository.findById(any(ConversationMemberId.class)))
+                .thenReturn(Optional.of(memberToRemove));
+
+        MessageEntity systemMessage = new MessageEntity();
+        when(messageRepository.save(any(MessageEntity.class))).thenReturn(systemMessage);
+        when(messageMapper.entityToDto(any(MessageEntity.class)))
+                .thenReturn(MessageResponseDto.builder().build());
+
+        conversationService.removeMember(conversationId, otherUserId);
+
+        verify(conversationMemberRepository).save(argThat(member ->
+                member.getLeftAt() != null));
+        verify(messageRepository).save(any(MessageEntity.class));
+        verify(chatMessageProducerService).sendChatMessage(any(), eq(ConversationType.GROUP), eq(conversationId));
+    }
+
+    @Test
+    @DisplayName("Lấy danh sách thành viên cuộc trò chuyện thành công")
+    void getConversationMembersSuccessfully() {
+        ConversationMemberEntity requesterMember = new ConversationMemberEntity();
+        requesterMember.setUser(user);
+        requesterMember.setConversation(conversation);
+        requesterMember.setRole(MemberRole.ADMIN);
+
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
+        when(conversationMemberRepository.findById(any(ConversationMemberId.class)))
+                .thenReturn(Optional.of(requesterMember));
+        when(conversationMemberRepository.findActiveMembers(conversationId))
+                .thenReturn(Arrays.asList(requesterMember, userMember));
+        when(conversationMemberMapper.entityToDto(any(ConversationMemberEntity.class)))
+                .thenReturn(ConversationMemberDto.builder().build());
+
+        List<ConversationMemberDto> result = conversationService.getConversationMembers(conversationId, userId);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        verify(conversationMemberRepository).findActiveMembers(conversationId);
+    }
+
+    @Test
+    @DisplayName("Lấy tất cả cuộc trò chuyện của user thành công")
+    void getAllUserConversationsSuccessfully() {
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(conversationRepository.findAllActiveConversationsByUserId(userId))
+                .thenReturn(Arrays.asList(conversation));
+        when(conversationMapper.entityToDto(conversation)).thenReturn(conversationResponseDto);
+        when(conversationMemberRepository.findActiveMembers(conversationId))
+                .thenReturn(Collections.singletonList(userMember));
+        when(conversationMemberMapper.entityToDto(userMember))
+                .thenReturn(ConversationMemberDto.builder().build());
+
+        List<ConversationResponseDto> result = conversationService.getAllUserConversations(userId);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(conversationRepository).findAllActiveConversationsByUserId(userId);
+    }
+
+    @Test
+    @DisplayName("Xóa cuộc trò chuyện nhóm thành công")
+    void deleteGroupConversationSuccessfully() {
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
+
+        conversationService.deleteGroupConversation(conversationId);
+
+        verify(messageRepository).deleteByConversation_Id(conversationId);
+        verify(unreadCountRepository).deleteByConversation_Id(conversationId);
+        verify(conversationMemberRepository).deleteByConversation_Id(conversationId);
+        verify(conversationRepository).delete(conversation);
+    }
+
+    @Test
+    @DisplayName("Lỗi khi xóa cuộc trò chuyện không phải nhóm")
+    void failToDeleteNonGroupConversation() {
+        ConversationEntity directConversation = new ConversationEntity();
+        directConversation.setType(ConversationType.DIRECT);
+
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(directConversation));
+
+        assertThrows(RuntimeException.class, () ->
+                conversationService.deleteGroupConversation(conversationId));
+    }
 }

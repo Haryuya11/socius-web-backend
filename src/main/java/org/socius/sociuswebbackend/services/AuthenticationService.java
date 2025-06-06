@@ -4,31 +4,32 @@ import org.socius.sociuswebbackend.model.dtos.auth.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 
 public interface AuthenticationService {
 
     /**
      * Xác thực người dùng và tạo phiên đăng nhập
-     * 
+     *
      * @param loginRequestDto Thông tin đăng nhập từ người dùng
-     * @param request Request HTTP hiện tại
-     * @param response Response HTTP hiện tại
+     * @param request         Request HTTP hiện tại
+     * @param response        Response HTTP hiện tại
      * @return Thông tin phản hồi đăng nhập chứa trạng thái xác thực và thông tin người dùng
      */
     LoginResponseDto login(LoginRequestDto loginRequestDto, HttpServletRequest request, HttpServletResponse response);
 
     /**
      * Đăng xuất người dùng và hủy phiên hiện tại
-     * 
-     * @param request Request HTTP hiện tại
+     *
+     * @param request  Request HTTP hiện tại
      * @param response Response HTTP hiện tại
      */
     void logout(HttpServletRequest request, HttpServletResponse response);
 
     /**
      * Lấy thông tin phiên hiện tại của người dùng
-     * 
+     *
      * @param request Request HTTP hiện tại
      * @return Thông tin phiên làm việc hoặc null nếu không có phiên hợp lệ
      */
@@ -36,7 +37,7 @@ public interface AuthenticationService {
 
     /**
      * Kiểm tra xem người dùng hiện tại đã được xác thực hay chưa
-     * 
+     *
      * @param request Request HTTP hiện tại
      * @return true nếu người dùng đã được xác thực, false nếu chưa
      */
@@ -44,9 +45,9 @@ public interface AuthenticationService {
 
     /**
      * Đổi mật khẩu lần đầu sau khi đăng nhập với mật khẩu mặc định
-     * 
+     *
      * @param requestDto Thông tin mật khẩu mới
-     * @param request Request HTTP hiện tại
+     * @param request    Request HTTP hiện tại
      * @return true nếu thành công, false nếu thất bại
      */
     PasswordChangeResult changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request);
@@ -62,7 +63,7 @@ public interface AuthenticationService {
     /**
      * Kiểm tra xem người dùng có quyền cụ thể hay không
      *
-     * @param request Request HTTP hiện tại
+     * @param request    Request HTTP hiện tại
      * @param permission Quyền cần kiểm tra
      * @return true nếu người dùng có quyền, false nếu không
      */
@@ -75,4 +76,12 @@ public interface AuthenticationService {
      * @return true nếu gia hạn thành công, false nếu không
      */
     boolean extendSession(HttpServletRequest request);
+
+    /**
+     * Đặt lại mật khẩu cho người dùng thông qua email
+     *
+     * @param email Email của người dùng cần đặt lại mật khẩu
+     * @return true nếu thành công, false nếu không tìm thấy người dùng hoặc có lỗi xảy ra
+     */
+    boolean resetPassword(String email);
 }

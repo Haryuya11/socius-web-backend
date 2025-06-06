@@ -3,7 +3,7 @@ package org.socius.sociuswebbackend.controllers;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.employee.EmployeeCreationRequestDto;
-import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.services.AdminService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,8 +27,8 @@ public class AdminController {
      * @return Thông tin nhân viên đã tạo
      */
     @PostMapping("/employees")
-    public ResponseEntity<UserResponseDto> createEmployee(@Valid @RequestBody EmployeeCreationRequestDto requestDto) {
-        UserResponseDto createdEmployee = adminService.createEmployee(requestDto);
+    public ResponseEntity<EmploymentDetailResponseDto> createEmployee(@Valid @RequestBody EmployeeCreationRequestDto requestDto) {
+        EmploymentDetailResponseDto createdEmployee = adminService.createEmployee(requestDto);
         return ResponseEntity.ok(createdEmployee);
     }
 }
