@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.springframework.data.domain.Pageable;
 
@@ -23,7 +24,7 @@ public interface UserService {
      * @param request Request HTTP hiện tại
      * @return Thông tin người dùng hiện tại hoặc null nếu không có phiên hợp lệ
      */
-    UserResponseDto getCurrentUser(HttpServletRequest request);
+    EmploymentDetailResponseDto getCurrentUser(HttpServletRequest request);
 
 
     /**

@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponseDto getCurrentUser(HttpServletRequest request) {
+    public EmploymentDetailResponseDto getCurrentUser(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session == null) {
             return null;
@@ -61,8 +61,8 @@ public class UserServiceImpl implements UserService {
             return null;
         }
 
-        Optional<UserEntity> userOptional = userRepository.findById(userId);
-        return userOptional.map(userMapper::entityToDto).orElse(null);
+        Optional<EmploymentDetailEntity> employmentDetailOptional = employmentDetailRepository.findByUserId(userId);
+        return employmentDetailOptional.map(employmentDetailMapper::entityToLimitedDtoForUser).orElse(null);
     }
 
     @Override
