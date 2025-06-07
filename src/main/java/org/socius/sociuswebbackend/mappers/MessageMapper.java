@@ -14,8 +14,8 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
 
     @Override
     @Mapping(source = "conversation.id", target = "conversationId")
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+//    @Mapping(target = "createdAt", ignore = true)
+//    @Mapping(target = "updatedAt", ignore = true)
     public abstract MessageResponseDto entityToDto(MessageEntity entity);
 
 
