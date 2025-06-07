@@ -8,16 +8,14 @@ import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.entities.ConversationEntity;
 import org.socius.sociuswebbackend.model.entities.MessageEntity;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
+import org.socius.sociuswebbackend.util.SpringBeanUtil;
 
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
 public abstract class MessageMapper extends BaseEntityMapper implements GenericMapper<MessageEntity, MessageResponseDto, MessageRequestDto> {
 
     @Override
     @Mapping(source = "conversation.id", target = "conversationId")
-//    @Mapping(target = "createdAt", ignore = true)
-//    @Mapping(target = "updatedAt", ignore = true)
     public abstract MessageResponseDto entityToDto(MessageEntity entity);
-
 
     @Override
     @Mapping(target = "conversation", ignore = true)
@@ -35,7 +33,7 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
             return null;
         }
 
-        EntityMappingUtil mappingUtil = new EntityMappingUtil();
+        EntityMappingUtil mappingUtil = SpringBeanUtil.getBean(EntityMappingUtil.class);
         ConversationEntity conversationEntity = mappingUtil.mapConversationIdToEntity(dto.getConversationId());
 
         return MessageEntity.builder()
@@ -72,6 +70,4 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
             entity.setMessageType(dto.getMessageType());
         }
     }
-
-
 }

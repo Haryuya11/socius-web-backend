@@ -6,14 +6,13 @@ import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationResponseDto;
 import org.socius.sociuswebbackend.services.NotificationService;
-import org.socius.sociuswebbackend.config.RabbitMQConfig;
 import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

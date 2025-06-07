@@ -108,7 +108,7 @@ public class EmploymentDetailServiceImplTest {
         when(employmentDetailMapper.entityToLimitedDto(testEmploymentDetail)).thenReturn(testEmploymentDetailResponseDto);
 
         // Act
-        Map<String, Object> result = employmentDetailService.getAllEmployees(testPageable);
+        Map<String, Object> result = employmentDetailService.getAllActiveEmployees(testPageable);
 
         // Assert
         verify(employmentDetailRepository, times(1)).findAll(testPageable);
@@ -128,7 +128,7 @@ public class EmploymentDetailServiceImplTest {
         when(employmentDetailMapper.entityToLimitedDtoForAdmin(testEmploymentDetail)).thenReturn(testEmploymentDetailResponseDto);
 
         // Act
-        Map<String, Object> result = employmentDetailService.getAllEmployeesForAdmin(testPageable);
+        Map<String, Object> result = employmentDetailService.getAllActiveEmployeesForAdmin(testPageable);
 
         // Assert
         verify(employmentDetailRepository, times(1)).findAll(testPageable);

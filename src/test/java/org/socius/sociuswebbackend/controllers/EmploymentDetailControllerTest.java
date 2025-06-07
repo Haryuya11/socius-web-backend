@@ -90,7 +90,7 @@ public class EmploymentDetailControllerTest {
     @DisplayName("Lấy danh sách nhân viên phải gọi service")
     void getAllEmployeesShouldCallService() throws Exception {
         // Arrange
-        when(employmentDetailService.getAllEmployees(testPageable)).thenReturn(testResponseMap);
+        when(employmentDetailService.getAllActiveEmployees(testPageable)).thenReturn(testResponseMap); // Sửa method name
 
         // Act
         mockMvc.perform(get("/api/employee/all")
@@ -103,7 +103,7 @@ public class EmploymentDetailControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(1));
 
         // Assert
-        verify(employmentDetailService, times(1)).getAllEmployees(testPageable);
+        verify(employmentDetailService, times(1)).getAllActiveEmployees(testPageable);
     }
 
     @Test
@@ -111,7 +111,7 @@ public class EmploymentDetailControllerTest {
     @WithMockUser(authorities = "ACCESS_ADMIN_PAGE")
     void getAllEmployeesForAdminShouldCallService() throws Exception {
         // Arrange
-        when(employmentDetailService.getAllEmployeesForAdmin(testPageable)).thenReturn(testResponseMap);
+        when(employmentDetailService.getAllActiveEmployeesForAdmin(testPageable)).thenReturn(testResponseMap);
 
         // Act
         mockMvc.perform(get("/api/employee/admin/all")
@@ -124,6 +124,6 @@ public class EmploymentDetailControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(1));
 
         // Assert
-        verify(employmentDetailService, times(1)).getAllEmployeesForAdmin(testPageable);
+        verify(employmentDetailService, times(1)).getAllActiveEmployeesForAdmin(testPageable);
     }
 }

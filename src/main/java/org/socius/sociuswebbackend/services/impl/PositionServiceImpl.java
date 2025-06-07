@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.PositionMapper;
+import org.socius.sociuswebbackend.mappers.PositionMappingHelper;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
 import org.socius.sociuswebbackend.model.entities.PositionEntity;
@@ -27,6 +28,7 @@ public class PositionServiceImpl implements PositionService {
     final private PositionRepository positionRepository;
     final private EmploymentDetailRepository employmentDetailRepository;
     final private PositionMapper positionMapper;
+    final private PositionMappingHelper positionMapperHelper;
 
     @Override
     public List<PositionResponseDto> findAll() {
@@ -101,6 +103,6 @@ public class PositionServiceImpl implements PositionService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Position not found with ID: " + positionId));
 
-        return positionMapper.entityToDtoWithMembers(position, pageable);
+        return positionMapperHelper.entityToDtoWithMembers(position);
     }
 }

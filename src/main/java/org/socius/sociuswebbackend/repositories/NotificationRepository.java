@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<NotificationEntity, UUID> {
     // Lấy danh sách thông báo theo userId của người nhận với phân trang

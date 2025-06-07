@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.DepartmentMapper;
+import org.socius.sociuswebbackend.mappers.DepartmentMappingHelper;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
@@ -36,6 +37,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     final private UserRepository userRepository;
     final private EmploymentDetailRepository employmentDetailRepository;
     final private ConversationService conversationService;
+    final private DepartmentMappingHelper departmentMapperHelper;
 
 
     @Override
@@ -155,6 +157,6 @@ public class DepartmentServiceImpl implements DepartmentService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Department not found with ID: " + departmentId));
 
-        return departmentMapper.entityToDtoWithMembers(department, pageable);
+        return departmentMapperHelper.entityToDtoWithMembers(department);
     }
 }

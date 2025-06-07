@@ -1,31 +1,20 @@
 package org.socius.sociuswebbackend.mappers;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
-import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.entities.PositionEntity;
+import org.springframework.stereotype.Component;
 
-/**
- * Mapper for Position entities and DTOs
- */
-@Mapper(componentModel = "spring")
-public abstract class PositionMapper extends BaseEntityMapper implements
-        GenericMapper<PositionEntity, PositionResponseDto, PositionRequestDto> {
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-    @Override
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    public abstract PositionResponseDto entityToDto(PositionEntity entity);
+@Component
+@RequiredArgsConstructor
+public class PositionMappingHelper {
 
-    @Override
-    public abstract PositionEntity requestDtoToEntity(PositionRequestDto dto);
+    private final UserMapper userMapper;
 
-    @Override
-    public abstract void updateEntityFromDto(PositionRequestDto dto, @MappingTarget PositionEntity entity);
-
-    /*
     public Map<String, Object> entityToDtoWithMembers(PositionEntity position) {
         if (position == null) {
             return null;
@@ -51,7 +40,7 @@ public abstract class PositionMapper extends BaseEntityMapper implements
                         ));
                     }
                     if (detail.getDepartment() != null) {
-                        employmentDetail.put("", Map.of(
+                        employmentDetail.put("department", Map.of( // Sửa lỗi: thêm "department"
                                 "id", detail.getDepartment().getId(),
                                 "name", detail.getDepartment().getName()
                         ));
@@ -75,5 +64,4 @@ public abstract class PositionMapper extends BaseEntityMapper implements
 
         return result;
     }
-     */
 }

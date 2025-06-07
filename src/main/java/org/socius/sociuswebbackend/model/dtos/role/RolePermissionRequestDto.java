@@ -1,11 +1,10 @@
 package org.socius.sociuswebbackend.model.dtos.role;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
-import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 

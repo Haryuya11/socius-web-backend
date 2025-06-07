@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.TaskMapper;
 import org.socius.sociuswebbackend.mappers.TeamMapper;
+import org.socius.sociuswebbackend.mappers.TeamMappingHelper;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
@@ -43,6 +44,7 @@ public class TeamServiceImpl implements TeamService {
     final private EntityMappingUtil entityMappingUtil;
     final private TaskRepository taskRepository;
     final private TaskMapper taskMapper;
+    final private TeamMappingHelper teamMapperHelper;
 
     @Override
     public List<TeamResponseDto> findAll() {
@@ -163,7 +165,7 @@ public class TeamServiceImpl implements TeamService {
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Team not found with ID: " + teamId));
-        return teamMapper.entityToTeamWithMembers(team, pageable);
+        return teamMapperHelper.entityToTeamWithMembers(team);
     }
 
     @Override

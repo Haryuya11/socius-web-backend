@@ -3,7 +3,6 @@ package org.socius.sociuswebbackend.services;
 import org.socius.sociuswebbackend.model.dtos.permission.PermissionResponseDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleRequestDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
-import org.socius.sociuswebbackend.model.entities.PermissionEntity;
 
 import java.util.List;
 import java.util.UUID;

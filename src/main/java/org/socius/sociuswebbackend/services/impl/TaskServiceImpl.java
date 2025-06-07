@@ -8,21 +8,18 @@ import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDt
 import org.socius.sociuswebbackend.model.dtos.task.TaskRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.entities.TaskEntity;
-import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.model.enums.NotificationType;
 import org.socius.sociuswebbackend.model.enums.TaskStatus;
 import org.socius.sociuswebbackend.repositories.TaskRepository;
 import org.socius.sociuswebbackend.repositories.TeamRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.socius.sociuswebbackend.services.NotificationService;
+import org.socius.sociuswebbackend.services.TaskService;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.socius.sociuswebbackend.services.NotificationService;
-import org.socius.sociuswebbackend.services.TaskService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -61,7 +58,7 @@ public class TaskServiceImpl implements TaskService {
                     .message("You have been assigned a new task: " + entity.getName())
                     .senderId(user.getId()) // System user or task creator
                     .recipientIds(Collections.singletonList(dto.getAssignedToId()))
-                    .recipientIds(new ArrayList<>(Arrays.asList(dto.getAssignedToId())))
+                    .recipientIds(new ArrayList<>(Collections.singletonList(dto.getAssignedToId())))
                     .type(NotificationType.info)
                     .isUrgent(false)
                     .expiryDate(dto.getDeadline())

@@ -8,7 +8,6 @@ import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
 
-import java.beans.JavaBean;
 import java.util.HashSet;
 import java.util.Set;
 

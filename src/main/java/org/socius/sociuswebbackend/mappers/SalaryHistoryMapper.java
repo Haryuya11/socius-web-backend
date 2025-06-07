@@ -7,6 +7,7 @@ import org.socius.sociuswebbackend.model.entities.SalaryHistoryEntity;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Mapper for SalaryHistory entities and DTOs
@@ -44,7 +45,7 @@ public abstract class SalaryHistoryMapper extends BaseEntityMapper implements
         }
         BigDecimal changeAmount = entity.getNewSalary().subtract(entity.getPreviousSalary());
         return changeAmount
-                .divide(entity.getPreviousSalary(), 4, BigDecimal.ROUND_HALF_UP)
+                .divide(entity.getPreviousSalary(), 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
     

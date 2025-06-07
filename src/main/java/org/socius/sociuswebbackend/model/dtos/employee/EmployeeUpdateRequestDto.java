@@ -1,12 +1,14 @@
 package org.socius.sociuswebbackend.model.dtos.employee;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.socius.sociuswebbackend.model.enums.Gender;
-import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

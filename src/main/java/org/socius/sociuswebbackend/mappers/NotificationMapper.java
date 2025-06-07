@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.mappers;
 
+import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -23,13 +24,11 @@ import java.util.stream.Collectors;
  * Mapper for Notification entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class, NotificationRecipientMapper.class})
+@RequiredArgsConstructor
 public abstract class NotificationMapper extends BaseEntityMapper implements
         GenericMapper<NotificationEntity, NotificationResponseDto, NotificationRequestDto> {
 
-    @Autowired
     protected NotificationRecipientMapper recipientMapper;
-
-    @Autowired
     protected EntityMappingUtil entityMappingUtil;
 
 

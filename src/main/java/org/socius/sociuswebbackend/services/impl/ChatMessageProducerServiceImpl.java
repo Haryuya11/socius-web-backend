@@ -35,7 +35,6 @@ public class ChatMessageProducerServiceImpl implements ChatMessageProducerServic
     @Override
     @Retryable(
             retryFor = {AmqpException.class},
-            maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 5000)
     )
     public void sendChatMessage(MessageResponseDto message, ConversationType conversationType, UUID conversationId) {

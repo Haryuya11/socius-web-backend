@@ -1,10 +1,8 @@
 package org.socius.sociuswebbackend.services;
 
-import org.socius.sociuswebbackend.model.dtos.auth.*;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+import org.socius.sociuswebbackend.model.dtos.auth.*;
 import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 
 public interface AuthenticationService {

@@ -26,10 +26,10 @@ public class SessionValidationServiceImpl implements SessionValidationService {
             String rbacKey = RedisKeyBuilder.rbacKey(sessionId);
             Boolean exists = redisTemplate.hasKey(rbacKey);
             
-            if (exists != null && exists) {
+            if (exists) {
                 // Kiểm tra xem key có expire time không (nếu có nghĩa là session còn hợp lệ)
                 Long expireTime = redisTemplate.getExpire(rbacKey);
-                return expireTime != null && expireTime > 0;
+                return expireTime > 0;
             }
             
             return false;
@@ -45,7 +45,7 @@ public class SessionValidationServiceImpl implements SessionValidationService {
             // Tìm tất cả RBAC keys
             Set<String> rbacKeys = redisTemplate.keys(RedisKeyBuilder.rbacPattern());
             
-            if (rbacKeys == null || rbacKeys.isEmpty()) {
+            if (rbacKeys.isEmpty()) {
                 return false;
             }
             
@@ -57,7 +57,7 @@ public class SessionValidationServiceImpl implements SessionValidationService {
                     if (permissions != null && userId.equals(permissions.getUserId())) {
                         // Kiểm tra xem key này có expire time không
                         Long expireTime = redisTemplate.getExpire(rbacKey);
-                        if (expireTime != null && expireTime > 0) {
+                        if (expireTime > 0) {
                             logger.debug("Tìm thấy session hợp lệ cho userId: {}", userId);
                             return true;
                         }
@@ -83,7 +83,7 @@ public class SessionValidationServiceImpl implements SessionValidationService {
             // Tìm tất cả RBAC keys
             Set<String> rbacKeys = redisTemplate.keys(RedisKeyBuilder.rbacPattern());
             
-            if (rbacKeys == null || rbacKeys.isEmpty()) {
+            if (rbacKeys.isEmpty()) {
                 return null;
             }
             
@@ -95,7 +95,7 @@ public class SessionValidationServiceImpl implements SessionValidationService {
                     if (permissions != null && userId.equals(permissions.getUserId())) {
                         // Kiểm tra xem key này có expire time không
                         Long expireTime = redisTemplate.getExpire(rbacKey);
-                        if (expireTime != null && expireTime > 0) {
+                        if (expireTime > 0) {
                             // Extract sessionId from rbac key: "rbac:session:{sessionId}"
                             return rbacKey.substring("rbac:session:".length());
                         }
