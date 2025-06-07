@@ -26,19 +26,13 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
     Page<ConversationEntity> findConversationsByUserId(@Param("userId") UUID userId, Pageable pageable);
 
 
-    @Query("""
-                SELECT c FROM ConversationEntity c 
-                JOIN c.members m1
-                JOIN c.members m2
-                WHERE c.type = 'DIRECT'   
-                AND m1.user.id = :userId1
-                AND m2.user.id = :userId2
-                AND m1.user.id != m2.user.id
-            """)
-    Optional<ConversationEntity> findDirectConversationBetweenUsers(
-            @Param("userId1") UUID userId1,
-            @Param("userId2") UUID userId2
-    );
+    @Query("SELECT c FROM ConversationEntity c " +
+            "LEFT JOIN FETCH c.members m " +
+            "LEFT JOIN FETCH m.user " +
+            "WHERE c.type = 'DIRECT' " +
+            "AND EXISTS (SELECT 1 FROM ConversationMemberEntity cm1 WHERE cm1.conversation = c AND cm1.user.id = :userId AND cm1.leftAt IS NULL) " +
+            "AND EXISTS (SELECT 1 FROM ConversationMemberEntity cm2 WHERE cm2.conversation = c AND cm2.user.id = :otherUserId AND cm2.leftAt IS NULL)")
+    Optional<ConversationEntity> findDirectConversationBetweenUsers(@Param("userId") UUID userId, @Param("otherUserId") UUID otherUserId);
 
     /**
      * Tìm kiếm các cuộc trò chuyện của người dùng theo ID người dùng

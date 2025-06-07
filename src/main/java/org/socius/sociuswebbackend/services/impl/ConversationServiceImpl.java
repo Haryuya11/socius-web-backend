@@ -230,55 +230,60 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     @Transactional
     public ConversationResponseDto getOrCreateDirectConversation(UUID otherUserId) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String userEmail = auth.getName();
+            UserEntity user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+            UUID userId = user.getId();
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
-        UserEntity user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
-        UUID userId = user.getId();
+            if (userId.equals(otherUserId)) {
+                throw new IllegalArgumentException("Không thể tạo cuộc trò chuyện với chính mình");
+            }
 
-        if (userId.equals(otherUserId)) {
-            throw new IllegalArgumentException("Không thể tạo cuộc trò chuyện với chính mình");
+            // Kiểm tra xem đã có cuộc trò chuyện trực tiếp giữa 2 người dùng này chưa
+            Optional<ConversationEntity> existingConversation = conversationRepository.findDirectConversationBetweenUsers(userId, otherUserId);
+
+            if (existingConversation.isPresent()) {
+                logger.info("Đã tìm thấy cuộc trò chuyện trực tiếp giữa {} và {}", userId, otherUserId);
+                return conversationMapper.entityToDto(existingConversation.get());
+            }
+
+            UserEntity otherUser = userRepository.findById(otherUserId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + otherUserId));
+
+            // Tạo cuộc trò chuyện mới
+            ConversationEntity conversation = ConversationEntity.builder()
+                    .name(generateDirectConversationName(user, otherUser))
+                    .type(ConversationType.DIRECT)
+                    .createdByUser(user)
+                    .build();
+
+            ConversationEntity savedConversation = conversationRepository.save(conversation);
+            conversationRepository.flush();
+
+            // Thêm cả 2 người dùng vào cuộc trò chuyện
+            List<ConversationMemberEntity> members = Arrays.asList(
+                    createMemberEntity(savedConversation, user, MemberRole.ADMIN),
+                    createMemberEntity(savedConversation, otherUser, MemberRole.ADMIN)
+            );
+
+            conversationMemberRepository.saveAll(members);
+
+            // Khởi tạo unread counts
+            List<UnreadCountEntity> unreadCounts = Arrays.asList(
+                    createUnreadCountEntity(savedConversation, user),
+                    createUnreadCountEntity(savedConversation, otherUser)
+            );
+
+            unreadCountRepository.saveAll(unreadCounts);
+            logger.info("Đã tạo cuộc trò chuyện trực tiếp giữa {} và {}", userId, otherUserId);
+
+            return conversationMapper.entityToDto(savedConversation);
+        } catch (Exception e) {
+            logger.error("Lỗi khi tạo hoặc lấy cuộc trò chuyện trực tiếp: {}", e.getMessage());
+            throw new RuntimeException("Không thể tạo hoặc lấy cuộc trò chuyện trực tiếp: " + e.getMessage());
         }
-
-        // Kiểm tra xem đã có cuộc trò chuyện trực tiếp giữa 2 người dùng này chưa
-        Optional<ConversationEntity> existingConversation = conversationRepository.findDirectConversationBetweenUsers(userId, otherUserId);
-
-        if (existingConversation.isPresent()) {
-            logger.info("Đã tìm thấy cuộc trò chuyện trực tiếp giữa {} và {}", userId, otherUserId);
-            return conversationMapper.entityToDto(existingConversation.get());
-        }
-
-        UserEntity otherUser = userRepository.findById(otherUserId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + otherUserId));
-
-        // Tạo cuộc trò chuyện mới
-        ConversationEntity conversation = ConversationEntity.builder()
-                .name(generateDirectConversationName(user, otherUser))
-                .type(ConversationType.DIRECT)
-                .createdByUser(user)
-                .build();
-
-        ConversationEntity savedConversation = conversationRepository.save(conversation);
-
-        // Thêm cả 2 người dùng vào cuộc trò chuyện
-        List<ConversationMemberEntity> members = Arrays.asList(
-                createMemberEntity(conversation, user, MemberRole.ADMIN),
-                createMemberEntity(conversation, otherUser, MemberRole.ADMIN)
-        );
-
-        conversationMemberRepository.saveAll(members);
-
-        // Khởi tạo unread counts
-        List<UnreadCountEntity> unreadCounts = Arrays.asList(
-                createUnreadCountEntity(conversation, user),
-                createUnreadCountEntity(conversation, otherUser)
-        );
-
-        unreadCountRepository.saveAll(unreadCounts);
-        logger.info("Đã tạo cuộc trò chuyện trực tiếp giữa {} và {}", userId, otherUserId);
-
-        return conversationMapper.entityToDto(savedConversation);
     }
 
     @Override
