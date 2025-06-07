@@ -106,30 +106,27 @@ class MessageMapperTest {
     @Test
     @DisplayName("Nên chuyển đổi requestDTO thành entity mới")
     void shouldConvertRequestDtoToNewEntity() {
-        // Khởi tạo - Tạo DTO yêu cầu tạo tin nhắn
+        // Khởi tạo
         MessageRequestDto requestDto = ChatTestDataUtil.createMessageRequestDto();
         UUID conversationId = requestDto.getConversationId();
-        UUID senderId = UUID.randomUUID();
 
-        // Tạo các entity để mô phỏng tìm kiếm
         ConversationEntity conversation = new ConversationEntity();
         conversation.setId(conversationId);
 
-        UserEntity sender = new UserEntity();
-        sender.setId(senderId);
-
-        // Giả lập EntityMappingUtil
+        // Mock EntityMappingUtil
         when(entityMappingUtil.mapIdToEntity(conversationId, ConversationEntity.class))
                 .thenReturn(conversation);
 
-        // Khi - Thực hiện chuyển đổi từ DTO sang thực thể mới
+        // Khi
         MessageEntity entity = messageMapper.requestDtoToEntity(requestDto);
 
-        // Thì - Xác minh chuyển đổi đã được thực hiện chính xác
+        // Thì
         assertNotNull(entity);
         assertEquals(conversation, entity.getConversation());
         assertEquals(requestDto.getContent(), entity.getContent());
         assertEquals(MessageType.TEXT, entity.getMessageType());
+
+        verify(entityMappingUtil).mapIdToEntity(conversationId, ConversationEntity.class);
     }
 
     @Test

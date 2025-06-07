@@ -7,6 +7,7 @@ import org.socius.sociuswebbackend.model.dtos.message.MessageRequestDto;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.entities.ConversationEntity;
 import org.socius.sociuswebbackend.model.entities.MessageEntity;
+import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 import org.socius.sociuswebbackend.util.SpringBeanUtil;
 
@@ -33,8 +34,9 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
             return null;
         }
 
-        EntityMappingUtil mappingUtil = SpringBeanUtil.getBean(EntityMappingUtil.class);
-        ConversationEntity conversationEntity = mappingUtil.mapConversationIdToEntity(dto.getConversationId());
+        EntityMappingUtil mappingUtil = ApplicationContextHelper.getBean(EntityMappingUtil.class);
+        ConversationEntity conversationEntity = mappingUtil.mapIdToEntity(
+                dto.getConversationId(), ConversationEntity.class);
 
         return MessageEntity.builder()
                 .conversation(conversationEntity)
@@ -59,6 +61,13 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
     public void updateEntityFromDto(MessageRequestDto dto, @MappingTarget MessageEntity entity) {
         if (dto == null) {
             return;
+        }
+
+        if (dto.getConversationId() != null) {
+            EntityMappingUtil entityMappingUtil = ApplicationContextHelper.getBean(EntityMappingUtil.class);
+            ConversationEntity conversation = entityMappingUtil.mapIdToEntity(
+                    dto.getConversationId(), ConversationEntity.class);
+            entity.setConversation(conversation);
         }
 
         if (dto.getContent() != null) {

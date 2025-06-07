@@ -53,7 +53,7 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
      */
     @Query("SELECT DISTINCT c FROM ConversationEntity c " +
             "INNER JOIN c.members m " +
-            "WHERE m.id.userId = :userId" +
+            "WHERE m.id.userId = :userId " +
             "AND m.leftAt IS NULL " +
             "ORDER BY c.updatedAt DESC")
     List<ConversationEntity> findAllActiveConversationsByUserId(@Param("userId") UUID userId);
@@ -66,11 +66,11 @@ public interface ConversationRepository extends JpaRepository<ConversationEntity
      * @param pageable Thông tin phân trang
      * @return Trang các cuộc trò chuyện
      */
-    @Query("SELECT DISTINCT c FROM ConversationEntity c" +
+    @Query("SELECT DISTINCT c FROM ConversationEntity c " +
             "INNER JOIN c.members m " +
-            "WHERE m.id.userId = :userId" +
-            "AND m.leftAt IS NULL" +
-            "ORDER BY c.updatedAt DESC"
+            "WHERE m.id.userId = :userId " +
+            "AND m.leftAt IS NULL " +
+            "ORDER BY c.updatedAt DESC "
     )
     Page<ConversationEntity> findActiveConversationsByUserId(
             @Param("userId") UUID userId,
