@@ -26,7 +26,7 @@ public class AdminController {
      * @param requestDto Thông tin nhân viên cần tạo
      * @return Thông tin nhân viên đã tạo
      */
-    @PostMapping("/employees")
+    @PostMapping("/employee")
     public ResponseEntity<EmploymentDetailResponseDto> createEmployee(@Valid @RequestBody EmployeeCreationRequestDto requestDto) {
         EmploymentDetailResponseDto createdEmployee = adminService.createEmployee(requestDto);
         return ResponseEntity.ok(createdEmployee);
