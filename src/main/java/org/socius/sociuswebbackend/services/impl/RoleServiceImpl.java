@@ -68,7 +68,7 @@ public class RoleServiceImpl implements RoleService {
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo vị trí vì ràng buộc dữ liệu", e);
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo vị trí: " + e.getMessage(), e);
+            throw new RuntimeException(e.getMessage(), e);
         }
 
     }
@@ -219,7 +219,7 @@ public class RoleServiceImpl implements RoleService {
 
         roleRepository.save(role);
 
-        CompletableFuture.runAsync(() -> eventPublisher.publishEvent(new RBACEvent(this, roleId, RBACEvent.EventType.ROLE_UPDATED)));
+        eventPublisher.publishEvent(new RBACEvent(this, roleId, RBACEvent.EventType.ROLE_UPDATED));
 
         logger.info("Đã xóa quyền {} khỏi vai trò {}", permissionId, roleId);
     }

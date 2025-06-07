@@ -96,7 +96,7 @@ public class TeamServiceImpl implements TeamService {
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo team do vi phạm ràng buộc dữ liệu", e);
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo team: " + e.getMessage(), e);
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 

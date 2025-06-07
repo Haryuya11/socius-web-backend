@@ -48,16 +48,21 @@ public class PositionServiceImpl implements PositionService {
     public PositionResponseDto create(PositionRequestDto requestDto) {
         try {
             if (positionRepository.existsByName(requestDto.getName())) {
-                throw new RuntimeException("Vị trí đã tồn tại");
+                throw new IllegalArgumentException("Vị trí đã tồn tại");
             }
 
             PositionEntity position = positionMapper.requestDtoToEntity(requestDto);
             position = positionRepository.save(position);
             return positionMapper.entityToDto(position);
+        } catch (IllegalArgumentException e) {
+            logger.error("Lỗi validation khi tạo vị trí: {}", e.getMessage());
+            throw e; // Ném lại exception gốc
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Không thể tạo vị trí vì ràng buộc dữ liệu", e);
+            logger.error("Lỗi ràng buộc dữ liệu khi tạo vị trí: {}", e.getMessage());
+            throw new IllegalArgumentException("Không thể tạo vị trí vì ràng buộc dữ liệu");
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo vị trí: " + e.getMessage(), e);
+            logger.error("Lỗi không mong muốn khi tạo vị trí: {}", e.getMessage());
+            throw new RuntimeException("Lỗi khi tạo vị trí: " + e.getMessage());
         }
     }
 
@@ -86,7 +91,7 @@ public class PositionServiceImpl implements PositionService {
 
         long count = employmentDetailRepository.countByPositionId(id);
         if (count > 0) {
-            throw new IllegalStateException("Không thể xóa vị trí vì vẫn còn " + count + " nhân viên đang giữ vị trí này");
+            throw new IllegalStateException("Không thể xóa vị trí vì vẫn còn " + count + " nhân viên thuộc vị trí này");
         }
 
         positionRepository.deleteById(id);
@@ -99,7 +104,7 @@ public class PositionServiceImpl implements PositionService {
                 .getContent()
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Position not found with ID: " + positionId));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vị trí với ID: " + positionId));
 
         return positionMapper.entityToDtoWithMembers(position, pageable);
     }

@@ -282,7 +282,7 @@ public class ConversationServiceImpl implements ConversationService {
             return conversationMapper.entityToDto(savedConversation);
         } catch (Exception e) {
             logger.error("Lỗi khi tạo hoặc lấy cuộc trò chuyện trực tiếp: {}", e.getMessage());
-            throw new RuntimeException("Không thể tạo hoặc lấy cuộc trò chuyện trực tiếp: " + e.getMessage());
+            throw new IllegalArgumentException("Không thể tạo hoặc lấy cuộc trò chuyện trực tiếp: " + e.getMessage());
         }
     }
 
