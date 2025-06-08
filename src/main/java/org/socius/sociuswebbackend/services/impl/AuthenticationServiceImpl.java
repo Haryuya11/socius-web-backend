@@ -16,7 +16,6 @@ import org.socius.sociuswebbackend.model.entities.AccountEntity;
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.RoleEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
-import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 import org.socius.sociuswebbackend.repositories.AccountRepository;
 import org.socius.sociuswebbackend.repositories.RoleRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
@@ -154,7 +153,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .roleName(roleName)
                     .permissions(permissions)
                     .build();
-            int sessionDurationMinutes = configService.getInt("session_timeout", 60); // Th
+            int sessionDurationMinutes = configService.getInt("session_timeout", 60);
             rbacRedisService.saveCacheUserPermissions(sessionId, permissionsDto, sessionDurationMinutes);
 
             // 10. Lưu thông tin lịch sử đăng nhập
@@ -294,7 +293,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     @Transactional
-    public PasswordChangeResult changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request) {
+    public void changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request) {
         try {
             if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
                 throw new IllegalArgumentException("Password và Confirm Password không khớp");
@@ -303,33 +302,33 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             HttpSession session = request.getSession(false);
             if (session == null) {
 //                throw new IllegalStateException("Chưa đăng nhập");
-                return PasswordChangeResult.NOT_AUTHENTICATED;
+                return;
             }
 
             // Lấy thông tin người dùng từ session
             String userKey = RedisKeyBuilder.userIdAttributeKey();
             UUID userId = (UUID) session.getAttribute(userKey);
             if (userId == null) {
-                return PasswordChangeResult.NOT_AUTHENTICATED;
+                return;
             }
 
             Optional<UserEntity> userOptional = userRepository.findById(userId);
             if (userOptional.isEmpty()) {
-                return PasswordChangeResult.USER_NOT_FOUND;
+                return;
             }
 
             UserEntity user = userOptional.get();
             Optional<AccountEntity> accountOptional = accountRepository.findByUser(user);
 
             if (accountOptional.isEmpty()) {
-                return PasswordChangeResult.ACCOUNT_NOT_FOUND;
+                return;
             }
 
             AccountEntity account = accountOptional.get();
 
             // Kiểm tra mật khẩu hiện tại
             if (!passwordEncoder.matches(requestDto.getCurrentPassword(), account.getPassword())) {
-                return PasswordChangeResult.INCORRECT_PASSWORD;
+                return;
             }
 
             // Mã hóa và lưu mật khẩu mới
@@ -342,10 +341,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             accountRepository.save(account);
 
-            return PasswordChangeResult.SUCCESS;
         } catch (Exception e) {
             logger.error("Lỗi khi đổi mật khẩu: {}", e.getMessage());
-            return PasswordChangeResult.GENERAL_ERROR;
         }
     }
 
@@ -433,7 +430,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public boolean resetPassword(String email) {
+    public void resetPassword(String email) {
         try {
             String defaultPassword = configService.getString("default_user_password", "1");
 
@@ -441,7 +438,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             if (userOptional.isEmpty()) {
                 logger.warn("Không tìm thấy người dùng với email: {}", email);
-                return false;
+                return;
             }
 
             UserEntity user = userOptional.get();
@@ -449,7 +446,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             Optional<AccountEntity> accountOptional = accountRepository.findByUser(user);
             if (accountOptional.isEmpty()) {
                 logger.warn("Không tìm thấy tài khoản cho người dùng: {}", user.getId());
-                return false;
+                return;
             }
 
             AccountEntity account = accountOptional.get();
@@ -461,10 +458,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             accountRepository.save(account);
             logger.info("Đặt lại mật khẩu thành công cho email: {}", email);
-            return true;
         } catch (Exception e) {
             logger.error("Lỗi khi đặt lại mật khẩu cho email {}: {}", email, e.getMessage());
-            return false;
         }
     }
 }

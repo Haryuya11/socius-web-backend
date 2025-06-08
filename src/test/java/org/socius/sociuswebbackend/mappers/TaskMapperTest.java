@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 class TaskMapperTest {
 
     @InjectMocks
-    private TaskMapper taskMapper = Mappers.getMapper(TaskMapper.class);
+    final private TaskMapper taskMapper = Mappers.getMapper(TaskMapper.class);
 
     @Mock
     private UserMapper userMapper;

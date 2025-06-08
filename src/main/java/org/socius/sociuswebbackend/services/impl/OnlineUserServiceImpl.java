@@ -11,7 +11,6 @@ import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
-import org.socius.sociuswebbackend.services.SessionValidationService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
@@ -32,7 +31,6 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     final private RedisTemplate<String, Object> redisTemplate;
     final private UserRepository userRepository;
     final private ConfigService configService;
-    final private SessionValidationService sessionValidationService;
     final private ObjectMapper objectMapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
@@ -67,43 +65,6 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             logger.error("Lỗi khi cập nhật online status: {}", e.getMessage(), e);
         }
     }
-
-//    @Override
-//    public void handleUserHeartbeat(UUID userId) {
-//        try {
-//            String key = RedisKeyBuilder.userOnlineKey(userId);
-//            OnlineUserStatusDto currentStatus = (OnlineUserStatusDto) redisTemplate.opsForValue().get(key);
-//
-//            if (currentStatus != null) {
-//                // Check session validity trước khi update
-//                String sessionKey = RedisKeyBuilder.springSessionKey(currentStatus.getSessionId());
-//
-//                if (redisTemplate.hasKey(sessionKey)) {
-//                    Long ttl = redisTemplate.getExpire(sessionKey);
-//                    if (ttl > 0) {
-//                        // Session còn hợp lệ → update heartbeat
-//                        currentStatus.setLastSeen(LocalDateTime.now());
-//                        int onlineStatusTimeout = configService.getInt("online.status.timeout.minutes", 2);
-//                        redisTemplate.opsForValue().set(key, currentStatus, Duration.ofMinutes(onlineStatusTimeout));
-//
-//                        logger.info("Cập nhật heartbeat cho user: {} với session: {}", userId, currentStatus.getSessionId());
-//                    } else {
-//                        // Session hết hạn → remove online status
-//                        redisTemplate.delete(key);
-//                        logger.info("Xóa online status cho user: {} do session hết hạn", userId);
-//                    }
-//                } else {
-//                    // Session không tồn tại → remove online status
-//                    redisTemplate.delete(key);
-//                    logger.info("Xóa online status cho user: {} do session không tồn tại", userId);
-//                }
-//            } else {
-//                logger.warn("Không tìm thấy online status cho user: {} khi xử lý heartbeat", userId);
-//            }
-//        } catch (Exception e) {
-//            logger.error("Lỗi khi xử lý heartbeat: {}", e.getMessage(), e);
-//        }
-//    }
 
     @Override
     public void handleUserHeartbeat(UUID userId) {
@@ -183,13 +144,13 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             Set<String> keys = redisTemplate.keys(pattern);
             List<OnlineUserStatusDto> onlineUsers = new ArrayList<>();
             if (keys.isEmpty()) {
-                logger.info("Không tìm thấy người dùng online nào");
+                logger.info("Không tìm thấy người dùng online nào ngoại trừ bản thân");
                 return onlineUsers;
             }
 
             List<Object> values = redisTemplate.opsForValue().multiGet(keys);
             if (values == null || values.isEmpty()) {
-                logger.info("Không tìm thấy giá trị nào cho các khóa online user");
+                logger.info("Không tìm thấy giá trị nào cho các khóa online user ngoại trừ bản thân");
                 return onlineUsers;
             }
 

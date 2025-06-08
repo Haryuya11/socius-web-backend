@@ -40,14 +40,7 @@ public class TaskController {
     public ResponseEntity<TaskResponseDto> updateTaskStatus(
             @PathVariable UUID taskId,
             @PathVariable String status) {
-        if (taskId == null || status == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        try {
-            TaskResponseDto response = taskService.updateTaskStatus(taskId, status);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(null);
-        }
+        TaskResponseDto response = taskService.updateTaskStatus(taskId, status);
+        return ResponseEntity.ok(response);
     }
 }

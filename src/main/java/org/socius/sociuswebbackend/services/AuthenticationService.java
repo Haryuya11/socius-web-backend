@@ -3,7 +3,6 @@ package org.socius.sociuswebbackend.services;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.socius.sociuswebbackend.model.dtos.auth.*;
-import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 
 public interface AuthenticationService {
 
@@ -46,9 +45,8 @@ public interface AuthenticationService {
      *
      * @param requestDto Thông tin mật khẩu mới
      * @param request    Request HTTP hiện tại
-     * @return true nếu thành công, false nếu thất bại
      */
-    PasswordChangeResult changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request);
+    void changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request);
 
     /**
      * Lấy thông tin quyền hạn của người dùng hiện tại
@@ -79,7 +77,6 @@ public interface AuthenticationService {
      * Đặt lại mật khẩu cho người dùng thông qua email
      *
      * @param email Email của người dùng cần đặt lại mật khẩu
-     * @return true nếu thành công, false nếu không tìm thấy người dùng hoặc có lỗi xảy ra
      */
-    boolean resetPassword(String email);
+    void resetPassword(String email);
 }

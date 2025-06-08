@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.socius.sociuswebbackend.exception.GlobalExceptionHandler;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationMemberDto;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
@@ -37,11 +38,11 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,25 +72,27 @@ class ConversationControllerTest {
     private ConversationController conversationController;
 
     private UUID conversationId;
-    private UUID userId;
     private UUID otherUserId;
     private UserEntity mockUser;
     private ConversationResponseDto conversationResponseDto;
     private ConversationMemberDto memberDto;
     private MessageResponseDto messageResponseDto;
 
+
     @BeforeEach
     void setUp() {
+        GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler();
 
         PageableHandlerMethodArgumentResolver resolver = new PageableHandlerMethodArgumentResolver();
 
         // Thiết lập MockMvc với resolver
         mockMvc = MockMvcBuilders.standaloneSetup(conversationController)
+                .setControllerAdvice(globalExceptionHandler)
                 .setCustomArgumentResolvers(resolver)
                 .build();
 
         conversationId = UUID.randomUUID();
-        userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         otherUserId = UUID.randomUUID();
 
         // Setup mock user
@@ -172,38 +175,38 @@ class ConversationControllerTest {
 
     @Test
     @DisplayName("Lấy thành viên conversation - không có authentication")
-    void getConversationMembers_NoAuthentication_ShouldReturnBadRequest() {
+    void getConversationMembers_NoAuthentication_ShouldReturnBadRequest() throws Exception {
         // Given
         setupNoAuthentication();
         when(conversationService.getConversationMembers(conversationId))
                 .thenThrow(new IllegalArgumentException("User không được xác thực"));
 
-        // When
-        ResponseEntity<?> response = conversationController.getConversationMembers(conversationId);
+//        // When
+//        ResponseEntity<List<ConversationMemberDto>> response = conversationController.getConversationMembers(conversationId);
+//
+//        // Then
+//        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+//
+//        assertNotNull(response.getBody());
 
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertTrue(body.containsKey("error"));
+        // When & Then
+        mockMvc.perform(get("/api/conversations/{conversationId}/members", conversationId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("User không được xác thực"));
     }
 
     @Test
     @DisplayName("Lấy thành viên conversation - user không tồn tại")
-    void getConversationMembers_UserNotFound_ShouldReturnBadRequest() {
+    void getConversationMembers_UserNotFound_ShouldReturnBadRequest() throws Exception {
         // Given
-        setupInvalidAuthentication();
+        UUID conversationId = UUID.randomUUID();
         when(conversationService.getConversationMembers(conversationId))
                 .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
 
-        // When
-        ResponseEntity<?> response = conversationController.getConversationMembers(conversationId);
-
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertEquals("Người dùng không tồn tại", body.get("error"));
+        // When & Then
+        mockMvc.perform(get("/api/conversations/{conversationId}/members", conversationId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Người dùng không tồn tại"));
     }
 
     // Test getUserConversations
@@ -227,41 +230,57 @@ class ConversationControllerTest {
 
     @Test
     @DisplayName("Lấy conversations - không có authentication")
-    void getUserConversations_NoAuthentication_ShouldReturnBadRequest() {
+    void getUserConversations_NoAuthentication_ShouldReturnBadRequest() throws Exception {
         // Given
         setupNoAuthentication();
         Pageable pageable = PageRequest.of(0, 10);
         when(conversationService.getUserConversations(pageable))
                 .thenThrow(new IllegalArgumentException("User không được xác thực"));
+//
+//        // When
+//        ResponseEntity<Page<ConversationResponseDto>> response = conversationController.getUserConversations(pageable);
+//
+//        // Then
+//        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+//        assertNotNull(response.getBody());
 
-        // When
-        ResponseEntity<?> response = conversationController.getUserConversations(pageable);
-
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertTrue(body.containsKey("error"));
+        // When & Then
+        mockMvc.perform(get("/api/conversations")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("User không được xác thực"));
     }
 
     @Test
     @DisplayName("Lấy conversations - user không tồn tại")
-    void getUserConversations_UserNotFound_ShouldReturnBadRequest() {
+    void getUserConversations_UserNotFound_ShouldReturnBadRequest() throws Exception {
         // Given
-        setupInvalidAuthentication();
-        Pageable pageable = PageRequest.of(0, 10);
-        when(conversationService.getUserConversations(pageable))
+        when(conversationService.getUserConversations(any(Pageable.class)))
                 .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
 
-        // When
-        ResponseEntity<?> response = conversationController.getUserConversations(pageable);
-
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertEquals("Người dùng không tồn tại", body.get("error"));
+        // When & Then
+        mockMvc.perform(get("/api/conversations")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Người dùng không tồn tại"));
     }
+
+    @Test
+    @DisplayName("Tạo direct conversation - user không tồn tại")
+    void createOrGetDirectConversation_UserNotFound_ShouldReturnBadRequest() throws Exception {
+        // Given
+        UUID otherUserId = UUID.randomUUID();
+        when(conversationService.getOrCreateDirectConversation(otherUserId))
+                .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
+
+        // When & Then
+        mockMvc.perform(post("/api/conversations/direct/{otherUserId}", otherUserId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Người dùng không tồn tại"));
+    }
+
 
     // Test getAllUserConversations
     @Test
@@ -283,38 +302,38 @@ class ConversationControllerTest {
 
     @Test
     @DisplayName("Lấy tất cả conversations - không có authentication")
-    void getAllUserConversations_NoAuthentication_ShouldReturnBadRequest() {
+    void getAllUserConversations_NoAuthentication_ShouldReturnBadRequest() throws Exception {
         // Given
         setupNoAuthentication();
         when(conversationService.getAllUserConversations())
                 .thenThrow(new IllegalArgumentException("User không được xác thực"));
 
-        // When
-        ResponseEntity<?> response = conversationController.getAllUserConversations();
+//        // When
+//        ResponseEntity<List<ConversationResponseDto>> response = conversationController.getAllUserConversations();
+//
+//        // Then
+//        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+//        assertNotNull(response.getBody());
 
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertTrue(body.containsKey("error"));
+        // When & Then
+        mockMvc.perform(get("/api/conversations/all"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("User không được xác thực"));
     }
 
     @Test
     @DisplayName("Lấy tất cả conversations - user không tồn tại")
-    void getAllUserConversations_UserNotFound_ShouldReturnBadRequest() {
+    void getAllUserConversations_UserNotFound_ShouldReturnBadRequest() throws Exception {
         // Given
-        setupInvalidAuthentication();
         when(conversationService.getAllUserConversations())
                 .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
 
-        // When
-        ResponseEntity<?> response = conversationController.getAllUserConversations();
-
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertEquals("Người dùng không tồn tại", body.get("error"));
+        // When & Then
+        mockMvc.perform(get("/api/conversations/all"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Người dùng không tồn tại"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Người dùng không tồn tại"));
     }
 
     // Test createOrGetDirectConversation
@@ -337,20 +356,23 @@ class ConversationControllerTest {
 
     @Test
     @DisplayName("Tạo direct conversation - không có authentication")
-    void createOrGetDirectConversation_NoAuthentication_ShouldReturnBadRequest() {
+    void createOrGetDirectConversation_NoAuthentication_ShouldReturnBadRequest() throws Exception {
         // Given
         setupNoAuthentication();
         when(conversationService.getOrCreateDirectConversation(otherUserId))
                 .thenThrow(new IllegalArgumentException("User không được xác thực"));
 
         // When
-        ResponseEntity<?> response = conversationController.createOrGetDirectConversation(otherUserId);
+//        ResponseEntity<ConversationResponseDto> response = conversationController.createOrGetDirectConversation(otherUserId);
+//
+//        // Then
+//        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+//        assertNotNull(response.getBody());
 
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertTrue(body.containsKey("error"));
+        // When & Then
+        mockMvc.perform(post("/api/conversations/direct/{otherUserId}", otherUserId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("User không được xác thực"));
     }
 
     // Test getMessages

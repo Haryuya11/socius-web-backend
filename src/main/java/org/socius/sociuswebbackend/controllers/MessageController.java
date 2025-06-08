@@ -47,15 +47,9 @@ public class MessageController {
      */
     @PostMapping
     public ResponseEntity<MessageResponseDto> sendMessage(@Valid @RequestBody MessageRequestDto requestDto) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
 
-        UserEntity user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
 
-        UUID senderId = user.getId();
-
-        MessageResponseDto responseDto = messageService.sendMessage(senderId, requestDto);
+        MessageResponseDto responseDto = messageService.sendMessage(requestDto);
         return ResponseEntity.ok(responseDto);
     }
 
@@ -75,15 +69,6 @@ public class MessageController {
             @RequestParam(value = "type") MessageType type,
             @RequestParam("file") MultipartFile file) {
         try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String userEmail = auth.getName();
-
-            UserEntity user = userRepository.findByEmail(userEmail)
-                    .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
-
-            UUID senderId = user.getId();
-
-            // Xác thực loại tin nhắn
             if (type == MessageType.TEXT) {
                 String contentType = file.getContentType();
                 if (contentType != null) {
@@ -115,19 +100,17 @@ public class MessageController {
 
             String fileUrl = fileStorageService.storeFile(file, directory);
 
-            // Tạo DTO tin nhắn
             MessageRequestDto requestDto = MessageRequestDto.builder()
-                .conversationId(conversationId)
-                .content(content == null ? "" : content)
-                .messageType(type)
-                .fileUrl(fileUrl)
-                .fileOriginalName(file.getOriginalFilename())
-                .fileContentType(file.getContentType())
-                .fileSize(file.getSize())
-                .build();
+                    .conversationId(conversationId)
+                    .content(content == null ? "" : content)
+                    .messageType(type)
+                    .fileUrl(fileUrl)
+                    .fileOriginalName(file.getOriginalFilename())
+                    .fileContentType(file.getContentType())
+                    .fileSize(file.getSize())
+                    .build();
 
-            // Gửi tin nhắn
-            MessageResponseDto responseDto = messageService.sendMessage(senderId, requestDto);
+            MessageResponseDto responseDto = messageService.sendMessage(requestDto);
             return ResponseEntity.ok(responseDto);
         } catch (IllegalArgumentException e) {
             logger.warn("Tham số không hợp lệ khi gửi tin nhắn với tệp tin: {}", e.getMessage());
@@ -149,14 +132,7 @@ public class MessageController {
      */
     @PostMapping("/read")
     public ResponseEntity<Integer> markAsRead(@Valid @RequestBody ReadReceiptDto readReceiptDto) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
-
-        UserEntity user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
-
-        UUID userId = user.getId();
-        int count = messageService.markAsRead(userId, readReceiptDto);
+        int count = messageService.markAsRead(readReceiptDto);
         return ResponseEntity.ok(count);
     }
 
@@ -169,32 +145,13 @@ public class MessageController {
     @PostMapping("/sync")
     public ResponseEntity<Map<UUID, List<MessageResponseDto>>> syncMessages(
             @Valid @RequestBody SyncMessagesRequestDto syncRequest) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
-
-        UserEntity user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
-
-        UUID userId = user.getId();
-
-        Map<UUID, List<MessageResponseDto>> syncedMessages = messageService.syncMessages(userId, syncRequest);
+        Map<UUID, List<MessageResponseDto>> syncedMessages = messageService.syncMessages(syncRequest);
         return ResponseEntity.ok(syncedMessages);
     }
 
     @DeleteMapping("/{messageId}")
     public ResponseEntity<Map<String, Boolean>> deleteMessage(@PathVariable UUID messageId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = auth.getName();
-
-        UserEntity user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
-
-        UUID userId = user.getId();
-
-        boolean result = messageService.deleteMessage(userId, messageId);
-        Map<String, Boolean> response = Collections.singletonMap("success", result);
-        return ResponseEntity.ok(response);
+        messageService.deleteMessage(messageId);
+        return ResponseEntity.noContent().build();
     }
-
-
 }

@@ -24,16 +24,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -46,16 +45,13 @@ public class EmploymentDetailControllerTest {
     private EmploymentDetailController employmentDetailController;
 
     private MockMvc mockMvc;
-    private ObjectMapper objectMapper;
 
-    private UserResponseDto testUserResponseDto;
-    private EmploymentDetailResponseDto testEmploymentDetailResponseDto;
     private Map<String, Object> testResponseMap;
     private Pageable testPageable;
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
         // Thêm PageableHandlerMethodArgumentResolver
@@ -64,13 +60,13 @@ public class EmploymentDetailControllerTest {
                 .setCustomArgumentResolvers(pageableResolver)
                 .build();
 
-        testUserResponseDto = UserResponseDto.builder()
+        UserResponseDto testUserResponseDto = UserResponseDto.builder()
                 .id(UUID.randomUUID())
                 .firstName("Nguyễn")
                 .lastName("Văn Bình")
                 .build();
 
-        testEmploymentDetailResponseDto = EmploymentDetailResponseDto.builder()
+        EmploymentDetailResponseDto testEmploymentDetailResponseDto = EmploymentDetailResponseDto.builder()
                 .id(UUID.randomUUID())
                 .user(testUserResponseDto)
                 .startDate(LocalDate.of(2023, 1, 1))
@@ -78,7 +74,7 @@ public class EmploymentDetailControllerTest {
                 .build();
 
         testResponseMap = new HashMap<>();
-        testResponseMap.put("employees", Arrays.asList(testEmploymentDetailResponseDto));
+        testResponseMap.put("employees", Collections.singletonList(testEmploymentDetailResponseDto));
         testResponseMap.put("employeeCount", 1);
         testResponseMap.put("totalPages", 1);
         testResponseMap.put("totalElements", 1L);

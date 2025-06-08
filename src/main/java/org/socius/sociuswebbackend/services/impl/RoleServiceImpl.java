@@ -57,28 +57,89 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Transactional
     public RoleResponseDto create(RoleRequestDto requestDto) {
+        logger.info("Creating role: {}", requestDto.getName());
+        logger.info("Permission IDs received: {}", requestDto.getPermissionIds());
+
+        // Kiểm tra tên role đã tồn tại
+        if (roleRepository.existsByName(requestDto.getName())) {
+            throw new IllegalArgumentException("Vai trò đã tồn tại");
+        }
+
         try {
-            if (roleRepository.existsByName(requestDto.getName())) {
-                throw new RuntimeException("Vai trò đã tồn tại");
-            }
-            RoleEntity role = roleMapper.requestDtoToEntity(requestDto);
-            role = roleRepository.save(role);
-            roleRepository.flush();
+            // 1. Tạo role entity cơ bản (không dùng mapper)
+            RoleEntity role = new RoleEntity();
+            role.setName(requestDto.getName());
+            role.setDescription(requestDto.getDescription());
+            role.setRolePermissions(new HashSet<>());
 
+            // 2. Save role để có ID
+            role = roleRepository.saveAndFlush(role);
+            logger.info("Role saved with ID: {}", role.getId());
+
+            // 3. Xử lý permissions nếu có
             if (requestDto.getPermissionIds() != null && !requestDto.getPermissionIds().isEmpty()) {
-                Set<RolePermissionEntity> rolePermissions = roleMapper.createRolePermissions(role, requestDto.getPermissionIds());
-                role.setRolePermissions(rolePermissions);
+                logger.info("Processing {} permission IDs", requestDto.getPermissionIds().size());
 
-                // Save lại để lưu permissions
+                // Validate permissions exist
+                for (UUID permissionId : requestDto.getPermissionIds()) {
+                    logger.info("Looking for permission: {}", permissionId);
+
+                    PermissionEntity permission = permissionRepository.findById(permissionId)
+                            .orElseThrow(() -> new IllegalArgumentException("Permission not found: " + permissionId));
+
+                    logger.info("Found permission: {} - {}", permission.getId(), permission.getName());
+
+                    // Create RolePermission
+                    RolePermissionEntity rolePermission = new RolePermissionEntity();
+                    RolePermissionId rolePermissionId = new RolePermissionId(role.getId(), permissionId);
+                    rolePermission.setId(rolePermissionId);
+                    rolePermission.setRole(role);
+                    rolePermission.setPermission(permission);
+
+                    role.getRolePermissions().add(rolePermission);
+                    logger.info("Added permission {} to role", permission.getName());
+                }
+
+                // Save again with permissions
                 role = roleRepository.save(role);
+                logger.info("Role saved with {} permissions", role.getRolePermissions().size());
             }
 
-            return roleMapper.entityToDto(role);
+            // Convert to DTO manually để tránh mapper issues
+            RoleResponseDto responseDto = new RoleResponseDto();
+            responseDto.setId(role.getId());
+            responseDto.setName(role.getName());
+            responseDto.setDescription(role.getDescription());
+            responseDto.setCreatedAt(role.getCreatedAt());
+            responseDto.setUpdatedAt(role.getUpdatedAt());
+
+            // Convert permissions manually
+            if (role.getRolePermissions() != null && !role.getRolePermissions().isEmpty()) {
+                Set<PermissionResponseDto> permissions = role.getRolePermissions().stream()
+                        .map(rp -> {
+                            PermissionResponseDto permDto = new PermissionResponseDto();
+                            permDto.setId(rp.getPermission().getId());
+                            permDto.setName(rp.getPermission().getName());
+                            permDto.setDescription(rp.getPermission().getDescription());
+                            return permDto;
+                        })
+                        .collect(Collectors.toSet());
+                responseDto.setPermissions(permissions);
+            }
+
+            logger.info("Created role response with {} permissions",
+                    responseDto.getPermissions() != null ? responseDto.getPermissions().size() : 0);
+
+            return responseDto;
+
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Không thể tạo vị trí vì ràng buộc dữ liệu", e);
+            logger.error("Data integrity violation when creating role", e);
+            throw new IllegalArgumentException("Không thể tạo vai trò vì ràng buộc dữ liệu", e);
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo vị trí: " + e.getMessage(), e);
+            logger.error("Error creating role", e);
+            throw new RuntimeException("Lỗi khi tạo vai trò: " + e.getMessage(), e);
         }
     }
 

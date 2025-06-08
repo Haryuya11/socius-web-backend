@@ -46,9 +46,6 @@ public class PositionController {
             @PathVariable UUID positionId,
             Pageable pageable
     ) {
-        if (positionId == null) {
-            return ResponseEntity.badRequest().build();
-        }
         return ResponseEntity.ok(positionService.getPositionWithMembers(positionId, pageable));
     }
 

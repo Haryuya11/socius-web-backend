@@ -13,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -25,56 +24,36 @@ public class ConversationController {
     private final MessageService messageService;
 
     @GetMapping("/{conversationId}/members")
-    public ResponseEntity<?> getConversationMembers(@PathVariable UUID conversationId) {
-        try {
-            List<ConversationMemberDto> members = conversationService.getConversationMembers(conversationId);
-            return ResponseEntity.ok(members);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<List<ConversationMemberDto>> getConversationMembers(@PathVariable UUID conversationId) {
+        List<ConversationMemberDto> members = conversationService.getConversationMembers(conversationId);
+        return ResponseEntity.ok(members);
     }
 
     /**
      * Lấy cuộc trò chuyện của user với phân trang (existing method với cải tiến)
      */
     @GetMapping()
-    public ResponseEntity<?> getUserConversations(Pageable pageable) {
-        try {
-            Page<ConversationResponseDto> conversations = conversationService.getUserConversations(pageable);
-            return ResponseEntity.ok(conversations);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<Page<ConversationResponseDto>> getUserConversations(Pageable pageable) {
+        Page<ConversationResponseDto> conversations = conversationService.getUserConversations(pageable);
+        return ResponseEntity.ok(conversations);
     }
 
     /**
      * Lấy tất cả cuộc trò chuyện của user hiện tại
      */
     @GetMapping("/all")
-    public ResponseEntity<?> getAllUserConversations() {
-        try {
-            List<ConversationResponseDto> conversations = conversationService.getAllUserConversations();
-            return ResponseEntity.ok(conversations);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<List<ConversationResponseDto>> getAllUserConversations() {
+        List<ConversationResponseDto> conversations = conversationService.getAllUserConversations();
+        return ResponseEntity.ok(conversations);
     }
 
     /**
      * Tạo hoặc lấy cuộc trò chuyện với người dùng khác
      */
     @PostMapping("/direct/{otherUserId}")
-    public ResponseEntity<?> createOrGetDirectConversation(@PathVariable UUID otherUserId) {
-        try {
-            ConversationResponseDto conversation = conversationService.getOrCreateDirectConversation(otherUserId);
-            return ResponseEntity.ok(conversation);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<ConversationResponseDto> createOrGetDirectConversation(@PathVariable UUID otherUserId) {
+        ConversationResponseDto conversation = conversationService.getOrCreateDirectConversation(otherUserId);
+        return ResponseEntity.ok(conversation);
     }
 
     /**

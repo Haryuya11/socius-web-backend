@@ -74,7 +74,6 @@ public class DepartmentController {
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<?> createDepartment(@Valid @RequestBody DepartmentRequestDto requestDto) {
         DepartmentResponseDto createdDepartment = departmentService.create(requestDto);
-
         return ResponseEntity.ok(createdDepartment);
     }
 

@@ -45,9 +45,17 @@ public class MessageServiceImpl implements MessageService {
     final private ChatMessageProducerService chatMessageProducerService;
 
     @Override
-    public MessageResponseDto sendMessage(UUID senderId, MessageRequestDto requestDto) {
+    public MessageResponseDto sendMessage(MessageRequestDto requestDto) {
 
-        if (!isUserMemberOfConversation(senderId, requestDto.getConversationId())) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID senderId = user.getId();
+
+        if (isNotUserMemberOfConversation(senderId, requestDto.getConversationId())) {
             throw new RuntimeException("Bạn không có quyền gửi tin nhắn trong cuộc trò chuyện này");
         }
         // Kiểm tra người gửi có tồn tại không
@@ -126,7 +134,7 @@ public class MessageServiceImpl implements MessageService {
                 .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
 
 
-        if (!isUserMemberOfConversation(user.getId(), conversationId)) {
+        if (isNotUserMemberOfConversation(user.getId(), conversationId)) {
             throw new RuntimeException("Bạn không có quyền xem cuộc trò chuyện này");
         }
 
@@ -148,11 +156,17 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     @Transactional
-    public int markAsRead(UUID userId, ReadReceiptDto readReceiptDto) {
+    public int markAsRead(ReadReceiptDto readReceiptDto) {
         try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String userEmail = auth.getName();
 
+            UserEntity user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+            UUID userId = user.getId();
             // Kiểm tra người dùng có quyền truy cập cuộc trò chuyện không
-            if (!isUserMemberOfConversation(userId, readReceiptDto.getConversationId())) {
+            if (isNotUserMemberOfConversation(userId, readReceiptDto.getConversationId())) {
                 throw new RuntimeException("Bạn không có quyền đánh dấu tin nhắn là đã đọc trong cuộc trò chuyện này");
             }
 
@@ -187,7 +201,15 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public Map<UUID, List<MessageResponseDto>> syncMessages(UUID userId, SyncMessagesRequestDto syncRequest) {
+    public Map<UUID, List<MessageResponseDto>> syncMessages(SyncMessagesRequestDto syncRequest) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
+
         Map<UUID, List<MessageResponseDto>> messages = new HashMap<>();
 
         // Duyết qua các cuộc trò chuyện cần đồng bộ
@@ -228,7 +250,15 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public boolean deleteMessage(UUID userId, UUID messageId) {
+    public void deleteMessage(UUID messageId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
+
         // Kiểm tra tin nhắn có tồn tại không
         MessageEntity message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tin nhắn với ID: " + messageId));
@@ -249,12 +279,19 @@ public class MessageServiceImpl implements MessageService {
         chatMessageProducerService.sendChatMessage(deletedMessageDto, message.getConversation().getType(),
                 message.getConversation().getId());
 
-        return true;
     }
 
     @Override
     @Transactional
-    public MessageResponseDto updateMessage(UUID userId, UUID messageId, MessageRequestDto requestDto) {
+    public MessageResponseDto updateMessage(UUID messageId, MessageRequestDto requestDto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName();
+
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+
+        UUID userId = user.getId();
+
         // Kiểm tra tin nhắn có tồn tại không
         MessageEntity message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tin nhắn với ID: " + messageId));
@@ -292,7 +329,7 @@ public class MessageServiceImpl implements MessageService {
         UUID userId = user.getId();
 
         // Kiểm tra cuộc trò chuyện có tồn tại không
-        ConversationEntity conversation = conversationRepository.findById(conversationId)
+        conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
 
         // Kiểm tra người gửi có phải là thành viên của cuộc trò chuyện không
@@ -308,9 +345,9 @@ public class MessageServiceImpl implements MessageService {
         return messages.map(messageMapper::entityToDto);
     }
 
-    private boolean isUserMemberOfConversation(UUID userId, UUID conversationId) {
+    private boolean isNotUserMemberOfConversation(UUID userId, UUID conversationId) {
         return conversationMemberRepository
                 .findActiveMember(conversationId, userId)
-                .isPresent();
+                .isEmpty();
     }
 }

@@ -119,7 +119,7 @@ public class ConfigServiceImpl implements ConfigService {
     public long getLong(String key) {
         String value = self.getString(key);
         if (value == null) {
-            logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0", key);
+            logger.warn("Không tìm thấy cấu hình cho key: {}, trả về 0L", key);
             return 0;
         }
         try {

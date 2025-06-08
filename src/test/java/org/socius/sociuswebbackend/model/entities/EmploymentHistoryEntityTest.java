@@ -63,17 +63,17 @@ class EmploymentHistoryEntityTest {
         // Trường hợp 1: Ngày kết thúc trước ngày bắt đầu (không hợp lệ)
         history.setStartDate(LocalDate.of(2023, 5, 1));
         history.setEndDate(LocalDate.of(2023, 4, 30));
-        Exception exception = assertThrows(IllegalArgumentException.class, history::validateDates);
+        Exception exception = assertThrows(IllegalArgumentException.class, history::validateEntity);
         assertEquals("End date must be after start date", exception.getMessage());
 
         // Trường hợp 2: Ngày kết thúc trùng với ngày bắt đầu (trường hợp biên, hợp lệ)
         history.setStartDate(LocalDate.of(2023, 5, 1));
         history.setEndDate(LocalDate.of(2023, 5, 1));
-        assertDoesNotThrow(history::validateDates);
+        assertDoesNotThrow(history::validateEntity);
 
         // Trường hợp 3: Ngày kết thúc sau ngày bắt đầu (trường hợp bình thường, hợp lệ)
         history.setStartDate(LocalDate.of(2023, 5, 1));
         history.setEndDate(LocalDate.of(2023, 6, 30));
-        assertDoesNotThrow(history::validateDates);
+        assertDoesNotThrow(history::validateEntity);
     }
 }

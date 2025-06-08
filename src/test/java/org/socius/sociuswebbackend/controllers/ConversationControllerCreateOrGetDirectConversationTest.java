@@ -1,7 +1,5 @@
 package org.socius.sociuswebbackend.controllers;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -9,30 +7,25 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
-import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.model.enums.ConversationType;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConversationService;
-import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,16 +38,9 @@ class ConversationControllerCreateOrGetDirectConversationTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private HttpSession session;
-
     @InjectMocks
     private ConversationController conversationController;
 
-    private UUID userId;
-    private UUID otherUserId;
-    private String userKey;
-    private ConversationResponseDto conversationResponseDto;
 
     @BeforeEach
     void setUp() {
@@ -110,41 +96,35 @@ class ConversationControllerCreateOrGetDirectConversationTest {
         // Given
         UUID otherUserId = UUID.randomUUID();
 
-        // Mock user không tồn tại
-        when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(Optional.empty());
-
         when(conversationService.getOrCreateDirectConversation(otherUserId))
                 .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
 
-        // When
-        ResponseEntity<?> response = conversationController
-                .createOrGetDirectConversation(otherUserId);
+        // When & Then - Expect exception to be thrown (GlobalExceptionHandler sẽ handle)
+        assertThrows(IllegalArgumentException.class, () -> {
+            conversationController.createOrGetDirectConversation(otherUserId);
+        });
 
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertEquals("Người dùng không tồn tại", body.get("error"));
+        verify(conversationService).getOrCreateDirectConversation(otherUserId);
     }
 
     @Test
-    @DisplayName("Authentication null - trả về 400")
-    void createOrGetDirectConversation_NoAuthentication_ReturnsBadRequest() {
+    @DisplayName("Authentication null - service throws exception")
+    void createOrGetDirectConversation_NoAuthentication_ServiceThrowsException() {
         // Given
         UUID otherUserId = UUID.randomUUID();
 
         // Clear SecurityContext
         SecurityContextHolder.clearContext();
 
+        // Mock service để throw IllegalArgumentException
         when(conversationService.getOrCreateDirectConversation(otherUserId))
-                .thenThrow(new IllegalArgumentException("User không được xác thực"));
+                .thenThrow(new IllegalArgumentException("Người dùng không tồn tại"));
 
-        // When
-        ResponseEntity<?> response = conversationController
-                .createOrGetDirectConversation(otherUserId);
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () -> {
+            conversationController.createOrGetDirectConversation(otherUserId);
+        });
 
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        verify(conversationService).getOrCreateDirectConversation(otherUserId);
     }
 }

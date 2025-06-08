@@ -1042,7 +1042,8 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
                     logger.info("Đã thêm nhân viên {} vào group chat {} của {} {}",
                             employeeId, groupChatId, entityType, assignmentId);
                 } else {
-                    logger.warn("Không tìm thấy group chat ID cho {} {}", getEntityTypeName(type), assignmentId);
+                    logger.warn("Không tìm thấy group chat ID cho {} {} khi thêm vào group chat",
+                            getEntityTypeName(type), assignmentId);
                 }
             } catch (Exception e) {
                 String entityType = getEntityTypeName(type);
@@ -1062,7 +1063,8 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
                     logger.info("Đã xóa nhân viên {} khỏi group chat {} của {} {}",
                             employeeId, groupChatId, entityType, assignmentId);
                 } else {
-                    logger.warn("Không tìm thấy group chat ID cho {} {}", getEntityTypeName(type), assignmentId);
+                    logger.warn("Không tìm thấy group chat ID cho {} {} khi xóa khỏi group chat",
+                            getEntityTypeName(type), assignmentId);
                 }
             } catch (Exception e) {
                 String entityType = getEntityTypeName(type);
@@ -1227,7 +1229,7 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
                 userRepository.findByEmail(email).ifPresent(user ->
                         invalidateEmployeeSession(user.getId()));
             } catch (Exception e) {
-                logger.error("Lỗi khi hủy session cho nhân viên {}: {}", email, e.getMessage());
+                logger.error("Lỗi khi hủy session cho nhân viên có email {}: {}", email, e.getMessage());
             }
         });
     }

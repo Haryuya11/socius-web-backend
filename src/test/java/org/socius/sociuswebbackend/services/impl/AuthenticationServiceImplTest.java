@@ -118,17 +118,15 @@ public class AuthenticationServiceImplTest {
     private UserEntity adminUser;
     private AccountEntity adminAccount;
     private RoleEntity adminRole;
-    private EmploymentDetailEntity adminEmploymentDetail;
     private UserResponseDto adminUserResponseDto;
     private LoginRequestDto adminLoginRequest;
-    private UserPermissionsDto adminPermissionsDto;
 
     @BeforeEach
     void setUp() {
         adminUser = AuthTestDataUtil.createTestAdminUser();
         adminAccount = AuthTestDataUtil.createTestAdminAccount(adminUser);
         adminRole = AuthTestDataUtil.createTestAdminRole();
-        adminEmploymentDetail = AuthTestDataUtil.createTestAdminEmploymentDetail(adminUser, adminRole);
+        EmploymentDetailEntity adminEmploymentDetail = AuthTestDataUtil.createTestAdminEmploymentDetail(adminUser, adminRole);
 
         adminUserResponseDto = UserResponseDto.builder()
                 .id(adminUser.getId())
@@ -138,7 +136,6 @@ public class AuthenticationServiceImplTest {
                 .build();
 
         adminLoginRequest = AuthTestDataUtil.createAdminLoginRequest();
-        adminPermissionsDto = AuthTestDataUtil.createAdminPermissionsDto();
         adminEmploymentDetail.setRole(adminRole);
         adminUser.setEmploymentDetail(adminEmploymentDetail);
 

@@ -58,8 +58,15 @@ public class EmploymentHistoryEntity extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @PrePersist
-    @PreUpdate void validateDates() {
+    @Override
+    protected void validateEntity() {
+        validateDates();
+    }
+
+    /**
+     * Validate rằng end date phải sau start date
+     */
+    private void validateDates() {
         if (endDate != null && startDate != null && endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("End date must be after start date");
         }

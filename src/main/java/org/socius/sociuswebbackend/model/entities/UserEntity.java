@@ -138,8 +138,11 @@ public class UserEntity extends BaseEntity {
         return this.firstName + " " + this.lastName;
     }
 
-    @PrePersist
-    @PreUpdate
+    @Override
+    protected void validateEntity() {
+        validateAge();
+    }
+
     void validateAge() {
         if (birthDate != null && birthDate.isAfter(LocalDate.now().minusYears(18))) {
             throw new IllegalArgumentException("User must be at least 18 years old");

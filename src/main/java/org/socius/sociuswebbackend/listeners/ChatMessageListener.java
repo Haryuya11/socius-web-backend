@@ -68,7 +68,7 @@ public class ChatMessageListener {
                 // Gửi đến queue của từng user - QUAN TRỌNG: sửa destination cho khớp với frontend
                 messagingTemplate.convertAndSendToUser(
                         userId.toString(),
-                        "/queue/messages", // Khớp với frontend subscription
+                        "/queue/messages",
                         messageWrapper
                 );
                 logger.info("Đã gửi tin nhắn realtime đến user {}", userId);

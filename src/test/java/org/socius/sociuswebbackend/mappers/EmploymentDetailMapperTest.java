@@ -62,7 +62,6 @@ public class EmploymentDetailMapperTest {
     private UserEntity testUser;
     private EmploymentDetailEntity testEmploymentDetail;
     private UserResponseDto testUserResponseDto;
-    private EmploymentDetailResponseDto testEmploymentDetailResponseDto;
     private EmploymentDetailRequestDto testEmploymentDetailRequestDto;
     private PositionEntity testPosition;
     private DepartmentEntity testDepartment;
@@ -144,17 +143,6 @@ public class EmploymentDetailMapperTest {
                 .id(testRole.getId())
                 .name("Employee")
                 .description("Standard Employee Role")
-                .build();
-
-        testEmploymentDetailResponseDto = EmploymentDetailResponseDto.builder()
-                .id(testEmploymentDetail.getId())
-                .user(testUserResponseDto)
-                .position(testPositionResponseDto)
-                .department(testDepartmentResponseDto)
-                .team(testTeamResponseDto)
-                .role(testRoleResponseDto)
-                .startDate(LocalDate.of(2023, 1, 1))
-                .workingStatus(WorkingStatus.valueOf("active"))
                 .build();
 
         testEmploymentDetailRequestDto = EmploymentDetailRequestDto.builder()

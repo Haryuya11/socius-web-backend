@@ -46,9 +46,6 @@ public class TeamController {
             @PathVariable UUID teamId,
             Pageable pageable
     ) {
-        if (teamId == null) {
-            return ResponseEntity.badRequest().build();
-        }
         return ResponseEntity.ok(teamService.getTeamWithMembers(teamId, pageable));
     }
 

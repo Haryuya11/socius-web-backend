@@ -15,45 +15,45 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class SessionValidationServiceImpl implements SessionValidationService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(SessionValidationServiceImpl.class);
-    
+
     private final RedisTemplate<String, Object> redisTemplate;
-    
+
     @Override
     public boolean isSessionValid(String sessionId) {
         try {
             String rbacKey = RedisKeyBuilder.rbacKey(sessionId);
             Boolean exists = redisTemplate.hasKey(rbacKey);
-            
+
             if (exists) {
                 // Kiểm tra xem key có expire time không (nếu có nghĩa là session còn hợp lệ)
                 Long expireTime = redisTemplate.getExpire(rbacKey);
                 return expireTime > 0;
             }
-            
+
             return false;
         } catch (Exception e) {
             logger.error("Lỗi khi kiểm tra session validity cho sessionId {}: {}", sessionId, e.getMessage(), e);
             return false;
         }
     }
-    
+
     @Override
     public boolean hasValidSession(UUID userId) {
         try {
             // Tìm tất cả RBAC keys
             Set<String> rbacKeys = redisTemplate.keys(RedisKeyBuilder.rbacPattern());
-            
+
             if (rbacKeys.isEmpty()) {
                 return false;
             }
-            
+
             // Kiểm tra từng key để tìm session của userId
             for (String rbacKey : rbacKeys) {
                 try {
                     UserPermissionsDto permissions = (UserPermissionsDto) redisTemplate.opsForValue().get(rbacKey);
-                    
+
                     if (permissions != null && userId.equals(permissions.getUserId())) {
                         // Kiểm tra xem key này có expire time không
                         Long expireTime = redisTemplate.getExpire(rbacKey);
@@ -63,35 +63,35 @@ public class SessionValidationServiceImpl implements SessionValidationService {
                         }
                     }
                 } catch (Exception e) {
-                    logger.warn("Lỗi khi đọc RBAC key {}: {}", rbacKey, e.getMessage());
+                    logger.warn("Lỗi khi đọc RBAC key lúc kiểm tra session cho userId {}: {}", userId, e.getMessage());
                     // Continue checking other keys
                 }
             }
-            
+
             logger.debug("Không tìm thấy session hợp lệ cho userId: {}", userId);
             return false;
-            
+
         } catch (Exception e) {
             logger.error("Lỗi khi kiểm tra session validity cho userId {}: {}", userId, e.getMessage(), e);
             return false;
         }
     }
-    
+
     @Override
     public String getUserSessionId(UUID userId) {
         try {
             // Tìm tất cả RBAC keys
             Set<String> rbacKeys = redisTemplate.keys(RedisKeyBuilder.rbacPattern());
-            
+
             if (rbacKeys.isEmpty()) {
                 return null;
             }
-            
+
             // Kiểm tra từng key để tìm session của userId
             for (String rbacKey : rbacKeys) {
                 try {
                     UserPermissionsDto permissions = (UserPermissionsDto) redisTemplate.opsForValue().get(rbacKey);
-                    
+
                     if (permissions != null && userId.equals(permissions.getUserId())) {
                         // Kiểm tra xem key này có expire time không
                         Long expireTime = redisTemplate.getExpire(rbacKey);
@@ -101,13 +101,13 @@ public class SessionValidationServiceImpl implements SessionValidationService {
                         }
                     }
                 } catch (Exception e) {
-                    logger.warn("Lỗi khi đọc RBAC key {}: {}", rbacKey, e.getMessage());
+                    logger.warn("Lỗi khi đọc RBAC key lúc lấy session cho userId {}: {}", userId, e.getMessage());
                     // Continue checking other keys
                 }
             }
-            
+
             return null;
-            
+
         } catch (Exception e) {
             logger.error("Lỗi khi tìm sessionId cho userId {}: {}", userId, e.getMessage(), e);
             return null;

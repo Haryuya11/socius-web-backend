@@ -115,7 +115,7 @@ public class WebSocketServiceImpl implements WebSocketService {
 
                 // Kiểm tra tính hợp lệ của phiên làm việc
                 if (isNotValidSession(sessionId)) {
-                    logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
+                    logger.warn("Phiên làm việc không hợp lệ khi kết nối: {}", sessionId);
                     sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED", "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
                     return;
                 }
@@ -142,7 +142,7 @@ public class WebSocketServiceImpl implements WebSocketService {
     @Override
     public boolean validateSessionAndNotify(String sessionId) {
         if (isNotValidSession(sessionId)) {
-            logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
+            logger.warn("Phiên làm việc không hợp lệ khi validate: {}", sessionId);
             sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED", "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
             return false;
         }

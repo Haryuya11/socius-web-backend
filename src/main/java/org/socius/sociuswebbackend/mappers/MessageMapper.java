@@ -9,7 +9,6 @@ import org.socius.sociuswebbackend.model.entities.ConversationEntity;
 import org.socius.sociuswebbackend.model.entities.MessageEntity;
 import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
-import org.socius.sociuswebbackend.util.SpringBeanUtil;
 
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
 public abstract class MessageMapper extends BaseEntityMapper implements GenericMapper<MessageEntity, MessageResponseDto, MessageRequestDto> {

@@ -28,7 +28,7 @@ public class EmploymentDetailController {
      *
      * @param pageable Đối tượng chứa thông tin phân trang (page, size)
      * @return ResponseEntity chứa Map với danh sách nhân viên và metadata phân trang,
-     *         với mã trạng thái HTTP 200 (OK)
+     * với mã trạng thái HTTP 200 (OK)
      */
     @GetMapping("/all")
     public ResponseEntity<Map<String, Object>> getAllEmployees(Pageable pageable) {
@@ -40,7 +40,7 @@ public class EmploymentDetailController {
      *
      * @param pageable Đối tượng chứa thông tin phân trang (page, size)
      * @return ResponseEntity chứa Map với danh sách nhân viên và metadata phân trang,
-     *         với mã trạng thái HTTP 200 (OK), chỉ dành cho người dùng có quyền admin
+     * với mã trạng thái HTTP 200 (OK), chỉ dành cho người dùng có quyền admin
      */
     @GetMapping("/admin/all")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
@@ -98,7 +98,6 @@ public class EmploymentDetailController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<List<EmploymentDetailResponseDto>> removeRoleFromMultipleEmployees(
             @RequestBody @Valid List<UUID> employeeIds) {
-
         employmentDetailService.removeRoleFromMultipleEmployees(employeeIds);
         return ResponseEntity.noContent().build();
     }
@@ -201,9 +200,7 @@ public class EmploymentDetailController {
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<?> updateEmployeeSalary(
             @RequestBody @Valid SalaryUpdateRequestDto requestDto, @PathVariable UUID employeeId) {
-
         EmploymentDetailResponseDto updatedEmployee = employmentDetailService.updateEmployeeSalary(requestDto, employeeId);
-
         return ResponseEntity.ok(updatedEmployee);
     }
 
@@ -219,11 +216,17 @@ public class EmploymentDetailController {
     public ResponseEntity<EmploymentDetailResponseDto> updateEmployee(
             @PathVariable UUID employeeId,
             @RequestBody @Valid EmployeeUpdateRequestDto requestDto) {
-
         EmploymentDetailResponseDto updatedEmployee = employmentDetailService.updateEmployee(employeeId, requestDto);
         return ResponseEntity.ok(updatedEmployee);
     }
 
+    /**
+     * Xóa nhiều nhân viên khỏi hệ thống
+     *
+     * @param employeeIds Danh sách ID của các nhân viên cần xóa
+     * @return ResponseEntity với mã trạng thái HTTP 204 (No Content) nếu thành công,
+     * hoặc mã lỗi nếu có lỗi xảy ra
+     */
     @PostMapping("/terminate")
     public ResponseEntity<?> terminateEmployees(
             @Valid @RequestBody List<UUID> employeeIds) {
@@ -255,6 +258,12 @@ public class EmploymentDetailController {
         }
     }
 
+    /**
+     * Xóa một nhân viên khỏi hệ thống (soft delete)
+     *
+     * @param employeeId ID của nhân viên cần xóa
+     * @return ResponseEntity với thông tin thành công hoặc lỗi
+     */
     @PostMapping("/terminate/single/{employeeId}")
     public ResponseEntity<Map<String, Object>> terminateEmployee(
             @PathVariable UUID employeeId) {
@@ -281,6 +290,12 @@ public class EmploymentDetailController {
         }
     }
 
+    /**
+     * Khôi phục một nhân viên đã bị terminate
+     *
+     * @param employeeId ID của nhân viên cần khôi phục
+     * @return ResponseEntity với thông tin thành công hoặc lỗi
+     */
     @PostMapping("/restore/{employeeId}")
     public ResponseEntity<Map<String, Object>> restoreEmployee(@PathVariable UUID employeeId) {
         try {
@@ -306,14 +321,15 @@ public class EmploymentDetailController {
         }
     }
 
+    /**
+     * Lấy danh sách nhân viên đã bị terminate
+     *
+     * @param pageable Thông tin phân trang
+     * @return Danh sách nhân viên đã bị terminate cùng với thông tin phân trang
+     */
     @GetMapping("/terminated")
     public ResponseEntity<Map<String, Object>> getTerminatedEmployees(Pageable pageable) {
-        try {
-            Map<String, Object> result = employmentDetailService.getTerminatedEmployees(pageable);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        Map<String, Object> result = employmentDetailService.getTerminatedEmployees(pageable);
+        return ResponseEntity.ok(result);
     }
-
 }

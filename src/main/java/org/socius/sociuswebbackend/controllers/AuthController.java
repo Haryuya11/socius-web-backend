@@ -33,7 +33,7 @@ public class AuthController {
      * thái xác thực
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(
+    public ResponseEntity<LoginResponseDto> login(
             @Valid @RequestBody LoginRequestDto loginRequest,
             HttpServletRequest request,
             HttpServletResponse response) {
@@ -42,8 +42,7 @@ public class AuthController {
         if (result.isAuthenticated()) {
             return ResponseEntity.ok(result);
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Đăng nhập không thành công, vui lòng kiểm tra email và mật khẩu"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
         }
     }
 
@@ -55,12 +54,7 @@ public class AuthController {
      * @return HTTP 200 OK sau khi đăng xuất thành công
      */
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
-
-        if (!authenticationService.isAuthenticated(request)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
-        }
-
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         authenticationService.logout(request, response);
         return ResponseEntity.ok().build();
     }
@@ -73,12 +67,12 @@ public class AuthController {
      * chưa
      */
     @GetMapping("/session")
-    public ResponseEntity<?> checkSession(HttpServletRequest request) {
+    public ResponseEntity<SessionInfoDto> checkSession(HttpServletRequest request) {
         SessionInfoDto sessionInfo = authenticationService.getCurrentSession(request);
         if (sessionInfo != null) {
             return ResponseEntity.ok(sessionInfo);
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
@@ -90,43 +84,17 @@ public class AuthController {
      * mật khẩu hiện tại không đúng hoặc mật khẩu mới không khớp
      */
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(
+    public ResponseEntity<Void> changePassword(
             @Valid @RequestBody PasswordChangeRequestDto requestDto,
             HttpServletRequest request) {
-        if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Mật khẩu mới và xác nhận không khớp"));
-        }
-
-        PasswordChangeResult result = authenticationService.changePassword(requestDto, request);
-
-        return switch (result) {
-            case SUCCESS -> ResponseEntity.ok(Map.of("success", true, "message", "Đổi mật khẩu thành công"));
-            case NOT_AUTHENTICATED -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Người dùng chưa đăng nhập"));
-            case USER_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Người dùng không tồn tại"));
-            case ACCOUNT_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Tài khoản không tồn tại"));
-            case INCORRECT_PASSWORD -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Mật khẩu hiện tại không đúng"));
-            default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Lỗi hệ thống"));
-        };
+        authenticationService.changePassword(requestDto, request);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/reset-password")
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
-    public ResponseEntity<?> resetPassword(@RequestParam String email) {
-        if (email == null || email.isEmpty()) {
-            return ResponseEntity.badRequest().body("Email không được để trống");
-        }
-
-        boolean result = authenticationService.resetPassword(email);
-        if (result) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "Đã gửi email hướng dẫn đặt lại mật khẩu"));
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Không tìm thấy người dùng với email này"));
-        }
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody String email) {
+        authenticationService.resetPassword(email);
+        return ResponseEntity.ok().build();
     }
 }

@@ -66,7 +66,6 @@ public class TaskServiceImplTest {
     private TaskEntity testTask;
     private TaskRequestDto testTaskRequestDto;
     private TaskResponseDto testTaskResponseDto;
-    private UserResponseDto testUserResponseDto;
 
     @BeforeEach
     void setUp() {
@@ -86,7 +85,7 @@ public class TaskServiceImplTest {
                 .assignedTo(testUser)
                 .build();
 
-        testUserResponseDto = UserResponseDto.builder()
+        UserResponseDto testUserResponseDto = UserResponseDto.builder()
                 .id(testUser.getId())
                 .firstName("Nguyễn")
                 .lastName("Văn An")

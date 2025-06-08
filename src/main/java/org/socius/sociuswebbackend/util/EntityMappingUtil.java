@@ -1,6 +1,5 @@
 package org.socius.sociuswebbackend.util;
 
-import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.entities.*;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.springframework.stereotype.Component;

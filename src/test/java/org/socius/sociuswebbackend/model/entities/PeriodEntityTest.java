@@ -48,17 +48,17 @@ class PeriodEntityTest {
         // Trường hợp 1: Ngày kết thúc trước ngày bắt đầu (không hợp lệ)
         period.setStartDate(LocalDate.of(2023, 3, 1));
         period.setEndDate(LocalDate.of(2023, 2, 28));
-        Exception exception = assertThrows(IllegalArgumentException.class, period::validateDates);
+        Exception exception = assertThrows(IllegalArgumentException.class, period::validateEntity);
         assertEquals("End date must be after start date", exception.getMessage());
 
         // Trường hợp 2: Ngày kết thúc trùng với ngày bắt đầu (trường hợp biên, hợp lệ)
         period.setStartDate(LocalDate.of(2023, 3, 1));
         period.setEndDate(LocalDate.of(2023, 3, 1));
-        assertDoesNotThrow(period::validateDates);
+        assertDoesNotThrow(period::validateEntity);
 
         // Trường hợp 3: Ngày kết thúc sau ngày bắt đầu (trường hợp bình thường, hợp lệ)
         period.setStartDate(LocalDate.of(2023, 3, 1));
         period.setEndDate(LocalDate.of(2023, 3, 31));
-        assertDoesNotThrow(period::validateDates);
+        assertDoesNotThrow(period::validateEntity);
     }
 }

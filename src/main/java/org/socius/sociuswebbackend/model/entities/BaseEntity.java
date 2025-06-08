@@ -43,11 +43,16 @@ public abstract class BaseEntity {
         if (version == null) {
             version = 0L;
         }
+        validateEntity();
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        validateEntity();
+    }
+
+    protected void validateEntity() {
     }
 
     @Override

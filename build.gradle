@@ -102,7 +102,7 @@ dependencies {
 }
 
 // Add this block to properly configure the annotation processor order
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.annotationProcessorPath = configurations.annotationProcessor
     options.compilerArgs += [
             '-Amapstruct.defaultComponentModel=spring',
