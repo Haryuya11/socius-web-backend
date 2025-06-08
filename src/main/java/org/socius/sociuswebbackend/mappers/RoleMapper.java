@@ -24,8 +24,6 @@ public abstract class RoleMapper extends BaseEntityMapper implements
         GenericMapper<RoleEntity, RoleResponseDto, RoleRequestDto> {
 
     @Override
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     public RoleResponseDto entityToDto(RoleEntity entity) {
         if (entity == null) {
             return null;
@@ -35,6 +33,8 @@ public abstract class RoleMapper extends BaseEntityMapper implements
         dto.setId(entity.getId());
         dto.setName(entity.getName());
         dto.setDescription(entity.getDescription());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
 
         if (entity.getRolePermissions() != null) {
             PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
