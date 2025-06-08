@@ -64,13 +64,22 @@ public class RoleServiceImpl implements RoleService {
             }
             RoleEntity role = roleMapper.requestDtoToEntity(requestDto);
             role = roleRepository.save(role);
+            roleRepository.flush();
+
+            if (requestDto.getPermissionIds() != null && !requestDto.getPermissionIds().isEmpty()) {
+                Set<RolePermissionEntity> rolePermissions = roleMapper.createRolePermissions(role, requestDto.getPermissionIds());
+                role.setRolePermissions(rolePermissions);
+
+                // Save lại để lưu permissions
+                role = roleRepository.save(role);
+            }
+
             return roleMapper.entityToDto(role);
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo vị trí vì ràng buộc dữ liệu", e);
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi tạo vị trí: " + e.getMessage(), e);
         }
-
     }
 
     @Override
