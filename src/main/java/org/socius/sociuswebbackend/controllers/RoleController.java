@@ -50,7 +50,7 @@ public class RoleController {
      * @param requestDto Thông tin yêu cầu tạo vai trò
      * @return Thông tin vai trò đã được tạo
      */
-    @PostMapping("/roles")
+    @PostMapping("/create")
     public ResponseEntity<RoleResponseDto> createRole(@Valid @RequestBody RoleRequestDto requestDto) {
         RoleResponseDto createdRole = roleService.create(requestDto);
         return ResponseEntity.ok(createdRole);
