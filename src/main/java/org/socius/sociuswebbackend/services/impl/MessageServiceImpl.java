@@ -119,7 +119,13 @@ public class MessageServiceImpl implements MessageService {
         responseDto.setRead(true); // Đánh dấu tin nhắn đã đọc cho người gửi
 
         // Publish tin nhắn đến RabbitMQ
-        chatMessageProducerService.sendChatMessage(responseDto, conversation.getType(), conversation.getId());
+        try {
+            chatMessageProducerService.sendChatMessage(responseDto, conversation.getType(), conversation.getId());
+            logger.info("Successfully sent message to RabbitMQ: messageId={}, conversationType={}, conversationId={}",
+                    responseDto.getId(), conversation.getType(), conversation.getId());
+        } catch (Exception e) {
+            logger.error("Failed to send message to RabbitMQ: {}", e.getMessage(), e);
+        }
 
         return responseDto;
     }

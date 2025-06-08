@@ -6,11 +6,14 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.OnlineUserStatusDto;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.services.OfflineMessageService;
 import org.socius.sociuswebbackend.services.OnlineUserService;
+import org.socius.sociuswebbackend.services.PendingMessagesService;
 import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
@@ -31,6 +34,8 @@ public class OnlineUserServiceImpl implements OnlineUserService {
     final private RedisTemplate<String, Object> redisTemplate;
     final private UserRepository userRepository;
     final private ConfigService configService;
+    final private OfflineMessageService offlineMessageService;
+    final private PendingMessagesService pendingMessagesService;
     final private ObjectMapper objectMapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
@@ -60,6 +65,18 @@ public class OnlineUserServiceImpl implements OnlineUserService {
 
             redisTemplate.opsForValue().set(key, statusDto, Duration.ofMinutes(onlineStatusTimeout));
             logger.debug("Cập nhật online status cho user: {} với session: {}", userId, sessionId);
+
+            List<MessageResponseDto> offlineMessages = offlineMessageService.getOfflineMessages(userId);
+            if (!offlineMessages.isEmpty()) {
+                logger.info("Sending {} offline messages to user {}", offlineMessages.size(), userId);
+                // OfflineMessageService sẽ tự động gửi qua WebSocket
+            }
+
+            // Gửi pending messages
+            List<MessageResponseDto> pendingMessages = pendingMessagesService.getPendingMessages(userId);
+            if (!pendingMessages.isEmpty()) {
+                logger.info("Sent {} pending messages to user {}", pendingMessages.size(), userId);
+            }
 
         } catch (Exception e) {
             logger.error("Lỗi khi cập nhật online status: {}", e.getMessage(), e);
@@ -215,6 +232,4 @@ public class OnlineUserServiceImpl implements OnlineUserService {
             return null;
         }
     }
-
-
 }

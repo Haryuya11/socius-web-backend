@@ -47,8 +47,6 @@ public class MessageController {
      */
     @PostMapping
     public ResponseEntity<MessageResponseDto> sendMessage(@Valid @RequestBody MessageRequestDto requestDto) {
-
-
         MessageResponseDto responseDto = messageService.sendMessage(requestDto);
         return ResponseEntity.ok(responseDto);
     }
