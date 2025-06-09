@@ -166,19 +166,18 @@ public class TeamServiceImpl implements TeamService {
         TeamEntity team = teamRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
 
-        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(team.getLeader())
-                .orElseThrow(() -> new RuntimeException("Người dùng không phải là thành viên của team"));
-
-        // Xóa employment detail liên kết với team
-        employmentDetail.setTeam(null);
-
-        // Xóa group chat của team
+        // Xóa group chat của team - CHECK NULL trước khi xóa
         try {
-            conversationService.deleteGroupConversation(team.getGroupChatId());
-            logger.info("Đã xóa nhóm trò chuyện của team với ID: {}", id);
+            if (team.getGroupChatId() != null) {
+                conversationService.deleteGroupConversation(team.getGroupChatId());
+                logger.info("Đã xóa nhóm trò chuyện của team với ID: {}", id);
+            } else {
+                logger.warn("Team {} không có group chat để xóa", team.getName());
+            }
         } catch (Exception e) {
             logger.error("Lỗi khi xóa nhóm trò chuyện của team: {}", e.getMessage());
         }
+
         team.softDelete();
         team.setLeader(null);
         teamRepository.save(team);

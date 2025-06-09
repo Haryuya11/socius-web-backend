@@ -98,6 +98,10 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     @Transactional
     public void deleteGroupConversation(UUID conversationId) {
+        if (conversationId == null) {
+            logger.warn("Không thể xóa cuộc trò chuyện với ID null");
+            return; // Hoặc throw một exception phù hợp
+        }
         logger.info("Xóa cuộc trò chuyện nhóm với ID: {}", conversationId);
 
         try {

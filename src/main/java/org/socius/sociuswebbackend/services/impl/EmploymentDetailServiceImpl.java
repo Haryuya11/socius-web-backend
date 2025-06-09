@@ -343,19 +343,25 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
         }
 
         TeamEntity team = employmentDetail.getTeam();
-        if (team.getLeader().equals(employee)) {
+        UUID teamId = team.getId();
+        String teamName = team.getName();
+
+        // Kiểm tra nếu nhân viên này là leader của team
+        if (team.getLeader() != null && team.getLeader().getId().equals(employeeId)) {
             team.setLeader(null);
+            teamRepository.save(team);
+            logger.info("Đã xóa leader khỏi team {}", teamName);
         }
 
         // Xóa khỏi team
         employmentDetail.setTeam(null);
         employmentDetailRepository.save(employmentDetail);
-        saveEmploymentHistory(employmentDetail, "Đã rời khỏi team " + team.getName());
+        saveEmploymentHistory(employmentDetail, "Đã rời khỏi team " + teamName);
 
         // Xóa khỏi group chat bất đồng bộ
-        removeFromGroupChatAsync(team.getId(), employeeId, AssignmentType.TEAM);
+        removeFromGroupChatAsync(teamId, employeeId, AssignmentType.TEAM);
 
-        logger.info("Đã xóa nhân viên {} khỏi team {}", employee.getEmail(), team.getName());
+        logger.info("Đã xóa nhân viên {} khỏi team {}", employee.getEmail(), teamName);
     }
 
     @Override
