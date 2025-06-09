@@ -874,7 +874,7 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
         }
 
         // Chỉ khôi phục trạng thái, không tự động gán lại department/team/position/role
-        employmentDetail.setWorkingStatus(WorkingStatus.inactive);
+        employmentDetail.setWorkingStatus(WorkingStatus.active);
 
         employmentDetailRepository.save(employmentDetail);
 
