@@ -1,6 +1,5 @@
 package org.socius.sociuswebbackend.mappers;
 
-import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -12,6 +11,7 @@ import org.socius.sociuswebbackend.model.entities.NotificationEntity;
 import org.socius.sociuswebbackend.model.entities.NotificationRecipientEntity;
 import org.socius.sociuswebbackend.model.entities.NotificationRecipientId;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
+import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 
 import java.util.ArrayList;
@@ -23,18 +23,20 @@ import java.util.stream.Collectors;
  * Mapper for Notification entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class, NotificationRecipientMapper.class})
-@RequiredArgsConstructor
 public abstract class NotificationMapper extends BaseEntityMapper implements
         GenericMapper<NotificationEntity, NotificationResponseDto, NotificationRequestDto> {
-
-    protected NotificationRecipientMapper recipientMapper;
-    protected EntityMappingUtil entityMappingUtil;
-
 
     @Override
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     public abstract NotificationResponseDto entityToDto(NotificationEntity entity);
+
+    /**
+     * Lấy NotificationRecipientMapper từ ApplicationContext
+     */
+    protected NotificationRecipientMapper getNotificationRecipientMapper() {
+        return ApplicationContextHelper.getBean(NotificationRecipientMapper.class);
+    }
 
     /**
      * Process recipients after mapping the main entity
@@ -47,6 +49,7 @@ public abstract class NotificationMapper extends BaseEntityMapper implements
         }
 
         if (entity != null && entity.getRecipients() != null && !entity.getRecipients().isEmpty()) {
+            NotificationRecipientMapper recipientMapper = getNotificationRecipientMapper();
             dto.setRecipients(entity.getRecipients().stream()
                     .map(recipientMapper::entityToDto)
                     .collect(Collectors.toList()));
@@ -61,6 +64,7 @@ public abstract class NotificationMapper extends BaseEntityMapper implements
             return null;
         }
 
+        EntityMappingUtil entityMappingUtil = getEntityMappingUtil();
         UserEntity sender = entityMappingUtil.mapUserIdToEntity(dto.getSenderId());
 
         return NotificationEntity.builder()
@@ -85,6 +89,7 @@ public abstract class NotificationMapper extends BaseEntityMapper implements
         }
 
         if (dto.getSenderId() != null) {
+            EntityMappingUtil entityMappingUtil = getEntityMappingUtil();
             entity.setSender(entityMappingUtil.mapUserIdToEntity(dto.getSenderId()));
         }
 
@@ -125,6 +130,8 @@ public abstract class NotificationMapper extends BaseEntityMapper implements
     public void addRecipientsToEntity(NotificationRequestDto dto, NotificationEntity entity) {
         if (dto.getRecipientIds() != null && entity.getId() != null) {
             entity.getRecipients().clear(); // Xóa recipients cũ nếu có
+
+            EntityMappingUtil entityMappingUtil = getEntityMappingUtil();
 
             dto.getRecipientIds().stream()
                     .filter(Objects::nonNull)
