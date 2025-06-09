@@ -29,7 +29,7 @@ public class PositionController {
     @GetMapping()
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<List<PositionResponseDto>> getAllPositions() {
-        List<PositionResponseDto> positions = positionService.findAll();
+        List<PositionResponseDto> positions = positionService.findAllActivePositions();
         return ResponseEntity.ok(positions);
     }
 

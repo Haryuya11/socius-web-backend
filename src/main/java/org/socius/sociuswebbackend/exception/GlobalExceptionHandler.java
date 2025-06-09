@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
         error.put("timestamp", LocalDateTime.now());
         error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         error.put("error", "Transaction Error");
-        error.put("message", "Lỗi xử lý giao dịch. Vui lòng thử lại.");
+        error.put("message", ex.getMostSpecificCause().getMessage());
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
         error.put("timestamp", LocalDateTime.now());
         error.put("status", HttpStatus.BAD_REQUEST.value());
         error.put("error", "Data Integrity Violation");
-        error.put("message", "Dữ liệu không hợp lệ hoặc đã tồn tại.");
+        error.put("message", ex.getMostSpecificCause().getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
@@ -129,7 +129,7 @@ public class GlobalExceptionHandler {
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         errorResponse.put("error", "Internal Server Error");
-        errorResponse.put("message", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.");
+        errorResponse.put("message", e.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -144,7 +144,7 @@ public class GlobalExceptionHandler {
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         errorResponse.put("error", "Internal Server Error");
-        errorResponse.put("message", "Đã xảy ra lỗi không mong muốn.");
+        errorResponse.put("message", e.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }

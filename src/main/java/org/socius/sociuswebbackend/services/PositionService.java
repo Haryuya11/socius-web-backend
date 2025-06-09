@@ -18,6 +18,13 @@ public interface PositionService {
     List<PositionResponseDto> findAll();
 
     /**
+     * Lấy danh sách tất cả các vị trí đang hoạt động
+     *
+     * @return Danh sách các vị trí đang hoạt động
+     */
+    List<PositionResponseDto> findAllActivePositions();
+
+    /**
      * Tìm một vị trí theo ID
      *
      * @param id ID của vị trí cần tìm

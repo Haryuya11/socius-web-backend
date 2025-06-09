@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.repositories;
 
+import java.util.List;
 import java.util.UUID;
 
 import io.lettuce.core.dynamic.annotation.Param;
@@ -18,6 +19,14 @@ public interface TeamRepository extends JpaRepository<TeamEntity, UUID> {
      */
     boolean existsByName(String name);
 
-    @Query("SELECT t FROM TeamEntity t JOIN FETCH t.employmentDetailEntities e WHERE t.id = :teamId")
+    @Query("SELECT t FROM TeamEntity t JOIN FETCH t.employmentDetail e WHERE t.id = :teamId")
     Page<TeamEntity> findTeamWithMembers(@Param("teamId") UUID teamId, Pageable pageable);
+
+    /**
+     * Lấy tất cả các nhóm đang hoạt động
+     *
+     * @return Danh sách các nhóm đang hoạt động
+     */
+    @Query("SELECT t FROM TeamEntity t WHERE t.status = 'active'")
+    List<TeamEntity> findAllActiveTeams();
 }

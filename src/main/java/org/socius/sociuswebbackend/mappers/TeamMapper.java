@@ -75,11 +75,11 @@ public abstract class TeamMapper extends BaseEntityMapper implements
      * Get list of member IDs from TeamEntity
      */
     public List<UUID> getMemberIds(TeamEntity entity) {
-        if (entity == null || entity.getEmploymentDetailEntities() == null) {
+        if (entity == null || entity.getEmploymentDetail() == null) {
             return List.of();
         }
 
-        return entity.getEmploymentDetailEntities().stream()
+        return entity.getEmploymentDetail().stream()
                 .filter(detail -> detail.getUser() != null)
                 .map(detail -> detail.getUser().getId())
                 .collect(Collectors.toList());

@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseD
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
+import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.TaskEntity;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
@@ -55,6 +57,14 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    public List<TeamResponseDto> findAllActiveTeams() {
+        List<TeamEntity> activeTeams = teamRepository.findAllActiveTeams();
+        return activeTeams.stream()
+                .map(teamMapper::entityToDto)
+                .toList();
+    }
+
+    @Override
     public TeamResponseDto findById(UUID id) {
         TeamEntity team = teamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + id));
@@ -76,6 +86,9 @@ public class TeamServiceImpl implements TeamService {
 
             UserEntity leader = entityMappingUtil.mapUserIdToEntity(requestDto.getLeaderId());
 
+            EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(leader)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không phải là thành viên của team"));
+
             TeamEntity team = TeamEntity.builder()
                     .name(requestDto.getName())
                     .leader(leader)
@@ -93,12 +106,17 @@ public class TeamServiceImpl implements TeamService {
             team.setGroupChatId(groupChat.getId());
 
             TeamEntity savedTeam = teamRepository.save(team);
-
+            employmentDetail.setTeam(savedTeam);
             return teamMapper.entityToDto(savedTeam);
         } catch (DataIntegrityViolationException e) {
+            logger.error("Data integrity violation when creating team: {}", e.getMessage());
             throw new IllegalArgumentException("Không thể tạo team do vi phạm ràng buộc dữ liệu", e);
+        } catch (RuntimeException e) {
+            logger.error("Runtime error when creating team: {}", e.getMessage());
+            throw new IllegalArgumentException("Lỗi khi tạo team: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo team: " + e.getMessage(), e);
+            logger.error("Unexpected error when creating team: {}", e.getMessage());
+            throw new IllegalArgumentException("Lỗi không mong muốn khi tạo team: " + e.getMessage(), e);
         }
     }
 
@@ -145,18 +163,27 @@ public class TeamServiceImpl implements TeamService {
             throw new IllegalStateException("Không thể xóa team vì vẫn còn " + count + " nhân viên thuộc team này");
         }
 
+        TeamEntity team = teamRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(team.getLeader())
+                .orElseThrow(() -> new RuntimeException("Người dùng không phải là thành viên của team"));
+
+        // Xóa employment detail liên kết với team
+        employmentDetail.setTeam(null);
+
         // Xóa group chat của team
         try {
-            conversationService.deleteGroupConversation(id);
+            conversationService.deleteGroupConversation(team.getGroupChatId());
             logger.info("Đã xóa nhóm trò chuyện của team với ID: {}", id);
         } catch (Exception e) {
             logger.error("Lỗi khi xóa nhóm trò chuyện của team: {}", e.getMessage());
         }
-
-        teamRepository.deleteById(id);
-        logger.info("Đã xóa team với ID: {}", id);
+        team.softDelete();
+        team.setLeader(null);
+        teamRepository.save(team);
+        logger.info("Đã xóa team với ID: {}", team.getId());
     }
-
 
     @Override
     public Map<String, Object> getTeamWithMembers(UUID teamId, Pageable pageable) {

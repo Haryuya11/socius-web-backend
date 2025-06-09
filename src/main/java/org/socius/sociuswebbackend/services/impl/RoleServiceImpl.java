@@ -50,6 +50,14 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public List<RoleResponseDto> findAllActiveRoles() {
+        List<RoleEntity> activeRoles = roleRepository.findAllActiveRoles();
+        return activeRoles.stream()
+                .map(roleMapper::entityToDto)
+                .toList();
+    }
+
+    @Override
     public RoleResponseDto findById(UUID id) {
         return roleRepository.findById(id)
                 .map(roleMapper::entityToDto)
@@ -181,10 +189,15 @@ public class RoleServiceImpl implements RoleService {
             throw new RuntimeException("Không thể xóa vai trò vì có nhân viên đang sử dụng vai trò này");
         }
 
+        RoleEntity role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vai trò với ID: " + roleId));
+
         // Phát sự kiện xóa vai trò
         eventPublisher.publishEvent(new RBACEvent(this, roleId, RBACEvent.EventType.ROLE_DELETED));
 
-        roleRepository.deleteById(roleId);
+//        roleRepository.deleteById(roleId);
+        role.softDelete();
+        roleRepository.save(role);
         logger.info("Đã xóa vai trò với ID: {}", roleId);
     }
 

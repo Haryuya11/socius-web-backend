@@ -25,7 +25,7 @@ public class DepartmentMappingHelper {
         result.put("name", department.getName());
         result.put("description", department.getDescription());
 
-        List<Map<String, Object>> members = department.getEmploymentDetails().stream()
+        List<Map<String, Object>> members = department.getEmploymentDetail().stream()
                 .filter(detail -> detail.getUser() != null)
                 .map(detail -> {
                     Map<String, Object> member = new HashMap<>();

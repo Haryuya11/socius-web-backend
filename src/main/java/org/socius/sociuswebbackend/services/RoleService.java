@@ -17,6 +17,13 @@ public interface RoleService {
     List<RoleResponseDto> findAll();
 
     /**
+     * Lấy danh sách tất cả các vai trò đang hoạt động
+     *
+     * @return Danh sách các vai trò đang hoạt động
+     */
+    List<RoleResponseDto> findAllActiveRoles();
+
+    /**
      * Tìm một vai trò theo ID
      *
      * @param id ID của vai trò cần tìm

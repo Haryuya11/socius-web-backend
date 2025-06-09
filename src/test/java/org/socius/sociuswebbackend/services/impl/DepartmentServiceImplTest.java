@@ -212,20 +212,27 @@ public class DepartmentServiceImplTest {
     void deleteDepartmentSuccessfully() {
         // Given
         UUID departmentId = UUID.randomUUID();
+        UUID groupChatId = UUID.randomUUID(); // Tạo groupChatId riêng
+
+        DepartmentEntity mockDepartment = DepartmentEntity.builder()
+                .id(departmentId)
+                .name("Test Department")
+                .groupChatId(groupChatId) // Thêm groupChatId
+                .build();
 
         when(departmentRepository.existsById(departmentId)).thenReturn(true);
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(mockDepartment));
         when(employmentDetailRepository.countByDepartmentId(departmentId)).thenReturn(0L);
 
         // When
         assertDoesNotThrow(() -> departmentService.delete(departmentId));
 
         // Then
-        verify(departmentRepository).existsById(departmentId);
+        verify(departmentRepository).findById(departmentId);
         verify(employmentDetailRepository).countByDepartmentId(departmentId);
-        verify(conversationService).deleteGroupConversation(departmentId);
-        verify(departmentRepository).deleteById(departmentId);
+        verify(conversationService).deleteGroupConversation(groupChatId); // Verify với groupChatId
+        verify(departmentRepository).save(any(DepartmentEntity.class)); // Verify save thay vì deleteById
     }
-
     @Test
     @DisplayName("Lỗi khi xóa phòng ban không tồn tại")
     void failToDeleteNonExistentDepartment() {

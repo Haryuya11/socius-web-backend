@@ -527,7 +527,7 @@ VALUES ('Thiết kế UI', 'Thiết kế layout cho trang dashboard quản trị
         '00778899-0011-22aa-44bb-55cc66dd77ee', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
        ('Tối ưu DB', 'Tối ưu các truy vấn SQL trong module báo cáo', '2025-06-10', 'pending',
         'ff667788-9900-1122-aa44-bb55cc66dd77', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       ('Test đăng ký', 'Viết test case cho màn hình đăng ký người dùng mới', '2025-06-08', 'completed',
+       ('Test đăng ký', 'Viết test case cho màn hình đăng ký người dùng mới', '2025-06-20', 'completed',
         'a1990011-22aa-44bb-55cc-66dd77ee8899', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
        ('Hệ thống TB', 'Tạo WebSocket backend gửi thông báo real-time', '2025-06-12', 'in_progress',
         'cc33dd44-ee55-ff66-7788-99001122aa44', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

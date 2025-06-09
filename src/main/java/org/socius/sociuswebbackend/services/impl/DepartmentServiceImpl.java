@@ -49,6 +49,14 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
+    public List<DepartmentResponseDto> findAllActiveDepartments() {
+        List<DepartmentEntity> activeDepartments = departmentRepository.findAllActiveDepartments();
+        return activeDepartments.stream()
+                .map(departmentMapper::entityToDto)
+                .toList();
+    }
+
+    @Override
     public DepartmentResponseDto findById(UUID id) {
         DepartmentEntity department = departmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + id));
@@ -137,15 +145,21 @@ public class DepartmentServiceImpl implements DepartmentService {
             throw new IllegalStateException("Không thể xóa phòng ban vì vẫn còn " + count + " nhân viên thuộc phòng ban này");
         }
 
+        DepartmentEntity department = departmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + id));
+
         // Xóa group chat của phòng ban
         try {
-            conversationService.deleteGroupConversation(id);
+            conversationService.deleteGroupConversation(department.getGroupChatId());
             logger.info("Đã xóa group chat của phòng ban {}", id);
         } catch (Exception e) {
             logger.error("Không thể xóa group chat của phòng ban: {}", e.getMessage());
         }
 
-        departmentRepository.deleteById(id);
+        department.setGroupChatId(null);
+        department.softDelete();
+        departmentRepository.save(department);
+
         logger.info("Đã xóa phòng ban với ID: {}", id);
     }
 

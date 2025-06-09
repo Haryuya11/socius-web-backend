@@ -39,6 +39,14 @@ public class PositionServiceImpl implements PositionService {
     }
 
     @Override
+    public List<PositionResponseDto> findAllActivePositions() {
+        List<PositionEntity> activePositions = positionRepository.findAllActivePositions();
+        return activePositions.stream()
+                .map(positionMapper::entityToDto)
+                .toList();
+    }
+
+    @Override
     public PositionResponseDto findById(UUID id) {
         PositionEntity position = positionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + id));
@@ -50,12 +58,14 @@ public class PositionServiceImpl implements PositionService {
     public PositionResponseDto create(PositionRequestDto requestDto) {
         try {
             if (positionRepository.existsByName(requestDto.getName())) {
-                throw new RuntimeException("Vị trí đã tồn tại");
+                throw new IllegalArgumentException("Vị trí với tên này đã tồn tại"); // Đổi từ RuntimeException thành IllegalArgumentException
             }
 
             PositionEntity position = positionMapper.requestDtoToEntity(requestDto);
             position = positionRepository.save(position);
             return positionMapper.entityToDto(position);
+        } catch (IllegalArgumentException e) {
+            throw e; // Re-throw IllegalArgumentException
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo vị trí vì ràng buộc dữ liệu", e);
         } catch (Exception e) {
@@ -88,10 +98,14 @@ public class PositionServiceImpl implements PositionService {
 
         long count = employmentDetailRepository.countByPositionId(id);
         if (count > 0) {
-            throw new IllegalStateException("Không thể xóa vị trí vì vẫn còn " + count + " nhân viên đang giữ vị trí này");
+            throw new IllegalStateException("Không thể xóa vị trí vì vẫn còn " + count + " nhân viên thuộc vị trí này");
         }
 
-        positionRepository.deleteById(id);
+        PositionEntity position = positionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + id));
+
+        position.softDelete();
+        positionRepository.save(position);
         logger.info("Đã xóa vị trí với ID: {}", id);
     }
 

@@ -342,18 +342,20 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
             throw new RuntimeException("Nhân viên không thuộc team nào");
         }
 
-        UUID currentTeamId = employmentDetail.getTeam().getId();
-        String teamName = employmentDetail.getTeam().getName();
+        TeamEntity team = employmentDetail.getTeam();
+        if (team.getLeader().equals(employee)) {
+            team.setLeader(null);
+        }
 
         // Xóa khỏi team
         employmentDetail.setTeam(null);
         employmentDetailRepository.save(employmentDetail);
-        saveEmploymentHistory(employmentDetail, "Đã rời khỏi team " + teamName);
+        saveEmploymentHistory(employmentDetail, "Đã rời khỏi team " + team.getName());
 
         // Xóa khỏi group chat bất đồng bộ
-        removeFromGroupChatAsync(currentTeamId, employeeId, AssignmentType.TEAM);
+        removeFromGroupChatAsync(team.getId(), employeeId, AssignmentType.TEAM);
 
-        logger.info("Đã xóa nhân viên {} khỏi team {}", employee.getEmail(), teamName);
+        logger.info("Đã xóa nhân viên {} khỏi team {}", employee.getEmail(), team.getName());
     }
 
     @Override

@@ -31,8 +31,8 @@ public class TeamMappingHelper {
         result.put("leader", entity.getLeader() != null ? userMapper.toLimitedDto(entity.getLeader()) : null);
 
         List<Map<String, Object>> members = new ArrayList<>();
-        if (entity.getEmploymentDetailEntities() != null) {
-            members = entity.getEmploymentDetailEntities().stream()
+        if (entity.getEmploymentDetail() != null) {
+            members = entity.getEmploymentDetail().stream()
                     .filter(detail -> detail != null && detail.getUser() != null)
                     .map(detail -> {
                         Map<String, Object> member = new HashMap<>();
