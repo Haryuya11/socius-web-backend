@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.file.FileMetadataDto;
-import org.socius.sociuswebbackend.model.entities.ConversationEntity;
 import org.socius.sociuswebbackend.model.entities.MessageEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.repositories.ConversationMemberRepository;
@@ -49,24 +48,6 @@ public class FileController {
 
             if (message.getFileUrl() == null || message.getFileUrl().isEmpty()) {
                 return ResponseEntity.notFound().build();
-            }
-
-            UUID userId = message.getSender().getId();
-            UUID conversationId = message.getConversation().getId();
-
-            // Kiểm tra người gửi có tồn tại không
-            UserEntity sender = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người gửi với ID: " + userId));
-
-            // Kiểm tra cuộc trò chuyện có tồn tại không
-            ConversationEntity conversation = conversationRepository.findById(conversationId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
-
-            // Kiểm tra người dùng có quyền truy cập vào cuộc trò chuyện không
-            boolean isMember = conversationMemberRepository.findActiveMember(conversationId, sender.getId())
-                    .isPresent();
-            if (!isMember) {
-                throw new RuntimeException("Người gửi không phải là thành viên của cuộc trò chuyện");
             }
 
             Path filePath = Paths.get(fileStorageService.getFilePath(message.getFileUrl()).toUri());

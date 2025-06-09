@@ -25,7 +25,7 @@ public abstract class ConversationMapper extends BaseEntityMapper implements Gen
     @Override
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "lastMessage", ignore = true)
+//    @Mapping(target = "lastMessage", ignore = true)
     @Mapping(target = "members", ignore = true)
     public abstract ConversationResponseDto entityToDto(ConversationEntity entity);
 

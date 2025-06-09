@@ -92,7 +92,11 @@ public class ConversationServiceImpl implements ConversationService {
 
         unreadCountRepository.saveAll(unreadCounts);
 
-        return conversationMapper.entityToDto(conversation);
+        // Load lastMessage cho conversation vừa tạo
+        ConversationResponseDto dto = conversationMapper.entityToDto(conversation);
+        loadLastMessage(dto, conversation.getId());
+
+        return dto;
     }
 
     @Override
@@ -100,7 +104,7 @@ public class ConversationServiceImpl implements ConversationService {
     public void deleteGroupConversation(UUID conversationId) {
         if (conversationId == null) {
             logger.warn("Không thể xóa cuộc trò chuyện với ID null");
-            return; // Hoặc throw một exception phù hợp
+            return;
         }
         logger.info("Xóa cuộc trò chuyện nhóm với ID: {}", conversationId);
 
@@ -128,7 +132,6 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     public Page<ConversationResponseDto> getUserConversations(Pageable pageable) {
-
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = auth.getName();
         UserEntity user = userRepository.findByEmail(userEmail)
@@ -147,16 +150,19 @@ public class ConversationServiceImpl implements ConversationService {
         return conversations.map(conversation -> {
             ConversationResponseDto dto = conversationMapper.entityToDto(conversation);
 
+            // Load last message cho từng conversation
+            loadLastMessage(dto, conversation.getId());
+
             // Chỉ lấy active members
             List<ConversationMemberEntity> activeMembers = conversationMemberRepository
                     .findActiveMembers(conversation.getId());
             dto.setMembers(activeMembers.stream()
                     .map(conversationMemberMapper::entityToDto)
                     .collect(Collectors.toSet()));
+
             return dto;
         });
     }
-
 
     @Override
     @Transactional
@@ -198,14 +204,12 @@ public class ConversationServiceImpl implements ConversationService {
     public void removeMembers(UUID conversationId, Set<UUID> memberIds) {
         for (UUID memberId : memberIds) {
             removeMember(conversationId, memberId);
-
         }
     }
 
     @Override
     @Transactional
     public void removeMember(UUID conversationId, UUID memberId) {
-
         ConversationEntity conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
 
@@ -255,7 +259,12 @@ public class ConversationServiceImpl implements ConversationService {
 
         if (existingConversation.isPresent()) {
             logger.info("Đã tìm thấy cuộc trò chuyện trực tiếp giữa {} và {}", userId, otherUserId);
-            return conversationMapper.entityToDto(existingConversation.get());
+            ConversationResponseDto dto = conversationMapper.entityToDto(existingConversation.get());
+
+            // Load last message cho conversation đã tồn tại
+            loadLastMessage(dto, existingConversation.get().getId());
+
+            return dto;
         }
 
         UserEntity otherUser = userRepository.findById(otherUserId)
@@ -288,7 +297,12 @@ public class ConversationServiceImpl implements ConversationService {
         unreadCountRepository.saveAll(unreadCounts);
         logger.info("Đã tạo cuộc trò chuyện trực tiếp giữa {} và {}", userId, otherUserId);
 
-        return conversationMapper.entityToDto(savedConversation);
+        ConversationResponseDto dto = conversationMapper.entityToDto(savedConversation);
+
+        // Load last message cho conversation mới tạo (sẽ là null vì chưa có tin nhắn)
+        loadLastMessage(dto, savedConversation.getId());
+
+        return dto;
     }
 
     @Override
@@ -347,9 +361,23 @@ public class ConversationServiceImpl implements ConversationService {
         List<ConversationEntity> conversations = conversationRepository
                 .findAllActiveConversationsByUserId(userId);
 
+        // Lấy danh sách conversation IDs để query last messages một lần
+        List<UUID> conversationIds = conversations.stream()
+                .map(ConversationEntity::getId)
+                .collect(Collectors.toList());
+
+        // Load tất cả last messages một lần để tối ưu performance
+        Map<UUID, MessageEntity> lastMessages = loadLastMessagesForConversations(conversationIds);
+
         return conversations.stream()
                 .map(conversation -> {
                     ConversationResponseDto dto = mapToConversationDto(conversation, userId);
+
+                    // Set last message từ Map đã load
+                    MessageEntity lastMessage = lastMessages.get(conversation.getId());
+                    if (lastMessage != null) {
+                        dto.setLastMessage(messageMapper.entityToDto(lastMessage));
+                    }
 
                     // Thêm thông tin members cho từng conversation
                     List<ConversationMemberEntity> activeMembers = conversationMemberRepository
@@ -370,7 +398,12 @@ public class ConversationServiceImpl implements ConversationService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện với ID: " + conversationId));
 
         // Trả về DTO của cuộc trò chuyện
-        return conversationMapper.entityToDto(conversation);
+        ConversationResponseDto dto = conversationMapper.entityToDto(conversation);
+
+        // Load last message
+        loadLastMessage(dto, conversationId);
+
+        return dto;
     }
 
     @Override
@@ -407,6 +440,54 @@ public class ConversationServiceImpl implements ConversationService {
                     conversationId, oldName, newName);
         } catch (Exception e) {
             logger.error("Lỗi khi gửi thông báo đổi tên group chat {}: {}", conversationId, e.getMessage());
+        }
+    }
+
+    /**
+     * Load last message cho một conversation cụ thể
+     */
+    private void loadLastMessage(ConversationResponseDto dto, UUID conversationId) {
+        try {
+            Optional<MessageEntity> lastMessageOpt = messageRepository
+                    .findTopByConversationIdOrderByCreatedAtDescIdDesc(conversationId);
+
+            if (lastMessageOpt.isPresent()) {
+                MessageResponseDto lastMessageDto = messageMapper.entityToDto(lastMessageOpt.get());
+                dto.setLastMessage(lastMessageDto);
+                logger.debug("Loaded last message for conversation {}: {}", conversationId, lastMessageDto.getContent());
+            } else {
+                logger.debug("No messages found for conversation {}", conversationId);
+            }
+        } catch (Exception e) {
+            logger.warn("Không thể load tin nhắn cuối cho conversation {}: {}", conversationId, e.getMessage());
+        }
+    }
+
+    /**
+     * Load last messages cho nhiều conversations cùng lúc để tối ưu performance
+     */
+    private Map<UUID, MessageEntity> loadLastMessagesForConversations(List<UUID> conversationIds) {
+        if (conversationIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        try {
+            List<MessageEntity> lastMessages = messageRepository
+                    .findLatestMessagesForConversations(conversationIds);
+
+            return lastMessages.stream()
+                    .collect(Collectors.toMap(
+                            msg -> msg.getConversation().getId(),
+                            msg -> msg,
+                            (existing, replacement) -> {
+                                // Nếu có duplicate, chọn message mới nhất
+                                return existing.getCreatedAt().isAfter(replacement.getCreatedAt())
+                                        ? existing : replacement;
+                            }
+                    ));
+        } catch (Exception e) {
+            logger.warn("Không thể load last messages cho conversations: {}", e.getMessage());
+            return new HashMap<>();
         }
     }
 
@@ -473,7 +554,7 @@ public class ConversationServiceImpl implements ConversationService {
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
-                .sender(conversation.getCreatedByUser()) // Người tạo cuộc trò chuyện là người gửi
+                .sender(conversation.getCreatedByUser())
                 .build();
 
         messageRepository.save(systemMessage);

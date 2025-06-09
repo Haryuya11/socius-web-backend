@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
@@ -36,15 +37,6 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
             @Param("conversationId") UUID conversationId,
             @Param("lastMessageId") UUID lastMessageId);
 
-    /**
-     * Tìm kiếm các tin nhắn mới nhất trong một cuộc trò chuyện.
-     *
-     * @param conversationIds Danh sách ID của các cuộc trò chuyện
-     * @return Danh sách các tin nhắn mới nhất trong các cuộc trò chuyện
-     */
-    @Query("SELECT m FROM MessageEntity m WHERE m.conversation.id IN :conversationIds AND m.id = " +
-            "(SELECT MAX(m2.id) FROM MessageEntity m2 WHERE m2.conversation.id = m.conversation.id)")
-    List<MessageEntity> findLatestMessagesForConversations(@Param("conversationIds") List<UUID> conversationIds);
 
     /**
      * Tìm kiếm các tin nhắn đã bị xóa có file đính kèm và chưa được dọn dẹp
@@ -101,4 +93,24 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
      * @param conversationId ID của cuộc trò chuyện
      */
     void deleteByConversation_Id(UUID conversationId);
+
+    /**
+     * Tìm tin nhắn mới nhất trong một cuộc trò chuyện theo ID của cuộc trò chuyện.
+     *
+     * @param conversationId ID của cuộc trò chuyện
+     * @return Tin nhắn mới nhất trong cuộc trò chuyện, nếu có
+     */
+    @Query("SELECT m FROM MessageEntity m WHERE m.conversation.id = :conversationId " +
+            "ORDER BY m.createdAt DESC, m.id DESC")
+    Optional<MessageEntity> findTopByConversationIdOrderByCreatedAtDescIdDesc(@Param("conversationId") UUID conversationId);
+
+    /**
+     * Tìm các tin nhắn mới nhất trong một danh sách các cuộc trò chuyện.
+     *
+     * @param conversationIds Danh sách ID của các cuộc trò chuyện
+     * @return Danh sách các tin nhắn mới nhất trong mỗi cuộc trò chuyện
+     */
+    @Query("SELECT m FROM MessageEntity m WHERE m.conversation.id IN :conversationIds " +
+            "AND m.id = (SELECT MAX(m2.id) FROM MessageEntity m2 WHERE m2.conversation.id = m.conversation.id)")
+    List<MessageEntity> findLatestMessagesForConversations(@Param("conversationIds") List<UUID> conversationIds);
 }
