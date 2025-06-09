@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.model.dtos.file.FileMetadataDto;
+import org.socius.sociuswebbackend.model.enums.MessageType;
 import org.socius.sociuswebbackend.security.FileValidator;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.FileStorageService;
@@ -64,7 +65,6 @@ public class FileStorageServiceImpl implements FileStorageService {
 
         // Tạo thư mục nếu không tồn tại
         Files.createDirectories(uploadPath);
-
 
         // Xây dựng đường dẫn đích
         Path targetLocation = uploadPath.resolve(uniqueFileName).normalize();
@@ -131,6 +131,37 @@ public class FileStorageServiceImpl implements FileStorageService {
         return mapper.readValue(path.toFile(), FileMetadataDto.class);
     }
 
+    @Override
+    public MessageType determineMessageType(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType == null) {
+            return MessageType.FILE;
+        }
+
+        if (contentType.startsWith("image/")) {
+            return MessageType.IMAGE;
+        } else if (contentType.startsWith("video/")) {
+            return MessageType.VIDEO;
+        } else if (contentType.startsWith("audio/")) {
+            return MessageType.AUDIO;
+        } else if (contentType.startsWith("application/")) {
+            return MessageType.FILE;
+        } else {
+            return MessageType.FILE;
+        }
+    }
+
+    @Override
+    public String determineDirectory(MessageType messageType) {
+        return switch (messageType) {
+            case IMAGE -> "images";
+            case VIDEO -> "videos";
+            case AUDIO -> "audios";
+            case FILE -> "files";
+            default -> "misc";
+        };
+    }
+
     private void saveFileMetadata(Path uploadPath, String uniqueFileName, String originalFilename, MultipartFile file) throws IOException {
         Map<String, Object> metadata = Map.of(
                 "originalFilename", originalFilename,
@@ -143,5 +174,4 @@ public class FileStorageServiceImpl implements FileStorageService {
         ObjectMapper mapper = new ObjectMapper();
         mapper.writeValue(metadataPath.toFile(), metadata);
     }
-
 }

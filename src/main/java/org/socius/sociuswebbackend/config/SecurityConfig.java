@@ -74,7 +74,8 @@ public class SecurityConfig {
                                 "/topic/**",
                                 "/user/**",
                                 "/api/user-online/**",
-                                "api/notification/**"
+                                "/api/notification/**",
+                                "/api/static/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/api/admin/**",

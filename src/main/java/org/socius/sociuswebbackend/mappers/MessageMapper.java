@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.mappers;
 
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -76,6 +77,13 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
 
         if (dto.getMessageType() != null) {
             entity.setMessageType(dto.getMessageType());
+        }
+    }
+
+    @AfterMapping
+    void mapDisplayUrl(@MappingTarget MessageResponseDto dto, MessageEntity entity) {
+        if (entity.getFileUrl() != null && !entity.getFileUrl().isEmpty()) {
+            dto.setDisplayUrl("/api/static/" + entity.getFileUrl());
         }
     }
 }
