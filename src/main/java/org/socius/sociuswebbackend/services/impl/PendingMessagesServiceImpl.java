@@ -24,7 +24,6 @@ public class PendingMessagesServiceImpl implements PendingMessagesService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ConfigService configService;
 
-
     @Override
     public void initializeBuffer(UUID userId) {
         String key = RabbitMQKeyBuilder.getPendingMessagesKey(userId);

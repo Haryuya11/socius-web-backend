@@ -29,7 +29,7 @@ public class TeamController {
     @GetMapping()
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<List<TeamResponseDto>> getAllTeams() {
-        List<TeamResponseDto> teams = teamService.findAll();
+        List<TeamResponseDto> teams = teamService.findAllActiveTeams();
         return ResponseEntity.ok(teams);
     }
 
@@ -46,9 +46,6 @@ public class TeamController {
             @PathVariable UUID teamId,
             Pageable pageable
     ) {
-        if (teamId == null) {
-            return ResponseEntity.badRequest().build();
-        }
         return ResponseEntity.ok(teamService.getTeamWithMembers(teamId, pageable));
     }
 
@@ -108,8 +105,8 @@ public class TeamController {
      * Lấy danh sách task của một team theo ID
      *
      * @param teamId ID của team cần lấy danh sách task
-     * @param page Số trang (mặc định là 0)
-     * @param size Số lượng task trên mỗi trang (mặc định là 10)
+     * @param page   Số trang (mặc định là 0)
+     * @param size   Số lượng task trên mỗi trang (mặc định là 10)
      * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử, hoặc 404 nếu không tìm thấy
      */
     @GetMapping("/{teamId}/tasks")

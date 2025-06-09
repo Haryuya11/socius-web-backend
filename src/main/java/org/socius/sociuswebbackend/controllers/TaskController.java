@@ -2,20 +2,12 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.socius.sociuswebbackend.mappers.TeamMapper;
 import org.socius.sociuswebbackend.model.dtos.task.TaskRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
-import org.socius.sociuswebbackend.model.entities.TeamEntity;
-import org.socius.sociuswebbackend.repositories.TeamRepository;
 import org.socius.sociuswebbackend.services.TaskService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -48,14 +40,7 @@ public class TaskController {
     public ResponseEntity<TaskResponseDto> updateTaskStatus(
             @PathVariable UUID taskId,
             @PathVariable String status) {
-        if (taskId == null || status == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        try {
-            TaskResponseDto response = taskService.updateTaskStatus(taskId, status);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(null);
-        }
+        TaskResponseDto response = taskService.updateTaskStatus(taskId, status);
+        return ResponseEntity.ok(response);
     }
 }

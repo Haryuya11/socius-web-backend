@@ -20,8 +20,8 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
      * @param pageable       Thông tin phân trang
      * @return Danh sách các tin nhắn trong cuộc trò chuyện
      */
-    @Query("SELECT m FROM MessageEntity m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt DESC")
-    Page<MessageEntity> findByConversationIdOrderByCreatedAtDesc(
+    @Query("SELECT m FROM MessageEntity m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt ASC ")
+    Page<MessageEntity> findByConversationIdOrderByCreatedAtAsc(
             @Param("conversationId") UUID conversationId, Pageable pageable);
 
     /**

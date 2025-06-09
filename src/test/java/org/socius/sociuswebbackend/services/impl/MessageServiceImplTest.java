@@ -1,11 +1,13 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -27,6 +29,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.*;
 
@@ -62,6 +67,12 @@ public class MessageServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private Authentication authentication;
+
+    @Mock
+    private SecurityContext securityContext;
+
     @InjectMocks
     private MessageServiceImpl messageService;
 
@@ -73,17 +84,41 @@ public class MessageServiceImplTest {
     private UUID senderId;
     private UUID conversationId;
     private UUID messageId;
+    private MockedStatic<SecurityContextHolder> securityContextHolder;
+
 
     @BeforeEach
     void setUp() {
-        // Tạo dữ liệu test
+        try {
+            if (securityContextHolder != null) {
+                securityContextHolder.close();
+            }
+        } catch (Exception e) {
+            // Không làm gì cả
+        }
+
+        // Tạo senderId cố định
         senderId = UUID.randomUUID();
         conversationId = UUID.randomUUID();
         messageId = UUID.randomUUID();
 
+        // Tạo user với ID cố định
         sender = AuthTestDataUtil.createTestAdminUser();
-        sender.setId(senderId);
+        sender.setId(senderId); // Đặt ID cố định
+        sender.setEmail("test@example.com"); // Đặt email cố định
 
+        // Mock SecurityContext
+        securityContextHolder = mockStatic(SecurityContextHolder.class);
+        securityContextHolder.when(SecurityContextHolder::getContext)
+                .thenReturn(securityContext);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("test@example.com");
+
+        // **QUAN TRỌNG**: Mock userRepository trả về user với ID cố định
+        when(userRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(sender)); // Sử dụng sender với ID đã set
+
+        // Tạo conversation và message
         conversation = ChatTestDataUtil.createConversationEntity();
         conversation.setId(conversationId);
 
@@ -99,16 +134,20 @@ public class MessageServiceImplTest {
 
         messageResponseDto = ChatTestDataUtil.createMessageResponseDto();
 
-
+        // **QUAN TRỌNG**: Mock với senderId cố định
         when(conversationMemberRepository.findActiveMember(eq(conversationId), eq(senderId)))
                 .thenReturn(Optional.of(mock(ConversationMemberEntity.class)));
 
-        // Mock conversation exists
         when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
-
-        // Mock user exists
         when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
+    }
 
+    @AfterEach
+    void tearDown() {
+        // Cleanup static mock sau mỗi test
+        if (securityContextHolder != null) {
+            securityContextHolder.close();
+        }
     }
 
     @Test
@@ -125,7 +164,7 @@ public class MessageServiceImplTest {
 
         // Execute & Verify
         assertDoesNotThrow(() -> {
-            MessageResponseDto result = messageService.sendMessage(senderId, messageRequestDto);
+            MessageResponseDto result = messageService.sendMessage(messageRequestDto);
             assertNotNull(result);
             assertEquals(messageResponseDto.getId(), result.getId());
         });
@@ -143,7 +182,7 @@ public class MessageServiceImplTest {
 
         // Execute & Verify
         Exception exception = assertThrows(RuntimeException.class, () ->
-                messageService.sendMessage(senderId, messageRequestDto));
+                messageService.sendMessage(messageRequestDto));
 
         assertTrue(exception.getMessage().contains("không phải là thành viên") ||
                 exception.getMessage().contains("không có quyền gửi tin nhắn"));
@@ -152,17 +191,37 @@ public class MessageServiceImplTest {
     @Test
     @DisplayName("Lấy tin nhắn theo cuộc trò chuyện")
     void getMessagesByConversation() {
-        // Setup
+        // Setup Authentication Mock
+        Authentication authentication = mock(Authentication.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("test@example.com");
+        SecurityContextHolder.setContext(securityContext);
+
+        // Setup User Mock
+        UserEntity mockUser = new UserEntity();
+        mockUser.setId(senderId);
+        mockUser.setEmail("test@example.com");
+
+        when(userRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(mockUser));
+
+        // Setup existing mocks
         when(conversationMemberRepository.findActiveMember(eq(conversationId), eq(senderId)))
-                .thenReturn(Optional.of(mock(ConversationMemberEntity.class))); // User is member
-        when(messageRepository.findByConversationIdOrderByCreatedAtDesc(eq(conversationId), any(Pageable.class)))
+                .thenReturn(Optional.of(mock(ConversationMemberEntity.class)));
+        when(messageRepository.findByConversationIdOrderByCreatedAtAsc(eq(conversationId), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        // Execute - sửa thứ tự tham số
-        assertDoesNotThrow(() -> messageService.getMessages(senderId, conversationId, Pageable.unpaged()));
+        // Execute
+        assertDoesNotThrow(() -> messageService.getMessages(conversationId, Pageable.unpaged()));
 
         // Verify
-        verify(messageRepository).findByConversationIdOrderByCreatedAtDesc(eq(conversationId), any(Pageable.class));
+        verify(messageRepository).findByConversationIdOrderByCreatedAtAsc(eq(conversationId), any(Pageable.class));
+        verify(userRepository).findByEmail("test@example.com");
+
+        // Cleanup
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -180,7 +239,7 @@ public class MessageServiceImplTest {
                 .thenReturn(5); // Giả sử đánh dấu 5 tin nhắn
 
         // Thực thi
-        int count = messageService.markAsRead(senderId, readReceiptDto);
+        int count = messageService.markAsRead(readReceiptDto);
 
         // Kiểm tra
         assertEquals(5, count, "Số lượng tin nhắn đã đánh dấu không đúng");
@@ -208,7 +267,7 @@ public class MessageServiceImplTest {
         when(messageMapper.entityToDto(message)).thenReturn(messageResponseDto);
 
         // Thực thi
-        Map<UUID, List<MessageResponseDto>> result = messageService.syncMessages(senderId, syncRequest);
+        Map<UUID, List<MessageResponseDto>> result = messageService.syncMessages(syncRequest);
 
         // Kiểm tra
         assertNotNull(result);
@@ -221,7 +280,24 @@ public class MessageServiceImplTest {
     void searchMessagesSuccessfully() {
         String searchTerm = "test";
 
-        // Thiết lập mock
+        Authentication mockAuth = mock(Authentication.class);
+        SecurityContext mockSecurityContext = mock(SecurityContext.class);
+
+        when(mockSecurityContext.getAuthentication()).thenReturn(mockAuth);
+        when(mockAuth.getName()).thenReturn("test@example.com");
+
+        securityContextHolder.when(SecurityContextHolder::getContext)
+                .thenReturn(mockSecurityContext);
+
+        UserEntity mockCurrentUser = new UserEntity();
+        mockCurrentUser.setId(senderId);
+        mockCurrentUser.setEmail("test@example.com");
+
+        when(userRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(mockCurrentUser));
+
+        when(conversationMemberRepository.findActiveMember(eq(conversationId), eq(senderId)))
+                .thenReturn(Optional.of(mock(ConversationMemberEntity.class)));
 
         when(messageRepository.searchMessages(eq(conversationId), eq(searchTerm), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(Collections.singletonList(message)));
@@ -229,19 +305,20 @@ public class MessageServiceImplTest {
         when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
         when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
 
-        // Thực thi
         Pageable pageable = PageRequest.of(0, 20);
-        Page<MessageResponseDto> results = messageService.searchMessages(senderId, conversationId, searchTerm, pageable);
+        Page<MessageResponseDto> results = messageService.searchMessages(conversationId, searchTerm, pageable);
 
-        // Kiểm tra
         assertNotNull(results);
         assertEquals(1, results.getTotalElements());
+
+        verify(conversationMemberRepository).findActiveMember(eq(conversationId), eq(senderId));
+        verify(userRepository).findByEmail("test@example.com");
     }
 
     @Test
     @DisplayName("Xóa tin nhắn thành công")
     void deleteMessageSuccessfully() {
-
+        message.setSender(sender);
         MessageResponseDto spyMessageResponseDto = spy(messageResponseDto);
 
         // Thiết lập mock
@@ -249,7 +326,7 @@ public class MessageServiceImplTest {
         when(messageMapper.entityToDto(message)).thenReturn(spyMessageResponseDto);
 
         // Thực thi
-        messageService.deleteMessage(senderId, messageId);
+        messageService.deleteMessage(messageId);
 
         // Kiểm tra
         verify(messageRepository).save(message);
@@ -263,13 +340,16 @@ public class MessageServiceImplTest {
         // Thiết lập dữ liệu
         messageRequestDto.setContent("Updated content");
 
+        message.setSender(sender);
+
+
         // Thiết lập mock
         when(messageRepository.findById(messageId)).thenReturn(Optional.of(message));
         when(messageRepository.save(any(MessageEntity.class))).thenReturn(message);
         when(messageMapper.entityToDto(message)).thenReturn(messageResponseDto);
 
         // Thực thi
-        MessageResponseDto result = messageService.updateMessage(senderId, messageId, messageRequestDto);
+        MessageResponseDto result = messageService.updateMessage(messageId, messageRequestDto);
 
         // Kiểm tra
         assertNotNull(result);
@@ -294,7 +374,7 @@ public class MessageServiceImplTest {
         when(messageRepository.save(message)).thenReturn(message);
         when(messageMapper.entityToDto(message)).thenReturn(messageResponseDto);
 
-        MessageResponseDto result = messageService.sendMessage(senderId, messageRequestDto);
+        MessageResponseDto result = messageService.sendMessage(messageRequestDto);
 
         assertNotNull(result, "Kết quả không được null");
         verify(messageRepository).save(any(MessageEntity.class));
@@ -310,7 +390,7 @@ public class MessageServiceImplTest {
 
         // Execute & Verify
         Exception exception = assertThrows(RuntimeException.class, () ->
-                messageService.sendMessage(senderId, messageRequestDto));
+                messageService.sendMessage(messageRequestDto));
 
         assertTrue(exception.getMessage().contains("Không tìm thấy người dùng"));
         verify(messageRepository, never()).save(any(MessageEntity.class));
@@ -325,7 +405,7 @@ public class MessageServiceImplTest {
 
         // Execute & Verify
         Exception exception = assertThrows(RuntimeException.class, () ->
-                messageService.sendMessage(senderId, messageRequestDto));
+                messageService.sendMessage(messageRequestDto));
 
         assertTrue(exception.getMessage().contains("Không tìm thấy cuộc trò chuyện"));
         verify(messageRepository, never()).save(any(MessageEntity.class));
@@ -336,7 +416,22 @@ public class MessageServiceImplTest {
     void searchMessagesWithMultipleResults() {
         String searchTerm = "test";
 
-        // Tạo nhiều tin nhắn để test
+        Authentication mockAuth = mock(Authentication.class);
+        SecurityContext mockSecurityContext = mock(SecurityContext.class);
+
+        when(mockSecurityContext.getAuthentication()).thenReturn(mockAuth);
+        when(mockAuth.getName()).thenReturn("test@example.com");
+
+        securityContextHolder.when(SecurityContextHolder::getContext)
+                .thenReturn(mockSecurityContext);
+
+        UserEntity mockCurrentUser = new UserEntity();
+        mockCurrentUser.setId(senderId);
+        mockCurrentUser.setEmail("test@example.com");
+
+        when(userRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(mockCurrentUser));
+
         MessageEntity message1 = ChatTestDataUtil.createMessageEntity(conversation, sender);
         message1.setId(UUID.randomUUID());
         message1.setContent("Test message one");
@@ -351,7 +446,8 @@ public class MessageServiceImplTest {
         MessageResponseDto messageResponseDto2 = ChatTestDataUtil.createMessageResponseDto();
         messageResponseDto2.setContent("Test message two");
 
-        // Thiết lập mock
+        when(conversationMemberRepository.findActiveMember(eq(conversationId), eq(senderId)))
+                .thenReturn(Optional.of(mock(ConversationMemberEntity.class)));
         when(messageRepository.searchMessages(eq(conversationId), eq(searchTerm), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(Arrays.asList(message1, message2)));
 
@@ -361,24 +457,24 @@ public class MessageServiceImplTest {
         when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
         when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(conversation));
 
-        // Thực thi
         Pageable pageable = PageRequest.of(0, 20);
-        Page<MessageResponseDto> results = messageService.searchMessages(senderId, conversationId, searchTerm, pageable);
+        Page<MessageResponseDto> results = messageService.searchMessages(conversationId, searchTerm, pageable);
 
-        // Kiểm tra
         assertNotNull(results);
         assertEquals(2, results.getTotalElements());
         assertTrue(results.getContent().get(0).getContent().toLowerCase().contains(searchTerm.toLowerCase()),
                 "Tin nhắn đầu tiên phải chứa từ khóa tìm kiếm");
         assertTrue(results.getContent().get(1).getContent().toLowerCase().contains(searchTerm.toLowerCase()),
                 "Tin nhắn thứ hai phải chứa từ khóa tìm kiếm");
+
+        verify(conversationMemberRepository).findActiveMember(eq(conversationId), eq(senderId));
+        verify(userRepository).findByEmail("test@example.com");
     }
 
     @Test
     @DisplayName("Đồng bộ tin nhắn với nhiều cuộc trò chuyện")
     void syncMessagesWithMultipleConversations() {
-        // Setup data
-        UUID senderId = UUID.randomUUID();
+        // Setup data - SỬ DỤNG senderId từ setUp()
         UUID conversationId1 = UUID.randomUUID();
         UUID conversationId2 = UUID.randomUUID();
 
@@ -391,10 +487,7 @@ public class MessageServiceImplTest {
                 .lastMessageIds(lastMessageIds)
                 .build();
 
-        // Tạo entities
-        UserEntity sender = AuthTestDataUtil.createTestAdminUser();
-        sender.setId(senderId); // Đặt ID giống với senderId
-
+        // Tạo entities với sender có ID cố định
         ConversationEntity conversation1 = ChatTestDataUtil.createConversationEntity();
         conversation1.setId(conversationId1);
 
@@ -409,7 +502,7 @@ public class MessageServiceImplTest {
 
         MessageResponseDto messageResponseDto = ChatTestDataUtil.createMessageResponseDto();
 
-        // **QUAN TRỌNG: Mock để user thuộc về các conversations**
+        // **QUAN TRỌNG**: Mock với senderId cố định
         when(conversationMemberRepository.findActiveMember(conversationId1, senderId))
                 .thenReturn(Optional.of(mock(ConversationMemberEntity.class)));
         when(conversationMemberRepository.findActiveMember(conversationId2, senderId))
@@ -426,7 +519,7 @@ public class MessageServiceImplTest {
         when(messageMapper.entityToDto(message2)).thenReturn(messageResponseDto);
 
         // Thực thi
-        Map<UUID, List<MessageResponseDto>> result = messageService.syncMessages(senderId, syncRequest);
+        Map<UUID, List<MessageResponseDto>> result = messageService.syncMessages(syncRequest);
 
         // Kiểm tra
         assertNotNull(result);

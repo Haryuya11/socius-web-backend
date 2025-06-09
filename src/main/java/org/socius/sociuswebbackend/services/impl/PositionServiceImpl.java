@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.PositionMapper;
+import org.socius.sociuswebbackend.mappers.PositionMappingHelper;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
 import org.socius.sociuswebbackend.model.entities.PositionEntity;
@@ -27,11 +28,20 @@ public class PositionServiceImpl implements PositionService {
     final private PositionRepository positionRepository;
     final private EmploymentDetailRepository employmentDetailRepository;
     final private PositionMapper positionMapper;
+    final private PositionMappingHelper positionMapperHelper;
 
     @Override
     public List<PositionResponseDto> findAll() {
         List<PositionEntity> positions = positionRepository.findAll();
         return positions.stream()
+                .map(positionMapper::entityToDto)
+                .toList();
+    }
+
+    @Override
+    public List<PositionResponseDto> findAllActivePositions() {
+        List<PositionEntity> activePositions = positionRepository.findAllActivePositions();
+        return activePositions.stream()
                 .map(positionMapper::entityToDto)
                 .toList();
     }
@@ -48,12 +58,14 @@ public class PositionServiceImpl implements PositionService {
     public PositionResponseDto create(PositionRequestDto requestDto) {
         try {
             if (positionRepository.existsByName(requestDto.getName())) {
-                throw new RuntimeException("Vị trí đã tồn tại");
+                throw new IllegalArgumentException("Vị trí với tên này đã tồn tại"); // Đổi từ RuntimeException thành IllegalArgumentException
             }
 
             PositionEntity position = positionMapper.requestDtoToEntity(requestDto);
             position = positionRepository.save(position);
             return positionMapper.entityToDto(position);
+        } catch (IllegalArgumentException e) {
+            throw e; // Re-throw IllegalArgumentException
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo vị trí vì ràng buộc dữ liệu", e);
         } catch (Exception e) {
@@ -86,10 +98,14 @@ public class PositionServiceImpl implements PositionService {
 
         long count = employmentDetailRepository.countByPositionId(id);
         if (count > 0) {
-            throw new IllegalStateException("Không thể xóa vị trí vì vẫn còn " + count + " nhân viên đang giữ vị trí này");
+            throw new IllegalStateException("Không thể xóa vị trí vì vẫn còn " + count + " nhân viên thuộc vị trí này");
         }
 
-        positionRepository.deleteById(id);
+        PositionEntity position = positionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + id));
+
+        position.softDelete();
+        positionRepository.save(position);
         logger.info("Đã xóa vị trí với ID: {}", id);
     }
 
@@ -101,6 +117,6 @@ public class PositionServiceImpl implements PositionService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Position not found with ID: " + positionId));
 
-        return positionMapper.entityToDtoWithMembers(position, pageable);
+        return positionMapperHelper.entityToDtoWithMembers(position);
     }
 }

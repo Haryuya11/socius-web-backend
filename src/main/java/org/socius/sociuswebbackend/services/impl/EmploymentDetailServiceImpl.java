@@ -7,16 +7,6 @@ import org.socius.sociuswebbackend.events.RBACEvent;
 import org.socius.sociuswebbackend.mappers.EmploymentDetailMapper;
 import org.socius.sociuswebbackend.model.dtos.employee.EmployeeUpdateRequestDto;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
-import org.socius.sociuswebbackend.model.dtos.employment.EmploymentHistoryResponseDto;
-import org.socius.sociuswebbackend.model.dtos.salary.SalaryHistoryResponseDto;
-import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
-import org.socius.sociuswebbackend.model.entities.EmploymentHistoryEntity;
-import org.socius.sociuswebbackend.model.entities.SalaryHistoryEntity;
-import org.socius.sociuswebbackend.model.entities.UserEntity;
-import org.socius.sociuswebbackend.model.enums.WorkingStatus;
-import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
-import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
-import org.socius.sociuswebbackend.repositories.SalaryHistoryRepository;
 import org.socius.sociuswebbackend.model.dtos.salary.SalaryUpdateRequestDto;
 import org.socius.sociuswebbackend.model.entities.*;
 import org.socius.sociuswebbackend.model.enums.WorkingStatus;
@@ -27,7 +17,6 @@ import org.socius.sociuswebbackend.services.SessionManagementService;
 import org.socius.sociuswebbackend.services.SessionValidationService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -353,8 +342,16 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
             throw new RuntimeException("Nhân viên không thuộc team nào");
         }
 
-        UUID currentTeamId = employmentDetail.getTeam().getId();
-        String teamName = employmentDetail.getTeam().getName();
+        TeamEntity team = employmentDetail.getTeam();
+        UUID teamId = team.getId();
+        String teamName = team.getName();
+
+        // Kiểm tra nếu nhân viên này là leader của team
+        if (team.getLeader() != null && team.getLeader().getId().equals(employeeId)) {
+            team.setLeader(null);
+            teamRepository.save(team);
+            logger.info("Đã xóa leader khỏi team {}", teamName);
+        }
 
         // Xóa khỏi team
         employmentDetail.setTeam(null);
@@ -362,7 +359,7 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
         saveEmploymentHistory(employmentDetail, "Đã rời khỏi team " + teamName);
 
         // Xóa khỏi group chat bất đồng bộ
-        removeFromGroupChatAsync(currentTeamId, employeeId, AssignmentType.TEAM);
+        removeFromGroupChatAsync(teamId, employeeId, AssignmentType.TEAM);
 
         logger.info("Đã xóa nhân viên {} khỏi team {}", employee.getEmail(), teamName);
     }
@@ -883,7 +880,7 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
         }
 
         // Chỉ khôi phục trạng thái, không tự động gán lại department/team/position/role
-        employmentDetail.setWorkingStatus(WorkingStatus.inactive);
+        employmentDetail.setWorkingStatus(WorkingStatus.active);
 
         employmentDetailRepository.save(employmentDetail);
 
@@ -1053,7 +1050,8 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
                     logger.info("Đã thêm nhân viên {} vào group chat {} của {} {}",
                             employeeId, groupChatId, entityType, assignmentId);
                 } else {
-                    logger.warn("Không tìm thấy group chat ID cho {} {}", getEntityTypeName(type), assignmentId);
+                    logger.warn("Không tìm thấy group chat ID cho {} {} khi thêm vào group chat",
+                            getEntityTypeName(type), assignmentId);
                 }
             } catch (Exception e) {
                 String entityType = getEntityTypeName(type);
@@ -1073,7 +1071,8 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
                     logger.info("Đã xóa nhân viên {} khỏi group chat {} của {} {}",
                             employeeId, groupChatId, entityType, assignmentId);
                 } else {
-                    logger.warn("Không tìm thấy group chat ID cho {} {}", getEntityTypeName(type), assignmentId);
+                    logger.warn("Không tìm thấy group chat ID cho {} {} khi xóa khỏi group chat",
+                            getEntityTypeName(type), assignmentId);
                 }
             } catch (Exception e) {
                 String entityType = getEntityTypeName(type);
@@ -1238,7 +1237,7 @@ public class EmploymentDetailServiceImpl implements EmploymentDetailService {
                 userRepository.findByEmail(email).ifPresent(user ->
                         invalidateEmployeeSession(user.getId()));
             } catch (Exception e) {
-                logger.error("Lỗi khi hủy session cho nhân viên {}: {}", email, e.getMessage());
+                logger.error("Lỗi khi hủy session cho nhân viên có email {}: {}", email, e.getMessage());
             }
         });
     }

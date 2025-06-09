@@ -19,7 +19,12 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
      * @param conversationId ID của cuộc trò chuyện
      * @return Danh sách các thành viên trong cuộc trò chuyện
      */
-    @Query("SELECT cm FROM ConversationMemberEntity cm  WHERE cm.id.conversationId = :conversationId AND cm.leftAt IS NULL ORDER BY cm.joinedAt ASC ")
+    @Query("SELECT cm FROM ConversationMemberEntity cm " +
+            "JOIN FETCH cm.user " +
+            "WHERE cm.id.conversationId = :conversationId " +
+            "AND cm.leftAt IS NULL" +
+            " ORDER BY cm.joinedAt ASC"
+    )
     List<ConversationMemberEntity> findActiveMembers(@Param("conversationId") UUID conversationId);
 
     /**

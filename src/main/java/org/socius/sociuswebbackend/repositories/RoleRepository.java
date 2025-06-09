@@ -41,4 +41,12 @@ public interface RoleRepository extends JpaRepository<RoleEntity, UUID> {
      */
     @Query("SELECT DISTINCT p FROM PermissionEntity p")
     List<PermissionEntity> findAllPermissions();
+
+    /**
+     * Lấy tất cả các vai trò đang hoạt động
+     *
+     * @return Danh sách các vai trò đang hoạt động
+     */
+    @Query("SELECT r FROM RoleEntity r WHERE r.status = 'active'")
+    List<RoleEntity> findAllActiveRoles();
 }

@@ -4,29 +4,24 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.socius.sociuswebbackend.config.RabbitMQConfig;
+import org.socius.sociuswebbackend.model.dtos.notification.NotificationRecipientDto;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationResponseDto;
-import org.socius.sociuswebbackend.model.dtos.notification.NotificationRecipientDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.enums.NotificationType;
 import org.socius.sociuswebbackend.services.NotificationService;
 import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import jakarta.persistence.EntityNotFoundException;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -36,11 +31,13 @@ import java.util.Collections;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Unit tests for NotificationController, testing REST endpoints.
@@ -64,9 +61,6 @@ class NotificationControllerTest {
     private UUID senderId;
     private NotificationRequestDto requestDto;
     private NotificationResponseDto responseDto;
-    private NotificationRecipientDto recipientDto;
-    private UserResponseDto userDto;
-    private UserResponseDto senderDto;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     /**
@@ -90,7 +84,7 @@ class NotificationControllerTest {
         senderId = UUID.randomUUID();
 
         // Setup UserResponseDto for recipient
-        userDto = UserResponseDto.builder()
+        UserResponseDto userDto = UserResponseDto.builder()
                 .id(userId)
                 .firstName("Test")
                 .lastName("User")
@@ -98,7 +92,7 @@ class NotificationControllerTest {
                 .build();
 
         // Setup UserResponseDto for sender
-        senderDto = UserResponseDto.builder()
+        UserResponseDto senderDto = UserResponseDto.builder()
                 .id(senderId)
                 .firstName("Sender")
                 .lastName("User")
@@ -117,7 +111,7 @@ class NotificationControllerTest {
                 .build();
 
         // Setup NotificationRecipientDto
-        recipientDto = NotificationRecipientDto.builder()
+        NotificationRecipientDto recipientDto = NotificationRecipientDto.builder()
                 .notificationId(notificationId)
                 .userId(userId)
                 .user(userDto)
@@ -206,49 +200,6 @@ class NotificationControllerTest {
     }
 
     /**
-     * Test GET /api/notification/user/{userId} returns paged notifications.
-     */
-    /*@Test
-    void testGetNotificationsByUserId() throws Exception {
-        // Simplify the response to avoid serialization issues
-        NotificationResponseDto simpleResponseDto = NotificationResponseDto.builder()
-                .id(notificationId)
-                .title("Test Notification")
-                .sender(senderDto)
-                .message("This is a test notification")
-                .expiryDate(LocalDate.now().plusDays(1))
-                .type(NotificationType.info)
-                .isUrgent(false)
-                .recipients(Collections.emptyList()) // Avoid immutable list issues
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        Page<NotificationResponseDto> page = new PageImpl<>(Collections.singletonList(simpleResponseDto));
-        when(notificationService.getNotificationsByUserId(eq(userId), any(Pageable.class))).thenReturn(page);
-
-        mockMvc.perform(get("/api/notification/user/{userId}", userId)
-                        .param("page", "0")
-                        .param("size", "10")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(notificationId.toString()))
-                .andExpect(jsonPath("$.content[0].title").value("Test Notification"))
-                .andExpect(jsonPath("$.content[0].message").value("This is a test notification"))
-                .andExpect(jsonPath("$.content[0].type").value("info"))
-                .andExpect(jsonPath("$.content[0].recipients").isEmpty())
-                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
-                .andExpect(jsonPath("$.pageable.pageSize").value(10))
-                .andDo(result -> {
-                    if (result.getResponse().getStatus() != 200) {
-                        System.out.println("Response error: " + result.getResponse().getErrorMessage());
-                    }
-                });
-
-        verify(notificationService).getNotificationsByUserId(eq(userId), any(Pageable.class));
-    }*/
-
-    /**
      * Test PUT /api/notification/{notificationId}/read marks notification as read.
      */
     @Test
@@ -306,7 +257,7 @@ class NotificationControllerTest {
                     if (cause == null) {
                         assertEquals(400, result.getResponse().getStatus(), "Expected HTTP 400 Bad Request");
                     } else {
-                        assertTrue(cause instanceof IllegalArgumentException, "Expected IllegalArgumentException, got " + cause.getClass().getName());
+                        assertInstanceOf(IllegalArgumentException.class, cause, "Expected IllegalArgumentException, got " + cause.getClass().getName());
                         assertEquals("User is not a recipient", cause.getMessage());
                     }
                 });

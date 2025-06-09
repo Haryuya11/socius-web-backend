@@ -52,10 +52,13 @@ public class NotificationEntity extends BaseEntity {
     @JsonIgnore
     @Builder.Default
     private Set<NotificationRecipientEntity> recipients = new HashSet<>();
-    
-    @PrePersist
-    @PreUpdate
-    protected void validateExpiryDate() {
+
+    @Override
+    protected void validateEntity() {
+        validateDates();
+    }
+
+    private void validateDates() {
         if (expiryDate != null && expiryDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Expiry date must be in the future");
         }

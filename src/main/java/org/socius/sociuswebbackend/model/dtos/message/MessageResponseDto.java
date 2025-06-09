@@ -30,4 +30,14 @@ public class MessageResponseDto extends BaseDto {
     private String fileOriginalName;
     private String fileContentType;
     private Long fileSize;
+
+    private String displayUrl;
+
+    // Getter tự động tạo displayUrl nếu có fileUrl
+    public String getDisplayUrl() {
+        if (fileUrl != null && !fileUrl.isEmpty()) {
+            return "/api/static/" + fileUrl;
+        }
+        return displayUrl;
+    }
 }

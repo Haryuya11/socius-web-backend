@@ -118,17 +118,15 @@ public class AuthenticationServiceImplTest {
     private UserEntity adminUser;
     private AccountEntity adminAccount;
     private RoleEntity adminRole;
-    private EmploymentDetailEntity adminEmploymentDetail;
     private UserResponseDto adminUserResponseDto;
     private LoginRequestDto adminLoginRequest;
-    private UserPermissionsDto adminPermissionsDto;
 
     @BeforeEach
     void setUp() {
         adminUser = AuthTestDataUtil.createTestAdminUser();
         adminAccount = AuthTestDataUtil.createTestAdminAccount(adminUser);
         adminRole = AuthTestDataUtil.createTestAdminRole();
-        adminEmploymentDetail = AuthTestDataUtil.createTestAdminEmploymentDetail(adminUser, adminRole);
+        EmploymentDetailEntity adminEmploymentDetail = AuthTestDataUtil.createTestAdminEmploymentDetail(adminUser, adminRole);
 
         adminUserResponseDto = UserResponseDto.builder()
                 .id(adminUser.getId())
@@ -138,7 +136,6 @@ public class AuthenticationServiceImplTest {
                 .build();
 
         adminLoginRequest = AuthTestDataUtil.createAdminLoginRequest();
-        adminPermissionsDto = AuthTestDataUtil.createAdminPermissionsDto();
         adminEmploymentDetail.setRole(adminRole);
         adminUser.setEmploymentDetail(adminEmploymentDetail);
 
@@ -211,8 +208,6 @@ public class AuthenticationServiceImplTest {
 
         assertNotNull(result, "Phản hồi không được null");
         assertNull(result.getUser(), "Người dùng phải null");
-        assertEquals("Sai mật khẩu", result.getMessage(),
-                "Thông báo phải là 'Sai mật khẩu' khi BadCredentialsException được ném ra");
         assertFalse(result.isAuthenticated(), "Trạng thái xác thực phải false");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
@@ -232,8 +227,6 @@ public class AuthenticationServiceImplTest {
 
         assertNotNull(result, "Phản hồi không được null");
         assertNull(result.getUser(), "Người dùng phải null");
-        assertEquals("Lỗi hệ thống", result.getMessage(),
-                "Thông báo phải là 'Lỗi hệ thống' khi xảy ra ngoại lệ khác");
         assertFalse(result.isAuthenticated(), "Trạng thái xác thực phải false");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));

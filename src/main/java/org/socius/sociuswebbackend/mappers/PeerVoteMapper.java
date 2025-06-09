@@ -2,7 +2,6 @@ package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.socius.sociuswebbackend.model.dtos.vote.PeerVoteRequestDto;
 import org.socius.sociuswebbackend.model.dtos.vote.PeerVoteResponseDto;

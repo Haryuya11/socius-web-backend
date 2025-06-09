@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.experimental.SuperBuilder;
+import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,8 +18,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = {"leader", "employmentDetailEntities", "employmentHistories"})
-public class TeamEntity extends BaseEntity {
+@ToString(exclude = {"leader", "employmentDetail"})
+public class TeamEntity extends SoftDeletableEntity {
 
     @NotBlank(message = "Team name must not be empty")
     @Column(name = "name", nullable = false, unique = true, length = 100)
@@ -31,13 +32,13 @@ public class TeamEntity extends BaseEntity {
     @Column(name = "group_chat_id")
     private UUID groupChatId;
 
-    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "team", fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
-    private Set<EmploymentDetailEntity> employmentDetailEntities = new HashSet<>();
+    private Set<EmploymentDetailEntity> employmentDetail = new HashSet<>();
 
-    @OneToMany(mappedBy = "team")
-    @JsonIgnore
-    @Builder.Default
-    private Set<EmploymentHistoryEntity> employmentHistories = new HashSet<>();
+    public boolean hasActiveEmployees() {
+        return employmentDetail.stream()
+                .anyMatch(emp -> emp.getWorkingStatus() == WorkingStatus.active);
+    }
 }

@@ -29,7 +29,7 @@ public class DepartmentController {
     @GetMapping()
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<List<DepartmentResponseDto>> getAllDepartments() {
-        List<DepartmentResponseDto> departments = departmentService.findAll();
+        List<DepartmentResponseDto> departments = departmentService.findAllActiveDepartments();
         return ResponseEntity.ok(departments);
     }
 
@@ -74,7 +74,6 @@ public class DepartmentController {
     @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
     public ResponseEntity<?> createDepartment(@Valid @RequestBody DepartmentRequestDto requestDto) {
         DepartmentResponseDto createdDepartment = departmentService.create(requestDto);
-
         return ResponseEntity.ok(createdDepartment);
     }
 

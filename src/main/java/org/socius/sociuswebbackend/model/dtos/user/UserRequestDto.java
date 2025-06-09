@@ -1,12 +1,11 @@
 package org.socius.sociuswebbackend.model.dtos.user;
 
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import org.socius.sociuswebbackend.model.enums.Gender;
-import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 

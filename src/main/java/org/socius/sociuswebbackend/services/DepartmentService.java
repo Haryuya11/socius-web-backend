@@ -19,6 +19,13 @@ public interface DepartmentService {
     List<DepartmentResponseDto> findAll();
 
     /**
+     * Lấy danh sách tất cả các phòng ban đang hoạt động
+     *
+     * @return Danh sách các phòng ban đang hoạt động
+     */
+    List<DepartmentResponseDto> findAllActiveDepartments();
+
+    /**
      * Tìm một phòng ban theo ID
      *
      * @param id ID của phòng ban cần tìm

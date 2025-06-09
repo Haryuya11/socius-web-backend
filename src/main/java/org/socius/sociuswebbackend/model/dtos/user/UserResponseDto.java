@@ -1,17 +1,15 @@
 package org.socius.sociuswebbackend.model.dtos.user;
 
-import java.time.LocalDate;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
-import org.socius.sociuswebbackend.model.dtos.BaseDto;
-import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
-import org.socius.sociuswebbackend.model.enums.Gender;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.socius.sociuswebbackend.model.dtos.BaseDto;
+import org.socius.sociuswebbackend.model.enums.Gender;
+
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor

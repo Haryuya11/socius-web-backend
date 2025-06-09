@@ -18,6 +18,13 @@ public interface TeamService {
     List<TeamResponseDto> findAll();
 
     /**
+     * Lấy danh sách tất cả các team đang hoạt động
+     *
+     * @return Danh sách các team đang hoạt động
+     */
+    List<TeamResponseDto> findAllActiveTeams();
+
+    /**
      * Tìm một team theo ID
      *
      * @param id ID của team cần tìm

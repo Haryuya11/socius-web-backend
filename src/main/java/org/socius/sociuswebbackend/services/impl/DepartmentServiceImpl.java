@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.DepartmentMapper;
+import org.socius.sociuswebbackend.mappers.DepartmentMappingHelper;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
@@ -36,12 +37,21 @@ public class DepartmentServiceImpl implements DepartmentService {
     final private UserRepository userRepository;
     final private EmploymentDetailRepository employmentDetailRepository;
     final private ConversationService conversationService;
+    final private DepartmentMappingHelper departmentMapperHelper;
 
 
     @Override
     public List<DepartmentResponseDto> findAll() {
         List<DepartmentEntity> departments = departmentRepository.findAll();
         return departments.stream()
+                .map(departmentMapper::entityToDto)
+                .toList();
+    }
+
+    @Override
+    public List<DepartmentResponseDto> findAllActiveDepartments() {
+        List<DepartmentEntity> activeDepartments = departmentRepository.findAllActiveDepartments();
+        return activeDepartments.stream()
                 .map(departmentMapper::entityToDto)
                 .toList();
     }
@@ -58,7 +68,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     public DepartmentResponseDto create(DepartmentRequestDto requestDto) {
         try {
             if (departmentRepository.existsByName(requestDto.getName())) {
-                throw new RuntimeException("Phòng ban đã tồn tại");
+                throw new IllegalArgumentException("Phòng ban đã tồn tại");
             }
 
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -83,6 +93,8 @@ public class DepartmentServiceImpl implements DepartmentService {
 
             DepartmentEntity savedDepartment = departmentRepository.save(department);
             return departmentMapper.entityToDto(savedDepartment);
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể tạo phòng ban vì ràng buộc dữ liệu", e);
         } catch (Exception e) {
@@ -96,13 +108,28 @@ public class DepartmentServiceImpl implements DepartmentService {
         DepartmentEntity department = departmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + id));
 
-        if (!department.getName().equals(requestDto.getName()) &&
-                departmentRepository.existsByName(requestDto.getName())) {
+        String oldName = department.getName();
+        boolean nameChanged = !oldName.equals(requestDto.getName());
+
+        if (nameChanged && departmentRepository.existsByName(requestDto.getName())) {
             throw new IllegalArgumentException("Phòng ban với tên này đã tồn tại");
         }
 
         departmentMapper.updateEntityFromDto(requestDto, department);
         department = departmentRepository.save(department);
+
+        // Cập nhật tên group chat nếu tên phòng ban thay đổi
+        if (nameChanged && department.getGroupChatId() != null) {
+            try {
+                conversationService.updateConversationName(department.getGroupChatId(), requestDto.getName());
+                logger.info("Đã cập nhật tên group chat của phòng ban {} từ '{}' sang '{}'",
+                        id, oldName, requestDto.getName());
+            } catch (Exception e) {
+                logger.error("Lỗi khi cập nhật tên group chat của phòng ban {}: {}", id, e.getMessage());
+                throw new RuntimeException("Không thể cập nhật tên group chat của phòng ban: " + e.getMessage(), e);
+            }
+        }
+
         return departmentMapper.entityToDto(department);
     }
 
@@ -118,15 +145,21 @@ public class DepartmentServiceImpl implements DepartmentService {
             throw new IllegalStateException("Không thể xóa phòng ban vì vẫn còn " + count + " nhân viên thuộc phòng ban này");
         }
 
+        DepartmentEntity department = departmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban với ID: " + id));
+
         // Xóa group chat của phòng ban
         try {
-            conversationService.deleteGroupConversation(id);
+            conversationService.deleteGroupConversation(department.getGroupChatId());
             logger.info("Đã xóa group chat của phòng ban {}", id);
         } catch (Exception e) {
             logger.error("Không thể xóa group chat của phòng ban: {}", e.getMessage());
         }
 
-        departmentRepository.deleteById(id);
+        department.setGroupChatId(null);
+        department.softDelete();
+        departmentRepository.save(department);
+
         logger.info("Đã xóa phòng ban với ID: {}", id);
     }
 
@@ -138,6 +171,6 @@ public class DepartmentServiceImpl implements DepartmentService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Department not found with ID: " + departmentId));
 
-        return departmentMapper.entityToDtoWithMembers(department, pageable);
+        return departmentMapperHelper.entityToDtoWithMembers(department);
     }
 }

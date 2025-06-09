@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.services.UserService;
 import org.springframework.data.domain.PageRequest;
@@ -31,11 +32,6 @@ public class UserController {
     @GetMapping("/{userId}")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID userId) {
         UserResponseDto user = userService.findById(userId);
-
-        if (user == null) {
-            return ResponseEntity.notFound().build();
-        }
-
         return ResponseEntity.ok(user);
     }
 
@@ -47,12 +43,8 @@ public class UserController {
      */
     @GetMapping("/current-user")
     public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
-        UserResponseDto user = userService.getCurrentUser(request);
-        if (user != null) {
-            return ResponseEntity.ok(user);
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
-        }
+        EmploymentDetailResponseDto userDetail = userService.getCurrentUser(request);
+        return ResponseEntity.ok(userDetail);
     }
 
     /**
@@ -162,8 +154,8 @@ public class UserController {
      * Lấy danh sách task của một người dùng theo ID
      *
      * @param userId ID của người dùng cần lấy danh sách task
-     * @param page Số trang (mặc định là 0)
-     * @param size Số lượng task trên mỗi trang (mặc định là 10)
+     * @param page   Số trang (mặc định là 0)
+     * @param size   Số lượng task trên mỗi trang (mặc định là 10)
      * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử, hoặc 404 nếu không tìm thấy
      */
     @GetMapping("/{userId}/tasks")

@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.socius.sociuswebbackend.exception.GlobalExceptionHandler;
 import org.socius.sociuswebbackend.model.dtos.task.TaskRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
@@ -44,7 +45,6 @@ public class TaskControllerTest {
 
     private TaskRequestDto testTaskRequestDto;
     private TaskResponseDto testTaskResponseDto;
-    private UserResponseDto testUserResponseDto;
     private UserEntity testUser;
     private TaskEntity testTask;
 
@@ -52,7 +52,9 @@ public class TaskControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule()); // Đăng ký JavaTimeModule
-        mockMvc = MockMvcBuilders.standaloneSetup(taskController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(taskController)
+                .setControllerAdvice(new GlobalExceptionHandler()) // Đăng ký GlobalExceptionHandler nếu cần
+                .build();
 
         testUser = UserEntity.builder()
                 .id(UUID.fromString("eb39ff27-0b69-4529-96e8-03e8fb582d05"))
@@ -70,7 +72,7 @@ public class TaskControllerTest {
                 .assignedTo(testUser)
                 .build();
 
-        testUserResponseDto = UserResponseDto.builder()
+        UserResponseDto testUserResponseDto = UserResponseDto.builder()
                 .id(testUser.getId())
                 .firstName("Nguyễn")
                 .lastName("Văn An")
@@ -151,16 +153,16 @@ public class TaskControllerTest {
     @Test
     @DisplayName("Cập nhật trạng thái task không làm gì khi trạng thái không hợp lệ")
     void updateTaskStatusShouldDoNothingWhenStatusInvalid() throws Exception {
-        // Arrange
-        when(taskService.updateTaskStatus(eq(testTask.getId()), eq("INVALID")))
-                .thenThrow(new IllegalArgumentException("Invalid status"));
+        // Arrange - Mock service để throw exception
+        when(taskService.updateTaskStatus(any(UUID.class), eq("INVALID")))
+                .thenThrow(new IllegalArgumentException("Invalid status: INVALID"));
 
-        // Act
+        // Act & Assert
         mockMvc.perform(patch("/api/task/{taskId}/update-status/INVALID", testTask.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
         // Assert
-        verify(taskService, times(1)).updateTaskStatus(eq(testTask.getId()), eq("INVALID"));
+        verify(taskService, times(1)).updateTaskStatus(any(UUID.class), eq("INVALID"));
     }
 }

@@ -1,7 +1,6 @@
 package org.socius.sociuswebbackend.listeners;
 
 import lombok.RequiredArgsConstructor;
-import org.socius.sociuswebbackend.config.RabbitMQConfig;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationResponseDto;
 import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

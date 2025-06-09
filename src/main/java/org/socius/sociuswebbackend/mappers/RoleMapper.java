@@ -1,7 +1,6 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.*;
-import org.socius.sociuswebbackend.model.dtos.permission.PermissionResponseDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleRequestDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
 import org.socius.sociuswebbackend.model.entities.PermissionEntity;
@@ -25,8 +24,6 @@ public abstract class RoleMapper extends BaseEntityMapper implements
         GenericMapper<RoleEntity, RoleResponseDto, RoleRequestDto> {
 
     @Override
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     public RoleResponseDto entityToDto(RoleEntity entity) {
         if (entity == null) {
             return null;
@@ -34,10 +31,10 @@ public abstract class RoleMapper extends BaseEntityMapper implements
 
         RoleResponseDto dto = new RoleResponseDto();
         dto.setId(entity.getId());
-//        dto.setCreatedAt(entity.getCreatedAt());
-//        dto.setUpdatedAt(entity.getUpdatedAt());
         dto.setName(entity.getName());
         dto.setDescription(entity.getDescription());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
 
         if (entity.getRolePermissions() != null) {
             PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
@@ -67,32 +64,6 @@ public abstract class RoleMapper extends BaseEntityMapper implements
         return dto;
     }
 
-    /**
-     * Process permissions after entity mapping
-     */
-//    @AfterMapping
-//    default void mapPermissions(@MappingTarget RoleResponseDto dto, RoleEntity entity) {
-//        if (entity.getRolePermissions() == null || entity.getRolePermissions().isEmpty()) {
-//            dto.setPermissions(new HashSet<>());
-//            return;
-//        }
-//
-//        PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
-//        Set<PermissionResponseDto> permissions = entity.getRolePermissions().stream()
-//                .filter(rp -> rp != null && rp.getPermission() != null)
-//                .map(rp -> permissionMapper.entityToDto(rp.getPermission()))
-//                .collect(Collectors.toSet());
-//
-//        dto.setPermissions(permissions);
-//    }
-
-    /*@AfterMapping
-    public void mapPermissions(@MappingTarget RoleResponseDto dto, RoleEntity entity) {
-        if (entity != null && entity.getRolePermissions() != null) {
-            PermissionMapper permissionMapper = ApplicationContextHelper.getBean(PermissionMapper.class);
-            dto.setPermissions(permissionMapper.rolePermissionsToPermissionDtos(entity.getRolePermissions()));
-        }
-    }*/
     @Override
     public RoleEntity requestDtoToEntity(RoleRequestDto dto) {
         if (dto == null) {
@@ -135,7 +106,7 @@ public abstract class RoleMapper extends BaseEntityMapper implements
             EntityMappingUtil mappingUtil = getEntityMappingUtil();
 
             dto.getPermissionIds().stream()
-                    .filter(permissionId -> permissionId != null)
+                    .filter(Objects::nonNull)
                     .forEach(permissionId -> {
                         PermissionEntity permission = mappingUtil.mapPermissionIdToEntity(permissionId);
 

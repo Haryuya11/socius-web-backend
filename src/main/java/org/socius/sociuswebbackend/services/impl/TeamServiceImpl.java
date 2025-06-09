@@ -1,13 +1,17 @@
 package org.socius.sociuswebbackend.services.impl;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.TaskMapper;
 import org.socius.sociuswebbackend.mappers.TeamMapper;
+import org.socius.sociuswebbackend.mappers.TeamMappingHelper;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
+import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.TaskEntity;
 import org.socius.sociuswebbackend.model.entities.TeamEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
@@ -42,11 +46,20 @@ public class TeamServiceImpl implements TeamService {
     final private EntityMappingUtil entityMappingUtil;
     final private TaskRepository taskRepository;
     final private TaskMapper taskMapper;
+    final private TeamMappingHelper teamMapperHelper;
 
     @Override
     public List<TeamResponseDto> findAll() {
         List<TeamEntity> teams = teamRepository.findAll();
         return teams.stream()
+                .map(teamMapper::entityToDto)
+                .toList();
+    }
+
+    @Override
+    public List<TeamResponseDto> findAllActiveTeams() {
+        List<TeamEntity> activeTeams = teamRepository.findAllActiveTeams();
+        return activeTeams.stream()
                 .map(teamMapper::entityToDto)
                 .toList();
     }
@@ -73,6 +86,9 @@ public class TeamServiceImpl implements TeamService {
 
             UserEntity leader = entityMappingUtil.mapUserIdToEntity(requestDto.getLeaderId());
 
+            EmploymentDetailEntity employmentDetail = employmentDetailRepository.findByUser(leader)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không phải là thành viên của team"));
+
             TeamEntity team = TeamEntity.builder()
                     .name(requestDto.getName())
                     .leader(leader)
@@ -90,12 +106,17 @@ public class TeamServiceImpl implements TeamService {
             team.setGroupChatId(groupChat.getId());
 
             TeamEntity savedTeam = teamRepository.save(team);
-
+            employmentDetail.setTeam(savedTeam);
             return teamMapper.entityToDto(savedTeam);
         } catch (DataIntegrityViolationException e) {
+            logger.error("Data integrity violation when creating team: {}", e.getMessage());
             throw new IllegalArgumentException("Không thể tạo team do vi phạm ràng buộc dữ liệu", e);
+        } catch (RuntimeException e) {
+            logger.error("Runtime error when creating team: {}", e.getMessage());
+            throw new IllegalArgumentException("Lỗi khi tạo team: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo team: " + e.getMessage(), e);
+            logger.error("Unexpected error when creating team: {}", e.getMessage());
+            throw new IllegalArgumentException("Lỗi không mong muốn khi tạo team: " + e.getMessage(), e);
         }
     }
 
@@ -105,13 +126,28 @@ public class TeamServiceImpl implements TeamService {
         TeamEntity team = teamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy team với ID: " + id));
 
-        if (!team.getName().equals(requestDto.getName()) &&
-                teamRepository.existsByName(requestDto.getName())) {
+        String oldName = team.getName();
+        boolean nameChanged = !oldName.equals(requestDto.getName());
+
+        if (nameChanged && teamRepository.existsByName(requestDto.getName())) {
             throw new IllegalArgumentException("Team với tên này đã tồn tại");
         }
 
         teamMapper.updateEntityFromDto(requestDto, team);
         team = teamRepository.save(team);
+
+        // Cập nhật tên group chat nếu tên team thay đổi
+        if (nameChanged && team.getGroupChatId() != null) {
+            try {
+                conversationService.updateConversationName(team.getGroupChatId(), requestDto.getName());
+                logger.info("Đã cập nhật tên group chat của team {} từ '{}' sang '{}'",
+                        id, oldName, requestDto.getName());
+            } catch (Exception e) {
+                logger.error("Lỗi khi cập nhật tên group chat của team {}: {}", id, e.getMessage());
+                throw new RuntimeException("Lỗi khi cập nhật tên nhóm trò chuyện của team: " + e.getMessage(), e);
+            }
+        }
+
         return teamMapper.entityToDto(team);
     }
 
@@ -127,18 +163,26 @@ public class TeamServiceImpl implements TeamService {
             throw new IllegalStateException("Không thể xóa team vì vẫn còn " + count + " nhân viên thuộc team này");
         }
 
-        // Xóa group chat của team
+        TeamEntity team = teamRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        // Xóa group chat của team - CHECK NULL trước khi xóa
         try {
-            conversationService.deleteGroupConversation(id);
-            logger.info("Đã xóa nhóm trò chuyện của team với ID: {}", id);
+            if (team.getGroupChatId() != null) {
+                conversationService.deleteGroupConversation(team.getGroupChatId());
+                logger.info("Đã xóa nhóm trò chuyện của team với ID: {}", id);
+            } else {
+                logger.warn("Team {} không có group chat để xóa", team.getName());
+            }
         } catch (Exception e) {
             logger.error("Lỗi khi xóa nhóm trò chuyện của team: {}", e.getMessage());
         }
 
-        teamRepository.deleteById(id);
-        logger.info("Đã xóa team với ID: {}", id);
+        team.softDelete();
+        team.setLeader(null);
+        teamRepository.save(team);
+        logger.info("Đã xóa team với ID: {}", team.getId());
     }
-
 
     @Override
     public Map<String, Object> getTeamWithMembers(UUID teamId, Pageable pageable) {
@@ -147,7 +191,7 @@ public class TeamServiceImpl implements TeamService {
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Team not found with ID: " + teamId));
-        return teamMapper.entityToTeamWithMembers(team, pageable);
+        return teamMapperHelper.entityToTeamWithMembers(team);
     }
 
     @Override

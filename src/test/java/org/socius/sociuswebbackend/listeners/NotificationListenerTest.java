@@ -40,12 +40,7 @@ class NotificationListenerTest {
 
     private ObjectMapper objectMapper;
     private NotificationResponseDto responseDto;
-    private NotificationRecipientDto recipientDto;
-    private UserResponseDto userDto;
-    private UserResponseDto senderDto;
     private UUID userId;
-    private UUID notificationId;
-    private UUID senderId;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
@@ -64,11 +59,11 @@ class NotificationListenerTest {
         objectMapper.registerModule(module);
 
         userId = UUID.randomUUID();
-        notificationId = UUID.randomUUID();
-        senderId = UUID.randomUUID();
+        UUID notificationId = UUID.randomUUID();
+        UUID senderId = UUID.randomUUID();
 
         // Setup UserResponseDto for recipient
-        userDto = UserResponseDto.builder()
+        UserResponseDto userDto = UserResponseDto.builder()
                 .id(userId)
                 .firstName("Test")
                 .lastName("User")
@@ -76,7 +71,7 @@ class NotificationListenerTest {
                 .build();
 
         // Setup UserResponseDto for sender
-        senderDto = UserResponseDto.builder()
+        UserResponseDto senderDto = UserResponseDto.builder()
                 .id(senderId)
                 .firstName("Sender")
                 .lastName("User")
@@ -84,7 +79,7 @@ class NotificationListenerTest {
                 .build();
 
         // Setup NotificationRecipientDto
-        recipientDto = NotificationRecipientDto.builder()
+        NotificationRecipientDto recipientDto = NotificationRecipientDto.builder()
                 .notificationId(notificationId)
                 .userId(userId)
                 .user(userDto)

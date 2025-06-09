@@ -27,13 +27,11 @@ public class WebSocketServiceImplTest {
     private WebSocketServiceImpl webSocketService;
 
     private UserEntity adminUser;
-    private UserEntity regularUser;
 
     @BeforeEach
     void setUp() {
         // Initialize test data
         adminUser = AuthTestDataUtil.createTestAdminUser();
-        regularUser = AuthTestDataUtil.createTestRegularUser();
     }
 
     @Test

@@ -1,10 +1,11 @@
 package org.socius.sociuswebbackend.model.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.experimental.SuperBuilder;
+import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,11 +18,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = {"employmentDetails", "employmentHistories"})
-public class DepartmentEntity extends BaseEntity {
+@ToString(exclude = {"employmentDetail"})
+public class DepartmentEntity extends SoftDeletableEntity {
 
-    @NotBlank(message = "Department name must not be empty")
-    @Column(name = "name", nullable = false, unique = true, length = 100)
+    @NotBlank(message = "Tên phòng ban không được để trống")
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     @Column(name = "description")
@@ -33,10 +34,10 @@ public class DepartmentEntity extends BaseEntity {
     @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
-    private Set<EmploymentDetailEntity> employmentDetails = new HashSet<>();
+    private Set<EmploymentDetailEntity> employmentDetail = new HashSet<>();
 
-    @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
-    private Set<EmploymentHistoryEntity> employmentHistories = new HashSet<>();
+    public boolean hasActiveEmployees() {
+        return employmentDetail.stream()
+                .anyMatch(emp -> emp.getWorkingStatus() == WorkingStatus.active);
+    }
 }

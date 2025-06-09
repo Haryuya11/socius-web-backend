@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.services;
 
 import org.socius.sociuswebbackend.model.dtos.file.FileMetadataDto;
+import org.socius.sociuswebbackend.model.enums.MessageType;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -41,4 +42,20 @@ public interface FileStorageService {
      * @throws IOException nếu có lỗi xảy ra trong quá trình lấy metadata
      */
     FileMetadataDto getFileMetadata(String fileUrl) throws IOException;
+
+    /**
+     * Xác định loại tin nhắn dựa trên file
+     *
+     * @param file tệp tin cần xác định loại
+     * @return MessageType tương ứng với loại tin nhắn
+     */
+    MessageType determineMessageType(MultipartFile file);
+
+    /**
+     * Xác định thư mục lưu trữ dựa trên loại message
+     *
+     * @param messageType loại tin nhắn
+     * @return tên thư mục tương ứng với loại tin nhắn
+     */
+    String determineDirectory(MessageType messageType);
 }

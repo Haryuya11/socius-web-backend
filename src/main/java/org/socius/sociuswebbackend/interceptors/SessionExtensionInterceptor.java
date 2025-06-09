@@ -7,7 +7,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.services.AuthenticationService;
 import org.socius.sociuswebbackend.services.ConfigService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 

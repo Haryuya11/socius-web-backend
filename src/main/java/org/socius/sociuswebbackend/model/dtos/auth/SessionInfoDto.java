@@ -1,14 +1,13 @@
 package org.socius.sociuswebbackend.model.dtos.auth;
 
-import java.time.LocalDateTime;
-import java.util.Set;
-import java.util.UUID;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor

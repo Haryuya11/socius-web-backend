@@ -55,7 +55,6 @@ dependencies {
 
     // Session Management
     implementation 'org.springframework.session:spring-session-core'
-//    implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.springframework.session:spring-session-data-redis'
     implementation "io.lettuce:lettuce-core:${lettuceVersion}"
 
@@ -70,9 +69,12 @@ dependencies {
 
     // Websockets
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework:spring-messaging'
+    implementation 'org.springframework:spring-websocket'
 
     // RabitMQ
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'org.springframework.amqp:spring-rabbit'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -100,7 +102,7 @@ dependencies {
 }
 
 // Add this block to properly configure the annotation processor order
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.annotationProcessorPath = configurations.annotationProcessor
     options.compilerArgs += [
             '-Amapstruct.defaultComponentModel=spring',

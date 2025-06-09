@@ -12,7 +12,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.session.events.SessionDestroyedEvent;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
 import java.util.UUID;
 
 @Component

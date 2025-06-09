@@ -14,7 +14,6 @@ import org.socius.sociuswebbackend.model.messages.SessionInvalidationMessage;
 import org.socius.sociuswebbackend.services.RBACRedisService;
 import org.socius.sociuswebbackend.services.SessionManagementService;
 import org.socius.sociuswebbackend.services.WebSocketService;
-import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -35,20 +34,17 @@ public class SessionInvalidationListenerTest {
     @Mock
     private WebSocketService webSocketService;
 
-    @Mock
-    RedisTemplate<String, Object> redisTemplate;
-
     @InjectMocks
     private SessionInvalidationListener sessionInvalidationListener;
 
     private final UUID roleId = UUID.randomUUID();
-    private final String sessionId1 = "session-1";
-    private final String sessionId2 = "session-2";
     private final Set<String> sessionIds = new HashSet<>();
 
     @BeforeEach
     void setUp() {
+        String sessionId1 = "session-1";
         sessionIds.add(sessionId1);
+        String sessionId2 = "session-2";
         sessionIds.add(sessionId2);
     }
 

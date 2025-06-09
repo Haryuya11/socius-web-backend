@@ -75,7 +75,7 @@ public class ConfigController {
     @PutMapping("/{key}")
     public ResponseEntity<ConfigDto> createConfig(@PathVariable String key, @Valid @RequestBody AppSettingUpdateRequestDto request) {
         if (appSettingsRepository.existsBySettingKey(key)) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().build();
         }
 
         configService.setString(key, request.getValue(), request.getDescription());

@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.mappers;
 
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -7,6 +8,7 @@ import org.socius.sociuswebbackend.model.dtos.message.MessageRequestDto;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.entities.ConversationEntity;
 import org.socius.sociuswebbackend.model.entities.MessageEntity;
+import org.socius.sociuswebbackend.util.ApplicationContextHelper;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
@@ -14,10 +16,7 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
 
     @Override
     @Mapping(source = "conversation.id", target = "conversationId")
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     public abstract MessageResponseDto entityToDto(MessageEntity entity);
-
 
     @Override
     @Mapping(target = "conversation", ignore = true)
@@ -35,8 +34,9 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
             return null;
         }
 
-        EntityMappingUtil mappingUtil = new EntityMappingUtil();
-        ConversationEntity conversationEntity = mappingUtil.mapConversationIdToEntity(dto.getConversationId());
+        EntityMappingUtil mappingUtil = ApplicationContextHelper.getBean(EntityMappingUtil.class);
+        ConversationEntity conversationEntity = mappingUtil.mapIdToEntity(
+                dto.getConversationId(), ConversationEntity.class);
 
         return MessageEntity.builder()
                 .conversation(conversationEntity)
@@ -63,6 +63,13 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
             return;
         }
 
+        if (dto.getConversationId() != null) {
+            EntityMappingUtil entityMappingUtil = ApplicationContextHelper.getBean(EntityMappingUtil.class);
+            ConversationEntity conversation = entityMappingUtil.mapIdToEntity(
+                    dto.getConversationId(), ConversationEntity.class);
+            entity.setConversation(conversation);
+        }
+
         if (dto.getContent() != null) {
             entity.setContent(dto.getContent());
             entity.setEdited(true);
@@ -73,5 +80,10 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
         }
     }
 
-
+    @AfterMapping
+    void mapDisplayUrl(@MappingTarget MessageResponseDto dto, MessageEntity entity) {
+        if (entity.getFileUrl() != null && !entity.getFileUrl().isEmpty()) {
+            dto.setDisplayUrl("/api/static/" + entity.getFileUrl());
+        }
+    }
 }

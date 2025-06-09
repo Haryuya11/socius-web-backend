@@ -65,8 +65,12 @@ public class PeriodEntity extends BaseEntity {
     @Builder.Default
     private Set<EmployeeRankingEntity> employeeRankings = new HashSet<>();
 
-    @PrePersist
-    @PreUpdate void validateDates() {
+    @Override
+    protected void validateEntity() {
+        validateDates();
+    }
+
+    private void validateDates() {
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("End date must be after start date");
         }

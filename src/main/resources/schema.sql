@@ -522,3 +522,40 @@ ALTER TABLE teams
     ADD COLUMN group_chat_id UUID REFERENCES conversations (id) ON DELETE SET NULL;
 
 COMMENT ON COLUMN teams.group_chat_id IS 'ID of the group chat conversation for this team';
+
+-- Thêm soft delete cho bảng departments
+ALTER TABLE departments
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Thêm soft delete cho bảng positions
+ALTER TABLE positions
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Thêm soft delete cho bảng roles
+ALTER TABLE roles
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Thêm soft delete cho bảng teams
+ALTER TABLE teams
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Thêm soft delete cho bảng permissions
+ALTER TABLE permissions
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Comment giải thích
+COMMENT ON COLUMN departments.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN departments.deleted_at IS 'Timestamp when record was soft deleted';
+COMMENT ON COLUMN positions.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN positions.deleted_at IS 'Timestamp when record was soft deleted';
+COMMENT ON COLUMN roles.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN roles.deleted_at IS 'Timestamp when record was soft deleted';
+COMMENT ON COLUMN teams.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN teams.deleted_at IS 'Timestamp when record was soft deleted';
+COMMENT ON COLUMN permissions.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN permissions.deleted_at IS 'Timestamp when record was soft deleted';

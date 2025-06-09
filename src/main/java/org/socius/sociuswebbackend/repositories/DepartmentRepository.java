@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.repositories;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.socius.sociuswebbackend.model.entities.DepartmentEntity;
@@ -24,6 +25,15 @@ public interface DepartmentRepository extends JpaRepository<DepartmentEntity, UU
      * @param pageable     Thông tin phân trang
      * @return Trang chứa thông tin phòng ban và các thành viên
      */
-    @Query("SELECT d FROM DepartmentEntity d JOIN FETCH d.employmentDetails e WHERE d.id = :departmentId")
+    @Query("SELECT d FROM DepartmentEntity d JOIN FETCH d.employmentDetail e WHERE d.id = :departmentId")
     Page<DepartmentEntity> findDepartmentWithMembers(UUID departmentId, Pageable pageable);
+
+    /**
+     * Lấy tất cả các phòng ban đang hoạt động
+     *
+     * @return Danh sách các phòng ban đang hoạt động
+     */
+    @Query("SELECT d FROM DepartmentEntity d WHERE d.status = 'active'")
+    List<DepartmentEntity> findAllActiveDepartments();
+
 }

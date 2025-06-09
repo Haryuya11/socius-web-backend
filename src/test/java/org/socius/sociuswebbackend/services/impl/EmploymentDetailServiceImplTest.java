@@ -10,16 +10,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.socius.sociuswebbackend.mappers.EmploymentDetailMapper;
-import org.socius.sociuswebbackend.mappers.EmploymentHistoryMapper;
-import org.socius.sociuswebbackend.mappers.SalaryHistoryMapper;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
 import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
-import org.socius.sociuswebbackend.repositories.EmploymentHistoryRepository;
-import org.socius.sociuswebbackend.repositories.SalaryHistoryRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -27,10 +23,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -45,30 +38,16 @@ public class EmploymentDetailServiceImplTest {
     @Mock
     private EmploymentDetailMapper employmentDetailMapper;
 
-    @Mock
-    private EmploymentHistoryRepository employmentHistoryRepository;
-
-    @Mock
-    private EmploymentHistoryMapper employmentHistoryMapper;
-
-    @Mock
-    private SalaryHistoryRepository salaryHistoryRepository;
-
-    @Mock
-    private SalaryHistoryMapper salaryHistoryMapper;
-
     @InjectMocks
     private EmploymentDetailServiceImpl employmentDetailService;
 
-    private UserEntity testUser;
     private EmploymentDetailEntity testEmploymentDetail;
-    private UserResponseDto testUserResponseDto;
     private EmploymentDetailResponseDto testEmploymentDetailResponseDto;
     private Pageable testPageable;
 
     @BeforeEach
     void setUp() {
-        testUser = UserEntity.builder()
+        UserEntity testUser = UserEntity.builder()
                 .id(UUID.randomUUID())
                 .email("employee@example.com")
                 .firstName("Nguyễn")
@@ -83,7 +62,7 @@ public class EmploymentDetailServiceImplTest {
                 .workingStatus(WorkingStatus.valueOf("active"))
                 .build();
 
-        testUserResponseDto = UserResponseDto.builder()
+        UserResponseDto testUserResponseDto = UserResponseDto.builder()
                 .id(testUser.getId())
                 .firstName("Nguyễn")
                 .lastName("Văn Bình")
@@ -103,12 +82,12 @@ public class EmploymentDetailServiceImplTest {
     @DisplayName("Lấy danh sách nhân viên phải gọi service và trả về dữ liệu phân trang")
     void getAllEmployeesShouldCallService() {
         // Arrange
-        Page<EmploymentDetailEntity> employeePage = new PageImpl<>(Arrays.asList(testEmploymentDetail), testPageable, 1);
+        Page<EmploymentDetailEntity> employeePage = new PageImpl<>(Collections.singletonList(testEmploymentDetail), testPageable, 1);
         when(employmentDetailRepository.findAll(testPageable)).thenReturn(employeePage);
         when(employmentDetailMapper.entityToLimitedDto(testEmploymentDetail)).thenReturn(testEmploymentDetailResponseDto);
 
         // Act
-        Map<String, Object> result = employmentDetailService.getAllEmployees(testPageable);
+        Map<String, Object> result = employmentDetailService.getAllActiveEmployees(testPageable);
 
         // Assert
         verify(employmentDetailRepository, times(1)).findAll(testPageable);
@@ -123,12 +102,12 @@ public class EmploymentDetailServiceImplTest {
     @DisplayName("Lấy danh sách nhân viên cho admin phải gọi service và trả về dữ liệu phân trang")
     void getAllEmployeesForAdminShouldCallService() {
         // Arrange
-        Page<EmploymentDetailEntity> employeePage = new PageImpl<>(Arrays.asList(testEmploymentDetail), testPageable, 1);
+        Page<EmploymentDetailEntity> employeePage = new PageImpl<>(Collections.singletonList(testEmploymentDetail), testPageable, 1);
         when(employmentDetailRepository.findAll(testPageable)).thenReturn(employeePage);
         when(employmentDetailMapper.entityToLimitedDtoForAdmin(testEmploymentDetail)).thenReturn(testEmploymentDetailResponseDto);
 
         // Act
-        Map<String, Object> result = employmentDetailService.getAllEmployeesForAdmin(testPageable);
+        Map<String, Object> result = employmentDetailService.getAllActiveEmployeesForAdmin(testPageable);
 
         // Assert
         verify(employmentDetailRepository, times(1)).findAll(testPageable);

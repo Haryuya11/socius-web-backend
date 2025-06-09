@@ -59,5 +59,4 @@ public class MessageEntity extends BaseEntity {
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<MessageStatusEntity> statusList = new HashSet<>();
-
 }

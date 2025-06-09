@@ -2,7 +2,6 @@ package org.socius.sociuswebbackend.config;
 
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.security.CsrfCookieFilter;
-import org.socius.sociuswebbackend.services.ConfigService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -56,7 +55,7 @@ public class SecurityConfig {
                                 "/api/csrf/token",          // CSRF token endpoint
                                 "/api/user-online/**"
                         )
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .csrfTokenRequestHandler(requestHandler)
                 )
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
@@ -75,7 +74,8 @@ public class SecurityConfig {
                                 "/topic/**",
                                 "/user/**",
                                 "/api/user-online/**",
-                                "api/notification/**"
+                                "/api/notification/**",
+                                "/api/static/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/api/admin/**",

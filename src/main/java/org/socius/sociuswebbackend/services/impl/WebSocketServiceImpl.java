@@ -46,7 +46,7 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     @Override
     public void sendSessionInvalidationNotification(String sessionId, String reason, String message) {
-        sendUserSpecificNotification(sessionId, "SESSION_INVALIDATION", Map.of(
+        sendUserSpecificNotification(sessionId, Map.of(
                 "reason", reason,
                 "message", message
         ));
@@ -85,7 +85,6 @@ public class WebSocketServiceImpl implements WebSocketService {
         }
     }
 
-
     @Override
     @EventListener
     public void handleWebSocketConnectEvent(SessionConnectedEvent event) {
@@ -115,8 +114,8 @@ public class WebSocketServiceImpl implements WebSocketService {
                 headerAccessor.getSessionAttributes().put("userSessionId", userSessionId);
 
                 // Kiểm tra tính hợp lệ của phiên làm việc
-                if (!isValidSession(sessionId)) {
-                    logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
+                if (isNotValidSession(sessionId)) {
+                    logger.warn("Phiên làm việc không hợp lệ khi kết nối: {}", sessionId);
                     sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED", "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
                     return;
                 }
@@ -142,8 +141,8 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     @Override
     public boolean validateSessionAndNotify(String sessionId) {
-        if (!isValidSession(sessionId)) {
-            logger.warn("Phiên làm việc không hợp lệ: {}", sessionId);
+        if (isNotValidSession(sessionId)) {
+            logger.warn("Phiên làm việc không hợp lệ khi validate: {}", sessionId);
             sendSessionInvalidationNotification(sessionId, "SESSION_EXPIRED", "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
             return false;
         }
@@ -180,26 +179,37 @@ public class WebSocketServiceImpl implements WebSocketService {
         try {
             List<MessageResponseDto> offlineMessages = offlineMessageService.getOfflineMessages(userId);
             if (!offlineMessages.isEmpty()) {
-                logger.info("Đang gửi {} tin nhắn offline cho người dùng {}", offlineMessages.size(), userId);
-
-                offlineMessages.sort(Comparator.comparing(MessageResponseDto::getCreatedAt));
+                logger.info("Sending {} offline messages to user {}", offlineMessages.size(), userId);
 
                 for (MessageResponseDto message : offlineMessages) {
+                    // Tạo message wrapper giống như realtime messages
+                    Map<String, Object> messageWrapper = new HashMap<>();
+                    messageWrapper.put("type", "CHAT_MESSAGE");
+
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("id", message.getId());
+                    data.put("content", message.getContent());
+                    data.put("timestamp", message.getCreatedAt());
+                    data.put("senderId", message.getSender().getId());
+                    data.put("senderName", message.getSender().getFirstName() + " " + message.getSender().getLastName());
+                    data.put("conversationId", message.getConversationId());
+                    data.put("read", false);
+
+                    messageWrapper.put("data", data);
+
                     messagingTemplate.convertAndSendToUser(
                             userId.toString(),
                             "/queue/offline-messages",
-                            message
+                            messageWrapper
                     );
 
-                    Thread.sleep(50); // Giả lập độ trễ giữa các tin nhắn để tránh quá tải
+                    Thread.sleep(100); // Tránh spam
                 }
 
-                // Xóa tin nhắn offline sau khi đã gửi
                 offlineMessageService.clearOfflineMessages(userId);
-                logger.info("Đã xóa tin nhắn offline cho người dùng {}", userId);
             }
         } catch (Exception e) {
-            logger.error("Lỗi khi gửi tin nhắn offline: {}", e.getMessage(), e);
+            logger.error("Error sending offline messages: {}", e.getMessage(), e);
         }
     }
 
@@ -222,10 +232,10 @@ public class WebSocketServiceImpl implements WebSocketService {
     /**
      * Gửi thông báo riêng cho một người dùng cụ thể
      */
-    private void sendUserSpecificNotification(String userId, String type, Map<String, Object> data) {
+    private void sendUserSpecificNotification(String userId, Map<String, Object> data) {
         try {
             Map<String, Object> notification = new HashMap<>(data);
-            notification.put("type", type);
+            notification.put("type", "SESSION_INVALIDATION");
             notification.put("timestamp", System.currentTimeMillis());
             notification.put("messageId", UUID.randomUUID().toString());
 
@@ -235,9 +245,9 @@ public class WebSocketServiceImpl implements WebSocketService {
                     "/topic/notifications",
                     notification
             );
-            logger.info("Đã gửi thông báo {} cho người dùng {}: {}", type, userId, data);
+            logger.info("Đã gửi thông báo {} cho người dùng {}: {}", "SESSION_INVALIDATION", userId, data);
         } catch (Exception e) {
-            logger.error("Lỗi khi gửi thông báo {}: {}", type, e.getMessage(), e);
+            logger.error("Lỗi khi gửi thông báo {}: {}", "SESSION_INVALIDATION", e.getMessage(), e);
         }
     }
 
@@ -247,16 +257,16 @@ public class WebSocketServiceImpl implements WebSocketService {
      * @param sessionId ID của phiên làm việc
      * @return true nếu phiên hợp lệ, false nếu đã hết hạn
      */
-    private boolean isValidSession(String sessionId) {
+    private boolean isNotValidSession(String sessionId) {
         try {
             String sessionKey = RedisKeyBuilder.springSessionKey(sessionId);
             Boolean exists = redisTemplate.hasKey(sessionKey);
             Long expireTime = redisTemplate.getExpire(sessionKey);
 
-            return exists && expireTime > 0;
+            return !exists || expireTime <= 0;
         } catch (Exception e) {
             logger.error("Lỗi kiểm tra session validity: {}", e.getMessage(), e);
-            return false;
+            return true;
         }
     }
 }

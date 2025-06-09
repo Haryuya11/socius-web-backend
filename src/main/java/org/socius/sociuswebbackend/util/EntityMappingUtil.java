@@ -1,9 +1,8 @@
 package org.socius.sociuswebbackend.util;
 
-import org.socius.sociuswebbackend.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.socius.sociuswebbackend.model.entities.*;
+import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
@@ -13,8 +12,12 @@ import java.util.UUID;
 @Component
 public class EntityMappingUtil {
 
-    @Autowired
-    private UserRepository userRepository;
+    final protected UserRepository userRepository;
+
+    public EntityMappingUtil(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     /**
      * Generic method to map an ID to an entity
      */
@@ -66,10 +69,4 @@ public class EntityMappingUtil {
     public ConversationEntity mapConversationIdToEntity(UUID id) {
         return mapIdToEntity(id, ConversationEntity.class);
     }
-
-    public MessageEntity mapMessageIdToEntity(UUID id) {
-        return mapIdToEntity(id, MessageEntity.class);
-    }
-
-
 }
