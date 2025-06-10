@@ -1,7 +1,7 @@
 package org.socius.sociuswebbackend.config;
 
 import lombok.RequiredArgsConstructor;
-import org.socius.sociuswebbackend.filter.ChatbotAuthenticationFilter;
+//import org.socius.sociuswebbackend.filter.ChatbotAuthenticationFilter;
 import org.socius.sociuswebbackend.security.CsrfCookieFilter;
 import org.socius.sociuswebbackend.services.ConfigService;
 import org.socius.sociuswebbackend.services.UserService;
@@ -47,7 +47,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, ChatbotAuthenticationFilter chatbotAuthenticationFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName("_csrf");
@@ -67,7 +67,6 @@ public class SecurityConfig {
                         )
                         .csrfTokenRequestHandler(requestHandler)
                 )
-                .addFilterBefore(chatbotAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -171,8 +170,4 @@ public class SecurityConfig {
         return (web) -> web.httpFirewall(httpFirewall());
     }
 
-    @Bean
-    public ChatbotAuthenticationFilter chatbotAuthenticationFilter() {
-        return new ChatbotAuthenticationFilter(userService, configService);
-    }
 }
