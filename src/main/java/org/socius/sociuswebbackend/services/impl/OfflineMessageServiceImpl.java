@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.services.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,61 +24,74 @@ public class OfflineMessageServiceImpl implements OfflineMessageService {
 
     final private RedisTemplate<String, Object> redisTemplate;
     final private ConfigService configService;
+    final private ObjectMapper objectMapper;
 
     @Override
     public void storeOfflineMessage(UUID userId, MessageResponseDto message) {
-        String key = RedisKeyBuilder.chatOfflineKey(userId);
+        try {
+            // ✅ Kiểm tra trùng lặp an toàn hơn
+            if (checkIfMessageExists(userId, message)) {
+                logger.debug("Message already exists for user: {}, messageId: {}", userId, message.getId());
+                return;
+            }
 
-        // Kiểm tra nếu tin nhắn này đã tồn tại trong danh sách tin nhắn offline
-        boolean exists = checkIfMessageExists(key, message);
-        if (exists) {
-            logger.info("Tin nhắn đã tồn tại trong danh sách offline cho người dùng {}", userId);
-            return;
+            String key = RedisKeyBuilder.chatOfflineKey(userId);
+            String messageJson = objectMapper.writeValueAsString(message);
+
+            redisTemplate.opsForList().rightPush(key, messageJson);
+            redisTemplate.expire(key, Duration.ofDays(configService.getInt("offline.message.retention.days", 7)));
+
+            // ✅ Log khác nhau cho system message và normal message
+            if (message.getId() == null) {
+                logger.info("Đã lưu system message offline cho người dùng {}: {}", userId, message.getContent());
+            } else {
+                logger.info("Đã lưu tin nhắn offline cho người dùng {}, messageId: {}", userId, message.getId());
+            }
+        } catch (Exception e) {
+            logger.error("Error storing offline message for user: {}, messageId: {}",
+                    userId, message.getId(), e);
         }
-
-        redisTemplate.opsForList().rightPush(key, message);
-
-        // Đặt TTL cho key
-        if (!redisTemplate.hasKey(key)) {
-            int expiryDays = configService.getInt("chat.offline.messages.expiry.days", 7);
-            redisTemplate.expire(key, Duration.ofDays(expiryDays));
-        }
-
-        // Kiểm tra và giới hạn số lượng tin nhắn, tránh quá tải
-        Long size = redisTemplate.opsForList().size(key);
-        int maxOfflineMessages = configService.getInt("chat.offline.messages.max", 1000);
-        if (size != null && size > maxOfflineMessages) {
-            // Loại bỏ tin nhắn cũ nếu vượt quá giới hạn
-            redisTemplate.opsForList().trim(key, size - maxOfflineMessages, -1);
-            logger.info("Giới hạn tin nhắn offline cho người dùng {} xuống {} tin nhắn", userId, maxOfflineMessages);
-        }
-
-        logger.info("Đã lưu tin nhắn offline cho người dùng {}, messageId: {}", userId, message.getId());
     }
 
     /**
      * Kiểm tra tin nhắn đã tồn tại trong danh sách offline chưa để tránh trùng lặp
      *
-     * @param key        Key của danh sách tin nhắn
-     * @param newMessage Tin nhắn mới
+     * @param userId     ID của người dùng
+     * @param messageDto Tin nhắn cần kiểm tra
      */
-    private boolean checkIfMessageExists(String key, MessageResponseDto newMessage) {
-        Long size = redisTemplate.opsForList().size(key);
-        if (size == null || size == 0) {
+    private boolean checkIfMessageExists(UUID userId, MessageResponseDto messageDto) {
+        try {
+            // ✅ Kiểm tra null trước khi so sánh
+            UUID messageId = messageDto.getId();
+            if (messageId == null) {
+                // Đối với tin nhắn hệ thống không có ID, luôn cho phép lưu
+                logger.debug("Message has no ID (likely system message), allowing storage for user: {}", userId);
+                return false;
+            }
+
+            String key = RedisKeyBuilder.chatOfflineKey(userId);
+            List<Object> messages = redisTemplate.opsForList().range(key, 0, -1);
+
+            if (messages == null || messages.isEmpty()) {
+                return false;
+            }
+
+            return messages.stream()
+                    .map(obj -> {
+                        try {
+                            return objectMapper.readValue(obj.toString(), MessageResponseDto.class);
+                        } catch (Exception e) {
+                            logger.warn("Failed to parse stored message: {}", e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(msg -> msg != null && msg.getId() != null) // ✅ Thêm kiểm tra null
+                    .anyMatch(msg -> messageId.equals(msg.getId()));
+        } catch (Exception e) {
+            logger.error("Error checking if message exists for user: {}, messageId: {}",
+                    userId, messageDto.getId(), e);
             return false;
         }
-
-        List<Object> messages = redisTemplate.opsForList().range(key, 0, -1);
-        if (messages != null) {
-            for (Object obj : messages) {
-                if (obj instanceof MessageResponseDto message) {
-                    if (message.getId().equals(newMessage.getId())) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     @Override
