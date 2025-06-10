@@ -19,10 +19,10 @@ public interface FileStorageService {
     String storeFile(MultipartFile file, String directory) throws IOException;
 
     /**
-     * Lấy đường dẫn tệp tin từ URL
+     * Lấy đường dẫn đầy đủ của tệp tin
      *
-     * @param fileUrl URL của tệp tin
-     * @return đường dẫn tệp tin
+     * @param fileUrl URL tương đối của tệp tin
+     * @return đường dẫn đầy đủ của tệp tin
      */
     Path getFilePath(String fileUrl);
 
@@ -30,7 +30,7 @@ public interface FileStorageService {
      * Xóa tệp tin
      *
      * @param fileUrl URL của tệp tin cần xóa
-     * @throws IOException nếu có lỗi xảy ra trong quá trình xóa
+     * @throws IOException nếu có lỗi khi xóa tệp tin
      */
     void deleteFile(String fileUrl) throws IOException;
 
@@ -39,23 +39,23 @@ public interface FileStorageService {
      *
      * @param fileUrl URL của tệp tin
      * @return metadata của tệp tin
-     * @throws IOException nếu có lỗi xảy ra trong quá trình lấy metadata
+     * @throws IOException nếu có lỗi khi đọc metadata
      */
     FileMetadataDto getFileMetadata(String fileUrl) throws IOException;
 
     /**
-     * Xác định loại tin nhắn dựa trên file
+     * Xác định loại tin nhắn dựa trên tệp tin
      *
-     * @param file tệp tin cần xác định loại
-     * @return MessageType tương ứng với loại tin nhắn
+     * @param file tệp tin upload
+     * @return loại tin nhắn tương ứng
      */
     MessageType determineMessageType(MultipartFile file);
 
     /**
-     * Xác định thư mục lưu trữ dựa trên loại message
+     * Xác định thư mục lưu trữ dựa trên loại tin nhắn
      *
      * @param messageType loại tin nhắn
-     * @return tên thư mục tương ứng với loại tin nhắn
+     * @return tên thư mục lưu trữ
      */
     String determineDirectory(MessageType messageType);
 }

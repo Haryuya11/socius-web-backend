@@ -10,6 +10,7 @@ import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailRespons
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentHistoryResponseDto;
 import org.socius.sociuswebbackend.model.dtos.salary.SalaryHistoryResponseDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
+import org.socius.sociuswebbackend.model.dtos.user.UserRequestDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.*;
 import org.socius.sociuswebbackend.model.enums.WorkingStatus;
@@ -166,5 +167,15 @@ public class UserServiceImpl implements UserService {
         result.put("totalElements", taskPage.getTotalElements());
 
         return result;
+    }
+
+    @Override
+    public UserResponseDto updateInfoUser(UUID userId, UserRequestDto userRequestDto) {
+        UserEntity userEntity = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+
+        UserEntity updatedUser = userRepository.save(userEntity);
+
+        return userMapper.entityToDto(updatedUser);
     }
 }

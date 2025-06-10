@@ -62,13 +62,19 @@ public class ChatMessageListener {
                 boolean isOnline = onlineUserService.isUserOnline(userId);
                 logger.info("User {} online status: {}", userId, isOnline);
 
-                if (isOnline) {
-                    sendRealtimeMessage(message, userId, isPrivateMessage);
+                if (!isOnline) {
+                    try {
+                        offlineMessageService.storeOfflineMessage(userId, message);
+                        logger.info("Saved offline message for user {} in conversation {}",
+                                userId, message.getConversationId());
+                    } catch (Exception e) {
+                        logger.error("Failed to store offline message for user {}: {}",
+                                userId, e.getMessage(), e);
+                        // ✅ Không throw exception, chỉ log để không làm crash listener
+                    }
                 } else {
-                    // Lưu vào offline messages
-                    offlineMessageService.storeOfflineMessage(userId, message);
-                    logger.info("Saved offline message for user {} in conversation {}",
-                            userId, message.getConversationId());
+                    logger.info("User {} is online, sent message in real-time", userId);
+                    sendRealtimeMessage(message, userId, isPrivateMessage);
                 }
             }
 
