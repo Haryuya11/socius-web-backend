@@ -7,6 +7,7 @@ import java.util.UUID;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
+import org.socius.sociuswebbackend.model.dtos.user.UserRequestDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.services.UserService;
 import org.springframework.data.domain.PageRequest;
@@ -166,5 +167,20 @@ public class UserController {
         Pageable pageable = PageRequest.of(page, size);
         Map<String, Object> response = userService.getTasksByUserId(userId, pageable);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Cập nhật thông tin người dùng
+     *
+     * @param userId          ID của người dùng cần cập nhật
+     * @param userRequestDto  DTO chứa thông tin cập nhật người dùng
+     * @return Thông tin người dùng đã được cập nhật
+     */
+    @PutMapping("/{userId}/update")
+    public ResponseEntity<UserResponseDto> updateUser(
+            @PathVariable UUID userId,
+            @RequestBody UserRequestDto userRequestDto) {
+        UserResponseDto updatedUser = userService.updateInfoUser(userId, userRequestDto);
+        return ResponseEntity.ok(updatedUser);
     }
 }

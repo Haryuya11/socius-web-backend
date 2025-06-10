@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
+import org.socius.sociuswebbackend.model.dtos.user.UserRequestDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.springframework.data.domain.Pageable;
 
@@ -84,4 +85,6 @@ public interface UserService {
      * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử
      */
     Map<String, Object> getTasksByUserId(UUID userId, Pageable pageable);
+
+    UserResponseDto updateInfoUser(UUID userID, UserRequestDto userRequestDto);
 }
