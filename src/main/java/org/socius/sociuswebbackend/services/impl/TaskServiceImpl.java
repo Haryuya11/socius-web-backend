@@ -1,6 +1,5 @@
 package org.socius.sociuswebbackend.services.impl;
 
-
 import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.mappers.TaskMapper;
 import org.socius.sociuswebbackend.mappers.TeamMapper;
@@ -36,9 +35,6 @@ public class TaskServiceImpl implements TaskService {
     private final TeamRepository teamRepository;
     private final TeamMapper teamMapper;
     private final UserRepository userRepository;
-
-
-
 
     @Override
     public TaskResponseDto createTask(TaskRequestDto dto) {

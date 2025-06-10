@@ -80,11 +80,18 @@ public interface UserService {
     /**
      * Lấy danh sách task của một người dùng theo ID
      *
-     * @param userId  ID của người dùng cần lấy danh sách task
+     * @param userId   ID của người dùng cần lấy danh sách task
      * @param pageable Thông tin phân trang (số trang, kích thước trang)
      * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử
      */
     Map<String, Object> getTasksByUserId(UUID userId, Pageable pageable);
 
+    /**
+     * Cập nhật thông tin người dùng
+     *
+     * @param userID         ID của người dùng cần cập nhật
+     * @param userRequestDto Thông tin người dùng mới
+     * @return Thông tin người dùng đã cập nhật
+     */
     UserResponseDto updateInfoUser(UUID userID, UserRequestDto userRequestDto);
 }

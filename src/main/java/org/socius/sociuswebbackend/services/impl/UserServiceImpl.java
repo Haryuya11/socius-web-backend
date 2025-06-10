@@ -174,6 +174,9 @@ public class UserServiceImpl implements UserService {
         UserEntity userEntity = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
+        // Cập nhật thông tin từ DTO sang entity
+        userMapper.updateEntityFromDto(userRequestDto, userEntity);
+
         UserEntity updatedUser = userRepository.save(userEntity);
 
         return userMapper.entityToDto(updatedUser);
