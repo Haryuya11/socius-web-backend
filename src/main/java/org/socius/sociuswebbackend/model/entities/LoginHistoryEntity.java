@@ -24,19 +24,12 @@ public class LoginHistoryEntity extends BaseEntity {
 
     @NotNull(message = "Login time must not be null")
     @Column(name = "login_time", nullable = false)
-    private LocalDateTime loginTime;
+    @Builder.Default
+    private LocalDateTime loginTime = LocalDateTime.now();
 
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
     @Column(name = "device_info")
     private String deviceInfo;
-
-    @PrePersist
-    protected void onCreate() {
-        super.onCreate();
-        if (loginTime == null) {
-            loginTime = LocalDateTime.now();
-        }
-    }
 }

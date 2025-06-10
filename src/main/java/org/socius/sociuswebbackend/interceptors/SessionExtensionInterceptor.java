@@ -3,22 +3,21 @@ package org.socius.sociuswebbackend.interceptors;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.services.AuthenticationService;
 import org.socius.sociuswebbackend.services.ConfigService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
+@RequiredArgsConstructor
 public class SessionExtensionInterceptor implements HandlerInterceptor {
-    @Autowired
-    private AuthenticationService authenticationService;
-
-    @Autowired
-    private ConfigService configService;
+    final private AuthenticationService authenticationService;
+    final private ConfigService configService;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public boolean preHandle(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         HttpSession session = request.getSession();
         if (session != null) {
 

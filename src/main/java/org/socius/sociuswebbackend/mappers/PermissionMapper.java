@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.socius.sociuswebbackend.model.dtos.permission.PermissionRequestDto;
@@ -16,29 +17,47 @@ import java.util.stream.Collectors;
  * Mapper for Permission entities and DTOs
  */
 @Mapper(componentModel = "spring")
-public interface PermissionMapper extends BaseEntityMapper, 
+public abstract class PermissionMapper extends BaseEntityMapper implements
         GenericMapper<PermissionEntity, PermissionResponseDto, PermissionRequestDto> {
-    
+
     @Override
-    PermissionResponseDto entityToDto(PermissionEntity entity);
-    
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract PermissionResponseDto entityToDto(PermissionEntity entity);
+
+    @Named("entityToLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract PermissionResponseDto entityToLimitedDto(PermissionEntity entity);
+
     @Override
-    PermissionEntity requestDtoToEntity(PermissionRequestDto dto);
-    
+    public abstract PermissionEntity requestDtoToEntity(PermissionRequestDto dto);
+
     @Override
-    void updateEntityFromDto(PermissionRequestDto dto, @MappingTarget PermissionEntity entity);
-    
+    public abstract void updateEntityFromDto(PermissionRequestDto dto, @MappingTarget PermissionEntity entity);
+
     /**
      * Convert set of RolePermissionEntity to set of PermissionResponseDto
      */
     @Named("rolePermissionsToPermissionDtos")
-    default Set<PermissionResponseDto> rolePermissionsToPermissionDtos(Set<RolePermissionEntity> rolePermissions) {
+    public Set<PermissionResponseDto> rolePermissionsToPermissionDtos(Set<RolePermissionEntity> rolePermissions) {
         if (rolePermissions == null) {
             return new HashSet<>();
         }
         return rolePermissions.stream()
                 .filter(rp -> rp != null && rp.getPermission() != null)
                 .map(rp -> entityToDto(rp.getPermission()))
+                .collect(Collectors.toSet());
+    }
+
+    @Named("rolePermissionsToLimitedPermissionDtos")
+    public Set<PermissionResponseDto> rolePermissionsToLimitedPermissionDtos(Set<RolePermissionEntity> rolePermissions) {
+        if (rolePermissions == null) {
+            return new HashSet<>();
+        }
+        return rolePermissions.stream()
+                .filter(rp -> rp != null && rp.getPermission() != null)
+                .map(rp -> entityToLimitedDto(rp.getPermission()))
                 .collect(Collectors.toSet());
     }
 }

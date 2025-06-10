@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.experimental.SuperBuilder;
+import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,8 +17,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(exclude = {"employmentDetails", "employmentHistories"})
-public class PositionEntity extends BaseEntity {
+@ToString(exclude = {"employmentDetails"})
+public class PositionEntity extends SoftDeletableEntity {
 
     @NotBlank(message = "Position name must not be empty")
     @Column(name = "name", nullable = false, unique = true, length = 100)
@@ -31,8 +32,8 @@ public class PositionEntity extends BaseEntity {
     @Builder.Default
     private Set<EmploymentDetailEntity> employmentDetails = new HashSet<>();
 
-    @OneToMany(mappedBy = "position", fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
-    private Set<EmploymentHistoryEntity> employmentHistories = new HashSet<>();
+    public boolean hasActiveEmployees() {
+        return employmentDetails.stream()
+                .anyMatch(emp -> emp.getWorkingStatus() == WorkingStatus.active);
+    }
 }

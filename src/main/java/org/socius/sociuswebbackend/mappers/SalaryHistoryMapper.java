@@ -6,18 +6,51 @@ import org.socius.sociuswebbackend.model.dtos.salary.SalaryHistoryResponseDto;
 import org.socius.sociuswebbackend.model.entities.SalaryHistoryEntity;
 import org.socius.sociuswebbackend.util.EntityMappingUtil;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 /**
  * Mapper for SalaryHistory entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
-public interface SalaryHistoryMapper extends BaseEntityMapper, 
+public abstract class SalaryHistoryMapper extends BaseEntityMapper implements
         GenericMapper<SalaryHistoryEntity, SalaryHistoryResponseDto, SalaryHistoryRequestDto> {
     
     @Override
-    SalaryHistoryResponseDto entityToDto(SalaryHistoryEntity entity);
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract SalaryHistoryResponseDto entityToDto(SalaryHistoryEntity entity);
+
+    @Named("entityToLimitedDto")
+    @Mapping(target = "user", source = "user", qualifiedByName = "toLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "changeAmount", expression = "java(calculateChangeAmount(entity))")
+    @Mapping(target = "percentageChange", expression = "java(calculatePercentageChange(entity))")
+    public abstract SalaryHistoryResponseDto entityToLimitedDto(SalaryHistoryEntity entity);
+
+    @Named("calculateChangeAmount")
+    protected BigDecimal calculateChangeAmount(SalaryHistoryEntity entity) {
+        if (entity.getPreviousSalary() == null || entity.getNewSalary() == null) {
+            return null;
+        }
+        return entity.getNewSalary().subtract(entity.getPreviousSalary());
+    }
+
+    @Named("calculatePercentageChange")
+    protected BigDecimal calculatePercentageChange(SalaryHistoryEntity entity) {
+        if (entity.getPreviousSalary() == null || entity.getNewSalary() == null ||
+                entity.getPreviousSalary().compareTo(BigDecimal.ZERO) == 0) {
+            return null;
+        }
+        BigDecimal changeAmount = entity.getNewSalary().subtract(entity.getPreviousSalary());
+        return changeAmount
+                .divide(entity.getPreviousSalary(), 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+    }
     
     @Override
-    default SalaryHistoryEntity requestDtoToEntity(SalaryHistoryRequestDto dto) {
+    public SalaryHistoryEntity requestDtoToEntity(SalaryHistoryRequestDto dto) {
         if (dto == null) {
             return null;
         }
@@ -34,7 +67,7 @@ public interface SalaryHistoryMapper extends BaseEntityMapper,
     }
     
     @Override
-    default void updateEntityFromDto(SalaryHistoryRequestDto dto, @MappingTarget SalaryHistoryEntity entity) {
+    public void updateEntityFromDto(SalaryHistoryRequestDto dto, @MappingTarget SalaryHistoryEntity entity) {
         if (dto == null) {
             return;
         }

@@ -1,6 +1,7 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
@@ -10,15 +11,18 @@ import org.socius.sociuswebbackend.model.entities.PositionEntity;
  * Mapper for Position entities and DTOs
  */
 @Mapper(componentModel = "spring")
-public interface PositionMapper extends BaseEntityMapper, 
+public abstract class PositionMapper extends BaseEntityMapper implements
         GenericMapper<PositionEntity, PositionResponseDto, PositionRequestDto> {
 
     @Override
-    PositionResponseDto entityToDto(PositionEntity entity);
-    
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract PositionResponseDto entityToDto(PositionEntity entity);
+
     @Override
-    PositionEntity requestDtoToEntity(PositionRequestDto dto);
-    
+    public abstract PositionEntity requestDtoToEntity(PositionRequestDto dto);
+
     @Override
-    void updateEntityFromDto(PositionRequestDto dto, @MappingTarget PositionEntity entity);
+    public abstract void updateEntityFromDto(PositionRequestDto dto, @MappingTarget PositionEntity entity);
+
 }

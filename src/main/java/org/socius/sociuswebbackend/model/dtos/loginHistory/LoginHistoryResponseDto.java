@@ -1,5 +1,6 @@
-package org.socius.sociuswebbackend.model.dtos.login;
+package org.socius.sociuswebbackend.model.dtos.loginHistory;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class LoginHistoryResponseDto extends BaseDto {
     private UserResponseDto user;
     private LocalDateTime loginTime;

@@ -19,6 +19,11 @@ DROP TABLE IF EXISTS notification_recipients CASCADE;
 DROP TABLE IF EXISTS employee_ranking CASCADE;
 DROP TABLE IF EXISTS login_history CASCADE;
 DROP TABLE IF EXISTS app_settings CASCADE;
+DROP TABLE IF EXISTS conversations CASCADE;
+DROP TABLE IF EXISTS conversation_members CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS message_status CASCADE;
+DROP TABLE IF EXISTS unread_counts CASCADE;
 
 CREATE TABLE
     positions
@@ -88,11 +93,11 @@ CREATE TABLE
 CREATE TABLE
     users
 (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    first_name VARCHAR(100) NOT NULL,
-    last_name  VARCHAR(100) NOT NULL,
-    email      VARCHAR(100) NOT NULL UNIQUE CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-) ,
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    first_name   VARCHAR(100) NOT NULL,
+    last_name    VARCHAR(100) NOT NULL,
+    email        VARCHAR(100) NOT NULL UNIQUE CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        ),
     birth_date   DATE         NOT NULL CHECK (birth_date <= CURRENT_DATE - INTERVAL '18 years'),
     image_url    TEXT,
     gender       VARCHAR(10) CHECK (gender IN ('male', 'female')),
@@ -121,10 +126,10 @@ CREATE TABLE
 (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id        UUID                                                                       NOT NULL UNIQUE,
-    position_id    UUID                                                                       NOT NULL,
-    department_id  UUID                                                                       NOT NULL,
+    position_id    UUID,
+    department_id  UUID,
     team_id        UUID,
-    role_id        UUID                                                                       NOT NULL,
+    role_id        UUID,
     start_date     DATE                                                                       NOT NULL CHECK (start_date <= CURRENT_DATE),
     salary         DECIMAL(10, 2) CHECK (salary >= 0)                                         NOT NULL,
     working_status VARCHAR(10) CHECK (working_status IN ('active', 'inactive', 'terminated')) NOT NULL,
@@ -137,16 +142,25 @@ CREATE TABLE
     FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
 );
 
+ALTER TABLE employment_details
+    ALTER COLUMN department_id DROP NOT NULL;
+
+ALTER TABLE employment_details
+    ALTER COLUMN role_id DROP NOT NULL;
+
+ALTER TABLE employment_details
+    ALTER COLUMN position_id DROP NOT NULL;
+
 -- Bảng lịch sử việc làm
 CREATE TABLE
     employment_history
 (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id       UUID                               NOT NULL,
-    position_id   UUID                               NOT NULL,
-    department_id UUID                               NOT NULL,
+    position_id   UUID,
+    department_id UUID,
     team_id       UUID,
-    role_id       UUID                               NOT NULL,
+    role_id       UUID,
     start_date    DATE                               NOT NULL CHECK (start_date <= CURRENT_DATE),
     end_date      DATE                               NOT NULL CHECK (end_date >= start_date),
     salary        DECIMAL(10, 2) CHECK (salary >= 0) NOT NULL,
@@ -159,6 +173,14 @@ CREATE TABLE
     FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE SET NULL,
     FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
 );
+ALTER TABLE employment_history
+    ALTER COLUMN department_id DROP NOT NULL;
+
+ALTER TABLE employment_history
+    ALTER COLUMN role_id DROP NOT NULL;
+
+ALTER TABLE employment_history
+    ALTER COLUMN position_id DROP NOT NULL;
 
 -- Bảng lịch sử lương
 CREATE TABLE
@@ -185,7 +207,7 @@ CREATE TABLE
     status      VARCHAR(10) CHECK (
         status IN ('pending', 'completed', 'failed', 'in_progress')
         )                    NOT NULL,
-    assigned_to UUID NULL,
+    assigned_to UUID         NULL,
     created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assigned_to) REFERENCES users (id) ON DELETE CASCADE
@@ -198,10 +220,10 @@ CREATE TABLE
     name        VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
     deadline    DATE         NOT NULL CHECK (deadline > CURRENT_DATE),
-    status      VARCHAR(10) CHECK (
+    status      VARCHAR(20) CHECK (
         status IN ('pending', 'completed', 'failed', 'in_progress')
         )                    NOT NULL,
-    assigned_to UUID NULL,
+    assigned_to UUID         NULL,
     created_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assigned_to) REFERENCES users (id) ON DELETE CASCADE
@@ -312,14 +334,77 @@ CREATE TABLE login_history
 
 CREATE TABLE app_settings
 (
-    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    setting_key  VARCHAR(100) NOT NULL UNIQUE,
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    setting_key   VARCHAR(100) NOT NULL UNIQUE,
     setting_value VARCHAR(255) NOT NULL,
-    description  TEXT,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    description   TEXT,
+    created_at    TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Bảng cuộc trò chuyện
+CREATE TABLE conversations
+(
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name       VARCHAR(255),
+    type       VARCHAR(20) NOT NULL CHECK (type IN ('DIRECT', 'GROUP')),
+    image_url  TEXT,
+    created_by UUID        NOT NULL,
+    created_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users (id)
+
+);
+
+-- Bảng thành viên cuộc trò chuyện
+CREATE TABLE conversation_members
+(
+    conversation_id UUID NOT NULL REFERENCES conversations (id),
+    user_id         UUID NOT NULL REFERENCES users (id),
+    joined_at       TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    left_at         TIMESTAMP,
+    role            VARCHAR(20) DEFAULT 'MEMBER' CHECK (role IN ('MEMBER', 'ADMIN')),
+    PRIMARY KEY (conversation_id, user_id)
+);
+
+-- Bảng tin nhắn
+CREATE TABLE messages
+(
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id    UUID NOT NULL REFERENCES conversations (id),
+    sender_id          UUID NOT NULL REFERENCES users (id),
+    content            TEXT NOT NULL,
+    message_type       VARCHAR(20)      DEFAULT 'TEXT' CHECK (message_type IN ('TEXT', 'IMAGE', 'FILE', 'AUDIO', 'VIDEO', 'SYSTEM')),
+    file_url           TEXT,
+    created_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    is_edited          BOOLEAN          DEFAULT FALSE,
+    is_deleted         BOOLEAN          DEFAULT FALSE,
+    media_cleaned_up   BOOLEAN          DEFAULT FALSE,
+    file_size          BIGINT,
+    file_original_name TEXT,
+    file_content_type  TEXT
+);
+
+-- Bảng trạng thái đọc tin nhắn
+CREATE TABLE message_status
+(
+    message_id UUID NOT NULL REFERENCES messages (id),
+    user_id    UUID NOT NULL REFERENCES users (id),
+    is_read    BOOLEAN DEFAULT FALSE,
+    read_at    TIMESTAMP,
+    PRIMARY KEY (message_id, user_id)
+);
+
+-- Bảng theo dõi tin chưa đọc
+CREATE TABLE unread_counts
+(
+    conversation_id      UUID NOT NULL REFERENCES conversations (id),
+    user_id              UUID NOT NULL REFERENCES users (id),
+    unread_count         INT DEFAULT 0,
+    last_read_message_id UUID REFERENCES messages (id),
+    PRIMARY KEY (conversation_id, user_id)
+);
 
 --Constraints
 --Không có hai period trùng name, type, start_date, end_date.
@@ -343,13 +428,134 @@ ALTER TABLE notification_recipients
     ADD CONSTRAINT unique_notification_recipient UNIQUE (notification_id, user_id);
 
 
-INSERT INTO app_settings (setting_key, setting_value, description)
-VALUES
-    ('session_timeout', '30', 'Thời gian phiên làm việc (phút)'),
-    ('session_extension_threshold', '2', 'Ngưỡng thời gian còn lại để gia hạn phiên (phút)'),
-    ('default_user_password', '1', 'Mật khẩu mặc định cho tài khoản mới'),
-    ('allowed_origins', 'http://localhost:3000,https://app.socius.com', 'Danh sách domain được phép truy cập API'),
-    ('max_login_sessions', '1', 'Số phiên đăng nhập tối đa cho mỗi người dùng'),
-    ('online.status.timeout.minutes', '5', 'Thời gian chờ trạng thái online của người dùng (phút)'),
-    ('websocket.heartbeat.interval', '60000', 'Khoảng thời gian gửi tín hiệu heartbeat của WebSocket (milli giây)')
-ON CONFLICT (setting_key) DO NOTHING;
+-- Thêm versioning cho bảng users (Critical)
+ALTER TABLE users
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng departments (Critical)
+ALTER TABLE departments
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE conversations
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng positions (Critical)
+ALTER TABLE positions
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng roles (Critical)
+ALTER TABLE roles
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng permissions (Critical)
+ALTER TABLE permissions
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng teams (Critical)
+ALTER TABLE teams
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng account (Critical)
+ALTER TABLE account
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng employment_details (Critical)
+ALTER TABLE employment_details
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng employment_history (Important)
+ALTER TABLE employment_history
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng salary_history (Important)
+ALTER TABLE salary_history
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+-- Thêm versioning cho bảng app_settings (Important)
+ALTER TABLE app_settings
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE login_history
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE tasks
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE employee_ranking
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE notifications
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE messages
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE peer_votes
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE performance_reviews
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE periods
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+ALTER TABLE targets
+    ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+
+-- Thêm comment để giải thích
+COMMENT ON COLUMN users.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN teams.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN employment_details.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN account.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN login_history.version IS 'Optimistic locking version for concurrent updates';
+COMMENT ON COLUMN tasks.version IS 'Optimistic locking version for concurrent updates';
+
+
+ALTER TABLE departments
+    ADD COLUMN group_chat_id UUID REFERENCES conversations (id) ON DELETE SET NULL;
+
+-- Thêm comment
+COMMENT ON COLUMN departments.group_chat_id IS 'ID of the group chat conversation for this department';
+
+ALTER TABLE teams
+    ADD COLUMN group_chat_id UUID REFERENCES conversations (id) ON DELETE SET NULL;
+
+COMMENT ON COLUMN teams.group_chat_id IS 'ID of the group chat conversation for this team';
+
+-- Thêm soft delete cho bảng departments
+ALTER TABLE departments
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Thêm soft delete cho bảng positions
+ALTER TABLE positions
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Thêm soft delete cho bảng roles
+ALTER TABLE roles
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Thêm soft delete cho bảng teams
+ALTER TABLE teams
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Thêm soft delete cho bảng permissions
+ALTER TABLE permissions
+    ADD COLUMN status     VARCHAR(10) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
+    ADD COLUMN deleted_at TIMESTAMP   DEFAULT NULL;
+
+-- Comment giải thích
+COMMENT ON COLUMN departments.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN departments.deleted_at IS 'Timestamp when record was soft deleted';
+COMMENT ON COLUMN positions.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN positions.deleted_at IS 'Timestamp when record was soft deleted';
+COMMENT ON COLUMN roles.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN roles.deleted_at IS 'Timestamp when record was soft deleted';
+COMMENT ON COLUMN teams.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN teams.deleted_at IS 'Timestamp when record was soft deleted';
+COMMENT ON COLUMN permissions.status IS 'Status: active, inactive, deleted for soft delete';
+COMMENT ON COLUMN permissions.deleted_at IS 'Timestamp when record was soft deleted';

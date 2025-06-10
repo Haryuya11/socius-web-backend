@@ -1,32 +1,47 @@
 package org.socius.sociuswebbackend.services.impl;
 
-import java.util.List;
-import java.util.UUID;
-
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.PositionMapper;
+import org.socius.sociuswebbackend.mappers.PositionMappingHelper;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
 import org.socius.sociuswebbackend.model.entities.PositionEntity;
+import org.socius.sociuswebbackend.repositories.EmploymentDetailRepository;
 import org.socius.sociuswebbackend.repositories.PositionRepository;
 import org.socius.sociuswebbackend.services.PositionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 @Service
+@RequiredArgsConstructor
 public class PositionServiceImpl implements PositionService {
 
-    @Autowired
-    private PositionRepository positionRepository;
-
-    @Autowired
-    private PositionMapper positionMapper;
+    private static final Logger logger = LoggerFactory.getLogger(PositionServiceImpl.class);
+    final private PositionRepository positionRepository;
+    final private EmploymentDetailRepository employmentDetailRepository;
+    final private PositionMapper positionMapper;
+    final private PositionMappingHelper positionMapperHelper;
 
     @Override
     public List<PositionResponseDto> findAll() {
         List<PositionEntity> positions = positionRepository.findAll();
         return positions.stream()
+                .map(positionMapper::entityToDto)
+                .toList();
+    }
+
+    @Override
+    public List<PositionResponseDto> findAllActivePositions() {
+        List<PositionEntity> activePositions = positionRepository.findAllActivePositions();
+        return activePositions.stream()
                 .map(positionMapper::entityToDto)
                 .toList();
     }
@@ -39,17 +54,27 @@ public class PositionServiceImpl implements PositionService {
     }
 
     @Override
+    @Transactional
     public PositionResponseDto create(PositionRequestDto requestDto) {
-        if (positionRepository.existsByName(requestDto.getName())) {
-            throw new RuntimeException("Vị trí đã tồn tại");
-        } else {
+        try {
+            if (positionRepository.existsByName(requestDto.getName())) {
+                throw new IllegalArgumentException("Vị trí với tên này đã tồn tại"); // Đổi từ RuntimeException thành IllegalArgumentException
+            }
+
             PositionEntity position = positionMapper.requestDtoToEntity(requestDto);
             position = positionRepository.save(position);
             return positionMapper.entityToDto(position);
+        } catch (IllegalArgumentException e) {
+            throw e; // Re-throw IllegalArgumentException
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("Không thể tạo vị trí vì ràng buộc dữ liệu", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi tạo vị trí: " + e.getMessage(), e);
         }
     }
 
     @Override
+    @Transactional
     public PositionResponseDto update(UUID id, PositionRequestDto requestDto) {
         PositionEntity position = positionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + id));
@@ -70,7 +95,28 @@ public class PositionServiceImpl implements PositionService {
         if (!positionRepository.existsById(id)) {
             throw new RuntimeException("Không tìm thấy vị trí với ID: " + id);
         }
-        positionRepository.deleteById(id);
+
+        long count = employmentDetailRepository.countByPositionId(id);
+        if (count > 0) {
+            throw new IllegalStateException("Không thể xóa vị trí vì vẫn còn " + count + " nhân viên thuộc vị trí này");
+        }
+
+        PositionEntity position = positionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí với ID: " + id));
+
+        position.softDelete();
+        positionRepository.save(position);
+        logger.info("Đã xóa vị trí với ID: {}", id);
     }
 
+    @Override
+    public Map<String, Object> getPositionWithMembers(UUID positionId, Pageable pageable) {
+        PositionEntity position = positionRepository.findPositionWithMembers(positionId, pageable)
+                .getContent()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Position not found with ID: " + positionId));
+
+        return positionMapperHelper.entityToDtoWithMembers(position);
+    }
 }

@@ -55,7 +55,6 @@ dependencies {
 
     // Session Management
     implementation 'org.springframework.session:spring-session-core'
-//    implementation 'org.springframework.session:spring-session-jdbc'
     implementation 'org.springframework.session:spring-session-data-redis'
     implementation "io.lettuce:lettuce-core:${lettuceVersion}"
 
@@ -70,9 +69,12 @@ dependencies {
 
     // Websockets
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework:spring-messaging'
+    implementation 'org.springframework:spring-websocket'
 
     // RabitMQ
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'org.springframework.amqp:spring-rabbit'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -86,6 +88,9 @@ dependencies {
     // Jackson
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0'
 
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
@@ -97,7 +102,7 @@ dependencies {
 }
 
 // Add this block to properly configure the annotation processor order
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.annotationProcessorPath = configurations.annotationProcessor
     options.compilerArgs += [
             '-Amapstruct.defaultComponentModel=spring',
@@ -117,4 +122,8 @@ tasks.named('test') {
 tasks.named('asciidoctor') {
     inputs.dir snippetsDir
     dependsOn test
+}
+
+test {
+    jvmArgs = ["-javaagent:${classpath.find { it.name.contains('byte-buddy-agent') }.absolutePath}"]
 }

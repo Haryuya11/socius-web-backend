@@ -13,8 +13,8 @@ import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 @NoArgsConstructor
 public class LoginResponseDto {
     private UserResponseDto user;
+    private RoleResponseDto role;
     private String sessionId;
     private boolean authenticated;
-    private String message;
     private boolean passwordChangeRequired;
 }

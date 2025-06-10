@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.mappers;
 
+import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRecipientDto;
@@ -8,46 +9,41 @@ import org.socius.sociuswebbackend.model.entities.NotificationEntity;
 import org.socius.sociuswebbackend.model.entities.NotificationRecipientEntity;
 import org.socius.sociuswebbackend.model.entities.NotificationRecipientId;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
-
-import java.util.List;
+import org.socius.sociuswebbackend.repositories.NotificationRepository;
+import org.socius.sociuswebbackend.repositories.UserRepository;
 
 /**
  * Mapper for NotificationRecipient entities and DTOs
  */
-@Mapper(componentModel = "spring", uses = { UserMapper.class, NotificationMapper.class })
-public interface NotificationRecipientMapper extends BaseEntityMapper {
+@Mapper(componentModel = "spring", uses = {UserMapper.class})
+public abstract class NotificationRecipientMapper {
 
     /**
      * Convert NotificationRecipientEntity to NotificationRecipientDto
      */
     @Mapping(source = "id.notificationId", target = "notificationId")
     @Mapping(source = "id.userId", target = "userId")
-    @Mapping(source = "user", target = "user")
-    @Mapping(source = "isRead", target = "isRead")
-    @Mapping(source = "readAt", target = "readAt")
-    NotificationRecipientDto entityToDto(NotificationRecipientEntity entity);
-
-    /**
-     * Convert list of NotificationRecipientEntity to list of
-     * NotificationRecipientDto
-     */
-    List<NotificationRecipientDto> entitiesToDtos(List<NotificationRecipientEntity> entities);
+    public abstract NotificationRecipientDto entityToDto(NotificationRecipientEntity entity);
 
     /**
      * Convert NotificationRecipientRequestDto to NotificationRecipientEntity
      */
-    default NotificationRecipientEntity requestDtoToEntity(NotificationRecipientRequestDto dto) {
+//    @Override
+    public NotificationRecipientEntity requestDtoToEntity(
+            NotificationRecipientRequestDto dto,
+            @Context NotificationRepository notificationRepository,
+            @Context UserRepository userRepository) {
         if (dto == null) {
             return null;
         }
 
         NotificationRecipientId id = new NotificationRecipientId(dto.getNotificationId(), dto.getUserId());
 
-        NotificationEntity notification = new NotificationEntity();
-        notification.setId(dto.getNotificationId());
+        NotificationEntity notification = notificationRepository.findById(dto.getNotificationId())
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found with ID: " + dto.getNotificationId()));
 
-        UserEntity user = new UserEntity();
-        user.setId(dto.getUserId());
+        UserEntity user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + dto.getUserId()));
 
         return NotificationRecipientEntity.builder()
                 .id(id)

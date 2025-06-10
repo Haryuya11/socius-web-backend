@@ -43,4 +43,19 @@ public interface OnlineUserService {
      * @return true nếu người dùng đang online, false nếu không
      */
     boolean isUserOnline(UUID userId);
+    
+    /**
+     * Lấy ID phiên của người dùng
+     *
+     * @param userId ID của người dùng
+     * @return ID phiên của người dùng, hoặc null nếu không tìm thấy
+     */
+    String getUserSessionId(UUID userId);
+
+    /**
+     * Lấy danh sách người dùng online, ngoại trừ người dùng hiện tại
+     *
+     * @return Danh sách người dùng online ngoại trừ người dùng hiện tại
+     */
+    List<OnlineUserStatusDto> getOnlineUsersWithExceptSelf();
 }

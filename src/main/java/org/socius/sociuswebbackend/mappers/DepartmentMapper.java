@@ -1,7 +1,9 @@
 package org.socius.sociuswebbackend.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
 import org.socius.sociuswebbackend.model.entities.DepartmentEntity;
@@ -10,15 +12,26 @@ import org.socius.sociuswebbackend.model.entities.DepartmentEntity;
  * Mapper for Department entities and DTOs
  */
 @Mapper(componentModel = "spring")
-public interface DepartmentMapper extends BaseEntityMapper, 
+public abstract class DepartmentMapper extends BaseEntityMapper implements
         GenericMapper<DepartmentEntity, DepartmentResponseDto, DepartmentRequestDto> {
-    
+
     @Override
-    DepartmentResponseDto entityToDto(DepartmentEntity entity);
-    
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract DepartmentResponseDto entityToDto(DepartmentEntity entity);
+
+    @Named("entityToLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract DepartmentResponseDto entityToLimitedDto(DepartmentEntity entity);
+
     @Override
-    DepartmentEntity requestDtoToEntity(DepartmentRequestDto dto);
-    
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    public abstract DepartmentEntity requestDtoToEntity(DepartmentRequestDto dto);
+
     @Override
-    void updateEntityFromDto(DepartmentRequestDto dto, @MappingTarget DepartmentEntity entity);
+    public abstract void updateEntityFromDto(DepartmentRequestDto dto, @MappingTarget DepartmentEntity entity);
 }

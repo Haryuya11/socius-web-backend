@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.notification;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class NotificationResponseDto extends BaseDto {
     private String title;
     private UserResponseDto sender;

@@ -3,8 +3,8 @@ package org.socius.sociuswebbackend.services;
 import java.util.List;
 import java.util.UUID;
 
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryResponseDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryResponseDto;
 
 public interface LoginHistoryService {
     

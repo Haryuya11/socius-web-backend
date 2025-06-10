@@ -26,12 +26,10 @@ public class EmploymentDetailEntity extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private UserEntity user;
 
-    @NotNull(message = "Position must not be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "position_id", nullable = false)
     private PositionEntity position;
 
-    @NotNull(message = "Department must not be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id", nullable = false)
     private DepartmentEntity department;
@@ -40,7 +38,6 @@ public class EmploymentDetailEntity extends BaseEntity {
     @JoinColumn(name = "team_id")
     private TeamEntity team;
 
-    @NotNull(message = "Role must not be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
     private RoleEntity role;

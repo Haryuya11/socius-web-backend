@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.socius.sociuswebbackend.model.enums.WorkingStatus;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +16,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class RoleEntity extends BaseEntity {
+@ToString(exclude = {"rolePermissions", "employmentDetail"})
+public class RoleEntity extends SoftDeletableEntity {
 
     @NotBlank(message = "Role name must not be empty")
     @Column(name = "name", nullable = false, unique = true, length = 100)
@@ -27,4 +29,13 @@ public class RoleEntity extends BaseEntity {
     @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<RolePermissionEntity> rolePermissions = new HashSet<>();
+
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<EmploymentDetailEntity> employmentDetail = new HashSet<>();
+
+    public boolean hasActiveEmployees() {
+        return employmentDetail.stream()
+                .anyMatch(emp -> emp.getWorkingStatus() == WorkingStatus.active);
+    }
 }

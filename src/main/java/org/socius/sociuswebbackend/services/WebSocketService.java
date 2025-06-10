@@ -1,9 +1,9 @@
 package org.socius.sociuswebbackend.services;
 
+import org.socius.sociuswebbackend.model.dtos.message.TypingIndicatorDto;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
-
-import java.util.UUID;
 
 @Service
 public interface WebSocketService {
@@ -24,12 +24,29 @@ public interface WebSocketService {
     void sendSessionInvalidationNotification(String sessionId, String reason, String message);
 
     /**
-     * Xử lý heartbeat từ client
-     */
-    void handleHeartbeat(UUID userId);
-
-    /**
      * Xử lý sự kiện ngắt kết nối tới WebSocket
      */
     void handleWebSocketDisconnectEvent(SessionDisconnectEvent event);
+
+    /**
+     * Gửi thông báo khi người dùng đang gõ
+     *
+     * @param typingDto Thông tin về trạng thái gõ
+     */
+    void sendTypingIndicator(TypingIndicatorDto typingDto);
+
+    /**
+     * Gửi thông báo khi người dùng đã kết nối tới WebSocket
+     *
+     * @param event Sự kiện kết nối
+     */
+    void handleWebSocketConnectEvent(SessionConnectedEvent event);
+
+    /**
+     * Kiểm tra tính hợp lệ của phiên và thông báo cho client nếu phiên không hợp lệ
+     *
+     * @param sessionId ID phiên cần kiểm tra
+     * @return true nếu phiên hợp lệ, false nếu không hợp lệ
+     */
+    boolean validateSessionAndNotify(String sessionId);
 }

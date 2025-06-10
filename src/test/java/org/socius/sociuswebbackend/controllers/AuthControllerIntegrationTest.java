@@ -5,9 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.socius.sociuswebbackend.config.TestConfig;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
@@ -19,11 +16,6 @@ import org.socius.sociuswebbackend.utils.AuthTestDataUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -34,8 +26,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
@@ -62,30 +56,32 @@ public class AuthControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        authenticationService = mock(AuthenticationService.class);
-        ReflectionTestUtils.setField(authController, "authenticationService", authenticationService);
+        try {
+            MockitoAnnotations.openMocks(this);
+            authenticationService = mock(AuthenticationService.class);
+            ReflectionTestUtils.setField(authController, "authenticationService", authenticationService);
 
-        UserEntity adminUser = AuthTestDataUtil.createTestAdminUser();
+            UserEntity adminUser = AuthTestDataUtil.createTestAdminUser();
 
-        adminLoginRequest = AuthTestDataUtil.createAdminLoginRequest();
+            adminLoginRequest = AuthTestDataUtil.createAdminLoginRequest();
 
-        // Create successful login response
-        successLoginResponse = new LoginResponseDto();
-        successLoginResponse.setAuthenticated(true);
-        successLoginResponse.setMessage("Đăng nhập thành công");
-        successLoginResponse.setPasswordChangeRequired(false);
+            // Create successful login response
+            successLoginResponse = new LoginResponseDto();
+            successLoginResponse.setAuthenticated(true);
+            successLoginResponse.setPasswordChangeRequired(false);
 
-        // Create failed login response
-        failedLoginResponse = new LoginResponseDto();
-        failedLoginResponse.setAuthenticated(false);
-        failedLoginResponse.setMessage("Đăng nhập không thành công");
+            // Create failed login response
+            failedLoginResponse = new LoginResponseDto();
+            failedLoginResponse.setAuthenticated(false);
 
-        // Create session info DTO
-        sessionInfoDto = new SessionInfoDto();
-        sessionInfoDto.setUserId(adminUser.getId());
-        sessionInfoDto.setUsername(adminUser.getEmail());
-        sessionInfoDto.setFullName(adminUser.getFullName());
+            // Create session info DTO
+            sessionInfoDto = new SessionInfoDto();
+            sessionInfoDto.setUserId(adminUser.getId());
+            sessionInfoDto.setUsername(adminUser.getEmail());
+            sessionInfoDto.setFullName(adminUser.getFullName());
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi khởi tạo các mock đối tượng trong AuthControllerIntegrationTest", e);
+        }
     }
 
     @Test
@@ -99,7 +95,6 @@ public class AuthControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(adminLoginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.authenticated").value(true))
-                .andExpect(jsonPath("$.message").value("Đăng nhập thành công"))
                 .andExpect(jsonPath("$.passwordChangeRequired").value(false));
 
         verify(authenticationService).login(any(LoginRequestDto.class), any(), any());
@@ -108,47 +103,41 @@ public class AuthControllerIntegrationTest {
     @Test
     @DisplayName("Login phải trả về 401 UNAUTHORIZED khi sai mật khẩu hoặc email")
     void loginShouldReturnUnauthorizedAndErrorMessageWithInvalidCredentials() throws Exception {
-        failedLoginResponse.setMessage("Sai mật khẩu");
         when(authenticationService.login(any(LoginRequestDto.class), any(), any()))
                 .thenReturn(failedLoginResponse);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(adminLoginRequest)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(content().string("Sai mật khẩu"));
+                .andExpect(status().isUnauthorized());
 
         verify(authenticationService).login(any(LoginRequestDto.class), any(), any());
     }
 
     @Test
-    @DisplayName("Login phải trả về 404 NOT_FOUND khi không tìm thấy người dùng")
+    @DisplayName("Login phải trả về 401 UNAUTHORIZED khi người dùng không tồn tại")
     void loginShouldReturnNotFoundAndErrorMessageWhenUserNotFound() throws Exception {
-        failedLoginResponse.setMessage("Không tìm thấy người dùng");
         when(authenticationService.login(any(LoginRequestDto.class), any(), any()))
                 .thenReturn(failedLoginResponse);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(adminLoginRequest)))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Không tìm thấy người dùng"));
+                .andExpect(status().isUnauthorized());
 
         verify(authenticationService).login(any(LoginRequestDto.class), any(), any());
     }
 
     @Test
-    @DisplayName("Login phải trả về 500 INTERNAL_SERVER_ERROR khi có lỗi không xác định")
+    @DisplayName("Login phải trả về 401 UNAUTHORIZED khi có lỗi không xác định")
     void loginShouldReturnInternalServerErrorAndErrorMessageOnUnknownError() throws Exception {
-        failedLoginResponse.setMessage("Lỗi hệ thống");
         when(authenticationService.login(any(LoginRequestDto.class), any(), any()))
                 .thenReturn(failedLoginResponse);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(adminLoginRequest)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Lỗi hệ thống"));
+                .andExpect(status().isUnauthorized());
 
         verify(authenticationService).login(any(LoginRequestDto.class), any(), any());
     }

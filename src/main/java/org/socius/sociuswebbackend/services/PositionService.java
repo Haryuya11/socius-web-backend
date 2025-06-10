@@ -2,22 +2,31 @@ package org.socius.sociuswebbackend.services;
 
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface PositionService {
 
     /**
      * Lấy danh sách tất cả các vị trí
-     * 
+     *
      * @return Danh sách các vị trí
      */
     List<PositionResponseDto> findAll();
 
     /**
+     * Lấy danh sách tất cả các vị trí đang hoạt động
+     *
+     * @return Danh sách các vị trí đang hoạt động
+     */
+    List<PositionResponseDto> findAllActivePositions();
+
+    /**
      * Tìm một vị trí theo ID
-     * 
+     *
      * @param id ID của vị trí cần tìm
      * @return Vị trí nếu tìm thấy, null nếu không tìm thấy
      */
@@ -25,7 +34,7 @@ public interface PositionService {
 
     /**
      * Tạo một vị trí mới
-     * 
+     *
      * @param requestDto Thông tin yêu cầu tạo vị trí
      * @return Thông tin vị trí đã được tạo
      */
@@ -33,7 +42,7 @@ public interface PositionService {
 
     /**
      * Cập nhật thông tin một vị trí
-     * 
+     *
      * @param id         ID của vị trí cần cập nhật
      * @param requestDto Thông tin yêu cầu cập nhật vị trí
      * @return Thông tin vị trí đã được cập nhật
@@ -42,8 +51,17 @@ public interface PositionService {
 
     /**
      * Xóa một vị trí
-     * 
+     *
      * @param id ID của vị trí cần xóa
      */
     void delete(UUID id);
+
+    /**
+     * Lấy thông tin vị trí cùng với danh sách thành viên
+     *
+     * @param positionId ID của vị trí
+     * @param pageable   Thông tin phân trang
+     * @return Map chứa thông tin vị trí và danh sách thành viên
+     */
+    Map<String, Object> getPositionWithMembers(UUID positionId, Pageable pageable);
 }

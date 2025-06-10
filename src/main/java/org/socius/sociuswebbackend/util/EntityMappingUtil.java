@@ -1,7 +1,8 @@
 package org.socius.sociuswebbackend.util;
 
-import org.springframework.stereotype.Component;
 import org.socius.sociuswebbackend.model.entities.*;
+import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
@@ -10,6 +11,12 @@ import java.util.UUID;
  */
 @Component
 public class EntityMappingUtil {
+
+    final protected UserRepository userRepository;
+
+    public EntityMappingUtil(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     /**
      * Generic method to map an ID to an entity
@@ -23,37 +30,43 @@ public class EntityMappingUtil {
             entity.setId(id);
             return entity;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create entity instance: " + entityClass.getSimpleName(), e);
+            throw new RuntimeException("Lỗi khi tạo phiên bản entity: " + entityClass.getSimpleName(), e);
         }
     }
-    
+
     public UserEntity mapUserIdToEntity(UUID id) {
-        return mapIdToEntity(id, UserEntity.class);
+        if (id == null) {
+            return null;
+        }
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + id));
     }
-    
+
     public PositionEntity mapPositionIdToEntity(UUID id) {
         return mapIdToEntity(id, PositionEntity.class);
     }
-    
+
     public DepartmentEntity mapDepartmentIdToEntity(UUID id) {
         return mapIdToEntity(id, DepartmentEntity.class);
     }
-    
+
     public TeamEntity mapTeamIdToEntity(UUID id) {
         return mapIdToEntity(id, TeamEntity.class);
     }
-    
+
     public RoleEntity mapRoleIdToEntity(UUID id) {
         return mapIdToEntity(id, RoleEntity.class);
     }
-    
+
     public PeriodEntity mapPeriodIdToEntity(UUID id) {
         return mapIdToEntity(id, PeriodEntity.class);
     }
-    
+
     public PermissionEntity mapPermissionIdToEntity(UUID id) {
         return mapIdToEntity(id, PermissionEntity.class);
     }
 
-    
+    public ConversationEntity mapConversationIdToEntity(UUID id) {
+        return mapIdToEntity(id, ConversationEntity.class);
+    }
 }

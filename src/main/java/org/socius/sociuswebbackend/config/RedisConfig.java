@@ -86,7 +86,7 @@ public class RedisConfig {
     @Bean
     public RedisIndexedSessionRepository redisIndexedSessionRepository(RedisTemplate<String, Object> redisTemplate) {
         RedisIndexedSessionRepository repository = new RedisIndexedSessionRepository(redisTemplate);
-        repository.setDefaultMaxInactiveInterval(Duration.ofMinutes(30)); // 30 minutes
+        repository.setDefaultMaxInactiveInterval(Duration.ofMinutes(60)); // Thời gian hết hạn phiên 60 phút
         return repository;
     }
 }

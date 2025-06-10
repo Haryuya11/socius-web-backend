@@ -3,26 +3,25 @@ package org.socius.sociuswebbackend.services.impl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.mappers.RoleMapper;
 import org.socius.sociuswebbackend.mappers.UserMapper;
 import org.socius.sociuswebbackend.model.dtos.auth.*;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
-import org.socius.sociuswebbackend.model.dtos.permission.PermissionResponseDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.AccountEntity;
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.RoleEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
-import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 import org.socius.sociuswebbackend.repositories.AccountRepository;
 import org.socius.sociuswebbackend.repositories.RoleRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
 import org.socius.sociuswebbackend.services.*;
 import org.socius.sociuswebbackend.util.ApplicationContextHelper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.socius.sociuswebbackend.util.RedisKeyBuilder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -43,48 +42,24 @@ import java.util.stream.Collectors;
 
 
 @Service
+@RequiredArgsConstructor
 public class AuthenticationServiceImpl implements AuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private UserMapper userMapper;
-
-    @Autowired
-    private RoleMapper roleMapper;
-
-    @Autowired
-    private LoginHistoryService loginHistoryService;
-
-    @Autowired
-    private WebSocketService webSocketService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private RBACRedisService rbacRedisService;
-
-    @Autowired
-    private ConfigService configService;
-
-    @Autowired
-    private OnlineUserService onlineUserService;
-
-    @Autowired
-    private SessionManagementService sessionManagementService;
+    final private AuthenticationManager authenticationManager;
+    final private UserRepository userRepository;
+    final private RoleRepository roleRepository;
+    final private AccountRepository accountRepository;
+    final private UserMapper userMapper;
+    final private RoleMapper roleMapper;
+    final private LoginHistoryService loginHistoryService;
+    final private WebSocketService webSocketService;
+    final private PasswordEncoder passwordEncoder;
+    final private RBACRedisService rbacRedisService;
+    final private ConfigService configService;
+    final private OnlineUserService onlineUserService;
+    final private SessionManagementService sessionManagementService;
 
     @Override
     public LoginResponseDto login(LoginRequestDto loginRequest, HttpServletRequest request,
@@ -114,12 +89,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             if (userOptional.isEmpty()) {
                 responseDto.setAuthenticated(false);
-                responseDto.setMessage("Không tìm thấy người dùng");
                 return responseDto;
             }
 
             UserEntity user = userOptional.get();
             AccountEntity account = user.getAccount();
+
+            if (account != null && !account.getIsActive()) {
+                responseDto.setAuthenticated(false);
+                logger.warn("Tài khoản {} đã bị vô hiệu hóa", loginRequest.getEmail());
+                return responseDto;
+            }
 
             // 5. Kiểm tra nếu người dùng đang sử dụng mật khẩu mặc định
             if (account != null && account.getIsDefaultPassword() != null && account.getIsDefaultPassword()) {
@@ -133,9 +113,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
 
             // 7. Lưu thông tin vào session
-            String userKey = configService.getString("session.attribute.user_id", "USER_ID");
-            String teamKey = configService.getString("session.attribute.team_id", "TEAM_ID");
-            String roleKey = configService.getString("session.attribute.role_id", "ROLE_ID");
+            String userKey = RedisKeyBuilder.userIdAttributeKey();
+            String teamKey = RedisKeyBuilder.teamIdAttributeKey();
+            String roleKey = RedisKeyBuilder.roleIdAttributeKey();
 
             session.setAttribute(userKey, user.getId());
             if (user.getEmploymentDetail() != null) {
@@ -173,7 +153,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .roleName(roleName)
                     .permissions(permissions)
                     .build();
-            int sessionDurationMinutes = configService.getInt("session.duration.minutes", 30);
+            int sessionDurationMinutes = configService.getInt("session_timeout", 60);
             rbacRedisService.saveCacheUserPermissions(sessionId, permissionsDto, sessionDurationMinutes);
 
             // 10. Lưu thông tin lịch sử đăng nhập
@@ -196,30 +176,25 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             onlineUserService.updateUserOnlineStatus(user.getId(), session.getId());
 
             UserResponseDto userDto = userMapper.entityToDto(user);
+            RoleResponseDto roleDto = null;
 
             if (roleId != null && user.getEmploymentDetail() != null && user.getEmploymentDetail().getRole() != null) {
                 RoleEntity fullRoleEntity = roleRepository.findById(roleId).orElse(null);
                 if (fullRoleEntity != null) {
-                    RoleResponseDto completeRoleDto = roleMapper.entityToDto(fullRoleEntity);
-                    userDto.setRole(completeRoleDto);
+                    roleDto = roleMapper.entityToDto(fullRoleEntity);
                 }
             }
 
             // 12. Tạo đối tượng phản hồi
             responseDto.setUser(userDto);
+            responseDto.setRole(roleDto);
             responseDto.setAuthenticated(true);
             responseDto.setSessionId(session.getId());
-            responseDto.setMessage("Đăng nhập thành công");
             return responseDto;
 
         } catch (AuthenticationException e) {
             logger.error("Lỗi khi đăng nhập: {}", e.getMessage());
             responseDto.setAuthenticated(false);
-            if (e.getMessage().contains("Bad credentials")) {
-                responseDto.setMessage("Sai mật khẩu");
-            } else {
-                responseDto.setMessage("Lỗi hệ thống");
-            }
             return responseDto;
         }
     }
@@ -235,7 +210,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         HttpSession session = request.getSession(false);
         if (session != null) {
             String sessionId = session.getId();
-            String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+            String userKey = RedisKeyBuilder.userIdAttributeKey();
             UUID userId = (UUID) session.getAttribute(userKey);
             if (userId != null) {
                 onlineUserService.markUserOffline(userId, sessionId);
@@ -267,7 +242,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return null;
         }
 
-        String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
         UUID userId = (UUID) session.getAttribute(userKey);
         if (userId == null) {
             return null;
@@ -303,7 +278,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public boolean isAuthenticated(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
-        String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+        String userKey = RedisKeyBuilder.userIdAttributeKey();
 
         return session != null && session.getAttribute(userKey) != null;
     }
@@ -318,7 +293,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     @Transactional
-    public PasswordChangeResult changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request) {
+    public void changePassword(PasswordChangeRequestDto requestDto, HttpServletRequest request) {
         try {
             if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
                 throw new IllegalArgumentException("Password và Confirm Password không khớp");
@@ -327,33 +302,33 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             HttpSession session = request.getSession(false);
             if (session == null) {
 //                throw new IllegalStateException("Chưa đăng nhập");
-                return PasswordChangeResult.NOT_AUTHENTICATED;
+                return;
             }
 
             // Lấy thông tin người dùng từ session
-            String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+            String userKey = RedisKeyBuilder.userIdAttributeKey();
             UUID userId = (UUID) session.getAttribute(userKey);
             if (userId == null) {
-                return PasswordChangeResult.NOT_AUTHENTICATED;
+                return;
             }
 
             Optional<UserEntity> userOptional = userRepository.findById(userId);
             if (userOptional.isEmpty()) {
-                return PasswordChangeResult.USER_NOT_FOUND;
+                return;
             }
 
             UserEntity user = userOptional.get();
             Optional<AccountEntity> accountOptional = accountRepository.findByUser(user);
 
             if (accountOptional.isEmpty()) {
-                return PasswordChangeResult.ACCOUNT_NOT_FOUND;
+                return;
             }
 
             AccountEntity account = accountOptional.get();
 
             // Kiểm tra mật khẩu hiện tại
             if (!passwordEncoder.matches(requestDto.getCurrentPassword(), account.getPassword())) {
-                return PasswordChangeResult.INCORRECT_PASSWORD;
+                return;
             }
 
             // Mã hóa và lưu mật khẩu mới
@@ -366,10 +341,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             accountRepository.save(account);
 
-            return PasswordChangeResult.SUCCESS;
         } catch (Exception e) {
             logger.error("Lỗi khi đổi mật khẩu: {}", e.getMessage());
-            return PasswordChangeResult.GENERAL_ERROR;
         }
     }
 
@@ -386,7 +359,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // Nếu không có trong Redis, lấy từ database
         if (permissions == null) {
             // Lấy thông tin người dùng
-            String userKey = configService.getString("session.attribute.user_id", "USER_ID");
+            String userKey = RedisKeyBuilder.userIdAttributeKey();
             UUID userId = (UUID) session.getAttribute(userKey);
             if (userId == null) {
                 return null;
@@ -412,7 +385,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             permissions.setPermissions(permissionsSet);
 
             // Lưu thông tin quyền vào Redis
-            int sessionDurationMinutes = configService.getInt("session.duration.minutes", 30);
+            int sessionDurationMinutes = configService.getInt("session_timeout", 60);
             rbacRedisService.saveCacheUserPermissions(session.getId(), permissions, sessionDurationMinutes);
         }
         return permissions;
@@ -446,7 +419,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         // Gia hạn thời gian hết hạn của phiên
-        int sessionDurationMinutes = configService.getInt("session.duration.minutes", 30);
+        int sessionDurationMinutes = configService.getInt("session_timeout", 60);
         boolean result = rbacRedisService.extendExpiration(session.getId(), sessionDurationMinutes);
         if (result) {
             session.setMaxInactiveInterval(sessionDurationMinutes * 60);
@@ -454,5 +427,39 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             logger.error("Lỗi khi gia hạn phiên làm việc");
         }
         return result;
+    }
+
+    @Override
+    public void resetPassword(String email) {
+        try {
+            String defaultPassword = configService.getString("default_user_password", "1");
+
+            Optional<UserEntity> userOptional = userRepository.findByEmail(email);
+
+            if (userOptional.isEmpty()) {
+                logger.warn("Không tìm thấy người dùng với email: {}", email);
+                return;
+            }
+
+            UserEntity user = userOptional.get();
+
+            Optional<AccountEntity> accountOptional = accountRepository.findByUser(user);
+            if (accountOptional.isEmpty()) {
+                logger.warn("Không tìm thấy tài khoản cho người dùng: {}", user.getId());
+                return;
+            }
+
+            AccountEntity account = accountOptional.get();
+
+            // Mã hóa mật khẩu mới
+            String encodedPassword = passwordEncoder.encode(defaultPassword);
+            account.setPassword(encodedPassword);
+            account.setIsDefaultPassword(true);
+
+            accountRepository.save(account);
+            logger.info("Đặt lại mật khẩu thành công cho email: {}", email);
+        } catch (Exception e) {
+            logger.error("Lỗi khi đặt lại mật khẩu cho email {}: {}", email, e.getMessage());
+        }
     }
 }

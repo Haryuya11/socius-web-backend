@@ -3,9 +3,10 @@ package org.socius.sociuswebbackend.utils;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.UserPermissionsDto;
-import org.socius.sociuswebbackend.model.dtos.login.LoginHistoryRequestDto;
+import org.socius.sociuswebbackend.model.dtos.loginHistory.LoginHistoryRequestDto;
 import org.socius.sociuswebbackend.model.dtos.permission.PermissionResponseDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
+import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
 import org.socius.sociuswebbackend.model.entities.AccountEntity;
 import org.socius.sociuswebbackend.model.entities.EmploymentDetailEntity;
 import org.socius.sociuswebbackend.model.entities.LoginHistoryEntity;
@@ -33,11 +34,26 @@ public final class AuthTestDataUtil {
         // Private constructor to prevent instantiation
     }
 
+    // Định nghĩa các hằng số UUID
+    private static final UUID adminUserId = UUID.randomUUID();
+    private static final UUID regularUserId = UUID.randomUUID();
+    private static final UUID adminAccountId = UUID.randomUUID();
+    private static final UUID regularAccountId = UUID.randomUUID();
+    private static final UUID adminRoleId = UUID.randomUUID();
+    private static final UUID userRoleId = UUID.randomUUID();
+    private static final UUID adminEmploymentId = UUID.randomUUID();
+    private static final UUID regularEmploymentId = UUID.randomUUID();
+    private static final UUID adminLoginHistoryId = UUID.randomUUID();
+    private static final UUID adminPermissionUserId = UUID.randomUUID();
+    private static final UUID createPermissionId = UUID.randomUUID();
+    private static final UUID readPermissionId = UUID.randomUUID();
+
     /**
-     * Creates a test admin user with ID
+     * Tạo một người dùng admin mẫu
      */
     public static UserEntity createTestAdminUser() {
-        UserEntity user = UserEntity.builder()
+        return UserEntity.builder()
+                .id(adminUserId)
                 .firstName("Admin")
                 .lastName("User")
                 .email("admin@socius.org")
@@ -46,16 +62,14 @@ public final class AuthTestDataUtil {
                 .phoneNumber("1234567890")
                 .hireDate(LocalDate.of(2020, 1, 1))
                 .build();
-
-        user.setId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-        return user;
     }
 
     /**
-     * Creates a test regular user with ID
+     * Tạo một người dùng thường mẫu
      */
     public static UserEntity createTestRegularUser() {
-        UserEntity user = UserEntity.builder()
+        return UserEntity.builder()
+                .id(regularUserId)
                 .firstName("Regular")
                 .lastName("User")
                 .email("user@socius.org")
@@ -64,142 +78,131 @@ public final class AuthTestDataUtil {
                 .phoneNumber("0987654321")
                 .hireDate(LocalDate.of(2021, 5, 5))
                 .build();
-
-        user.setId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
-        return user;
     }
 
     /**
-     * Creates a test account for admin user
+     * Tạo một tài khoản admin mẫu
      */
     public static AccountEntity createTestAdminAccount(UserEntity adminUser) {
-        AccountEntity account = AccountEntity.builder()
+        return AccountEntity.builder()
+                .id(adminAccountId)
                 .user(adminUser)
                 .password(passwordEncoder.encode("Admin@123"))
                 .isActive(true)
                 .isDefaultPassword(false)
                 .lastLogin(LocalDateTime.now().minusDays(1))
                 .build();
-
-        account.setId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-        return account;
     }
 
     /**
-     * Creates a test account for regular user
+     * Tạo một tài khoản thường mẫu
      */
     public static AccountEntity createTestRegularAccount(UserEntity regularUser) {
-        AccountEntity account = AccountEntity.builder()
+        return AccountEntity.builder()
+                .id(regularAccountId)
                 .user(regularUser)
                 .password(passwordEncoder.encode("User@123"))
                 .isActive(true)
                 .isDefaultPassword(true)
                 .lastLogin(LocalDateTime.now().minusDays(2))
                 .build();
-
-        account.setId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
-        return account;
     }
 
     /**
-     * Creates a test admin role
+     * Tạo admin role mẫu
      */
     public static RoleEntity createTestAdminRole() {
-        RoleEntity role = new RoleEntity();
-        role.setId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-        role.setName("ADMIN");
-        role.setDescription("Administrator role with full system access");
-        return role;
+        return RoleEntity.builder()
+                .id(adminRoleId)
+                .name("ADMIN")
+                .description("Administrator role with full system access")
+                .build();
     }
 
     /**
-     * Creates a test user role
+     * Tạo user role mẫu
      */
     public static RoleEntity createTestUserRole() {
-        RoleEntity role = new RoleEntity();
-        role.setId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
-        role.setName("USER");
-        role.setDescription("Regular user with limited access");
-        return role;
+        return RoleEntity.builder()
+                .id(userRoleId)
+                .name("USER")
+                .description("Regular user with limited access")
+                .build();
     }
 
     /**
-     * Creates a test employment detail for admin user
+     * Tạo một chi tiết việc làm mẫu cho người dùng admin
      */
     public static EmploymentDetailEntity createTestAdminEmploymentDetail(UserEntity adminUser, RoleEntity adminRole) {
-        EmploymentDetailEntity employmentDetail = EmploymentDetailEntity.builder()
+        return EmploymentDetailEntity.builder()
+                .id(adminEmploymentId)
                 .user(adminUser)
                 .role(adminRole)
                 .startDate(LocalDate.of(2020, 1, 1))
                 .salary(BigDecimal.valueOf(10000))
                 .workingStatus(WorkingStatus.active)
                 .build();
-
-        employmentDetail.setId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
-        return employmentDetail;
     }
 
     /**
-     * Creates a test employment detail for regular user
+     * Tạo một chi tiết việc làm mẫu cho người dùng thường
      */
     public static EmploymentDetailEntity createTestRegularEmploymentDetail(UserEntity regularUser, RoleEntity userRole) {
-        EmploymentDetailEntity employmentDetail = EmploymentDetailEntity.builder()
+        return EmploymentDetailEntity.builder()
+                .id(regularEmploymentId)
                 .user(regularUser)
                 .role(userRole)
                 .startDate(LocalDate.of(2021, 5, 5))
                 .salary(BigDecimal.valueOf(5000))
                 .workingStatus(WorkingStatus.active)
                 .build();
-
-        employmentDetail.setId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
-        return employmentDetail;
     }
 
     // DTOs
 
     /**
-     * Creates a login request for admin user
+     * Tạo một yêu cầu đăng nhập mẫu cho admin
      */
     public static LoginRequestDto createAdminLoginRequest() {
-        LoginRequestDto loginRequest = new LoginRequestDto();
-        loginRequest.setEmail("admin@socius.org");
-        loginRequest.setPassword("Admin@123");
-        return loginRequest;
+        return LoginRequestDto.builder()
+                .email("admin@socius.org")
+                .password("Admin@123")
+                .build();
     }
 
     /**
-     * Creates a login request for regular user
+     * Tạo một yêu cầu đăng nhập mẫu cho người dùng thường
      */
     public static LoginRequestDto createRegularUserLoginRequest() {
-        LoginRequestDto loginRequest = new LoginRequestDto();
-        loginRequest.setEmail("user@socius.org");
-        loginRequest.setPassword("User@123");
-        return loginRequest;
+        return LoginRequestDto.builder()
+                .email("user@socius.org")
+                .password("User@123")
+                .build();
     }
 
     /**
-     * Creates a login request with invalid credentials
+     * Tạo một yêu cầu đăng nhập không hợp lệ
      */
     public static LoginRequestDto createInvalidLoginRequest() {
-        LoginRequestDto loginRequest = new LoginRequestDto();
-        loginRequest.setEmail("nonexistent@socius.org");
-        loginRequest.setPassword("WrongPassword");
-        return loginRequest;
+        return LoginRequestDto.builder()
+                .email("nonexistent@socius.org")
+                .password("WrongPassword")
+                .build();
     }
 
     /**
-     * Creates a password change request
+     * Tạo một yêu cầu thay đổi mật khẩu mẫu
      */
     public static PasswordChangeRequestDto createPasswordChangeRequest() {
-        PasswordChangeRequestDto passwordChangeRequest = new PasswordChangeRequestDto();
-        passwordChangeRequest.setCurrentPassword("User@123");
-        passwordChangeRequest.setNewPassword("NewPass@456");
-        passwordChangeRequest.setConfirmPassword("NewPass@456");
-        return passwordChangeRequest;
+        return PasswordChangeRequestDto.builder()
+                .currentPassword("User@123")
+                .newPassword("NewPass@456")
+                .confirmPassword("NewPass@456")
+                .build();
     }
 
     /**
-     * Creates a test user permissions DTO for admin
+     * Tạo quyền truy cập mẫu cho người dùng admin
      */
     public static UserPermissionsDto createAdminPermissionsDto() {
         Set<String> permissions = new HashSet<>();
@@ -210,72 +213,70 @@ public final class AuthTestDataUtil {
         permissions.add("ADMIN_DASHBOARD");
 
         return UserPermissionsDto.builder()
-                .userId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
-                .roleId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+                .userId(adminUserId)
+                .roleId(adminRoleId)
                 .roleName("ADMIN")
                 .permissions(permissions)
                 .build();
     }
 
     /**
-     * Creates a test user permissions DTO for regular user
+     * Tạo quyền truy cập mẫu cho người dùng thường
      */
     public static UserPermissionsDto createRegularUserPermissionsDto() {
         Set<String> permissions = new HashSet<>();
         permissions.add("USER_READ");
 
         return UserPermissionsDto.builder()
-                .userId(UUID.fromString("22222222-2222-2222-2222-222222222222"))
-                .roleId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+                .userId(regularUserId)
+                .roleId(userRoleId)
                 .roleName("USER")
                 .permissions(permissions)
                 .build();
     }
 
     /**
-     * Creates a test login history entity for admin
+     * Tạo một lịch sử đăng nhập mẫu cho người dùng admin
      */
     public static LoginHistoryEntity createAdminLoginHistory(UserEntity adminUser) {
-        LoginHistoryEntity loginHistory = LoginHistoryEntity.builder()
+        return LoginHistoryEntity.builder()
+                .id(adminLoginHistoryId)
                 .user(adminUser)
                 .loginTime(LocalDateTime.now())
                 .ipAddress("192.168.1.1")
                 .deviceInfo("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/96.0.4664.110")
                 .build();
-
-        loginHistory.setId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"));
-        return loginHistory;
     }
 
     /**
-     * Creates a test login history request DTO for admin
+     * Tạo một yêu cầu lịch sử đăng nhập mẫu cho người dùng admin
      */
     public static LoginHistoryRequestDto createAdminLoginHistoryRequest() {
-        LoginHistoryRequestDto request = new LoginHistoryRequestDto();
-        request.setUserId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-        request.setIpAddress("192.168.1.1");
-        request.setDeviceInfo("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/96.0.4664.110");
-        return request;
+        return LoginHistoryRequestDto.builder()
+                .userId(adminUserId)
+                .ipAddress("192.168.1.1")
+                .deviceInfo("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/96.0.4664.110")
+                .build();
     }
 
     /**
-     * Creates a test role response DTO for admin
+     * Tạo role response DTO cho người dùng admin
      */
     public static RoleResponseDto createAdminRoleResponseDto() {
         Set<PermissionResponseDto> permissions = new HashSet<>();
         permissions.add(PermissionResponseDto.builder()
-                .id(UUID.fromString("11111111-0000-0000-0000-000000000000"))
+                .id(createPermissionId)
                 .name("USER_CREATE")
                 .description("Create users")
                 .build());
         permissions.add(PermissionResponseDto.builder()
-                .id(UUID.fromString("22222222-0000-0000-0000-000000000000"))
+                .id(readPermissionId)
                 .name("USER_READ")
                 .description("Read users")
                 .build());
 
         return RoleResponseDto.builder()
-                .id(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+                .id(adminRoleId)
                 .name("ADMIN")
                 .description("Administrator role with full system access")
                 .permissions(permissions)
@@ -283,22 +284,33 @@ public final class AuthTestDataUtil {
     }
 
     /**
-     * Creates a test role response DTO for regular user
+     * Tạo role response DTO cho người dùng thường
      */
     public static RoleResponseDto createUserRoleResponseDto() {
         Set<PermissionResponseDto> permissions = new HashSet<>();
         permissions.add(PermissionResponseDto.builder()
-                .id(UUID.fromString("22222222-0000-0000-0000-000000000000"))
+                .id(readPermissionId)
                 .name("USER_READ")
                 .description("Read users")
                 .build());
 
         return RoleResponseDto.builder()
-                .id(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+                .id(userRoleId)
                 .name("USER")
                 .description("Regular user with limited access")
                 .permissions(permissions)
                 .build();
     }
 
+    /**
+     * Tạo một UserResponse DTO mẫu cho người dùng admin
+     */
+    public static UserResponseDto createTestAdminUserResponse() {
+        return UserResponseDto.builder()
+                .id(adminUserId)
+                .firstName("Admin")
+                .lastName("User")
+                .email("admin@socius.org")
+                .build();
+    }
 }

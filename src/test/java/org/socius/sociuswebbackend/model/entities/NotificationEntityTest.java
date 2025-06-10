@@ -52,15 +52,15 @@ class NotificationEntityTest {
         // Khi & Thì
         // Trường hợp 1: Ngày hết hạn trong quá khứ (không hợp lệ)
         notification.setExpiryDate(LocalDate.now().minusDays(1));
-        Exception exception = assertThrows(IllegalArgumentException.class, notification::validateExpiryDate);
+        Exception exception = assertThrows(IllegalArgumentException.class, notification::validateEntity);
         assertEquals("Expiry date must be in the future", exception.getMessage());
 
         // Trường hợp 2: Ngày hết hạn là ngày hiện tại (trường hợp biên, hợp lệ)
         notification.setExpiryDate(LocalDate.now());
-        assertDoesNotThrow(notification::validateExpiryDate);
+        assertDoesNotThrow(notification::validateEntity);
 
         // Trường hợp 3: Ngày hết hạn trong tương lai (trường hợp bình thường, hợp lệ)
         notification.setExpiryDate(LocalDate.now().plusDays(7));
-        assertDoesNotThrow(notification::validateExpiryDate);
+        assertDoesNotThrow(notification::validateEntity);
     }
 }

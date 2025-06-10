@@ -10,76 +10,116 @@ import org.socius.sociuswebbackend.util.EntityMappingUtil;
  * Mapper for EmploymentDetail entities and DTOs
  */
 @Mapper(componentModel = "spring", uses = {
-                UserMapper.class,
-                PositionMapper.class,
-                DepartmentMapper.class,
-                TeamMapper.class,
-                RoleMapper.class
+        UserMapper.class,
+        PositionMapper.class,
+        DepartmentMapper.class,
+        TeamMapper.class,
+        RoleMapper.class
 })
-public interface EmploymentDetailMapper extends BaseEntityMapper,
-                GenericMapper<EmploymentDetailEntity, EmploymentDetailResponseDto, EmploymentDetailRequestDto> {
+public abstract class EmploymentDetailMapper extends BaseEntityMapper implements
+        GenericMapper<EmploymentDetailEntity, EmploymentDetailResponseDto, EmploymentDetailRequestDto> {
 
-        @Override
-        EmploymentDetailResponseDto entityToDto(EmploymentDetailEntity entity);
+    @Override
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    public abstract EmploymentDetailResponseDto entityToDto(EmploymentDetailEntity entity);
 
-        @Override
-        default EmploymentDetailEntity requestDtoToEntity(EmploymentDetailRequestDto dto) {
-                if (dto == null) {
-                        return null;
-                }
+    @Named("entityToLimitedDto")
+    @Mapping(target = "user", source = "user", qualifiedByName = "toLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "role", ignore = true) // Bỏ trường role
+    @Mapping(target = "startDate", source = "startDate")
+    @Mapping(target = "salary", ignore = true)
+    @Mapping(target = "workingStatus", source = "workingStatus")
+    public abstract EmploymentDetailResponseDto entityToLimitedDto(EmploymentDetailEntity entity);
 
-                EntityMappingUtil mappingUtil = getEntityMappingUtil();
-                
-                return EmploymentDetailEntity.builder()
-                        .user(mappingUtil.mapUserIdToEntity(dto.getUserId()))
-                        .position(mappingUtil.mapPositionIdToEntity(dto.getPositionId()))
-                        .department(mappingUtil.mapDepartmentIdToEntity(dto.getDepartmentId()))
-                        .team(dto.getTeamId() != null ? mappingUtil.mapTeamIdToEntity(dto.getTeamId()) : null)
-                        .role(mappingUtil.mapRoleIdToEntity(dto.getRoleId()))
-                        .startDate(dto.getStartDate())
-                        .salary(dto.getSalary())
-                        .workingStatus(dto.getWorkingStatus())
-                        .build();
+    @Named("entityToLimitedDto")
+    @Mapping(target = "user", source = "user", qualifiedByName = "toLimitedDto")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "position", source = "position")
+    @Mapping(target = "department", source = "department")
+    @Mapping(target = "team", source = "team")
+    @Mapping(target = "role", source = "role")
+    @Mapping(target = "startDate", source = "startDate")
+    @Mapping(target = "salary", ignore = true)
+    @Mapping(target = "workingStatus", source = "workingStatus")
+    public abstract EmploymentDetailResponseDto entityToLimitedDtoForAdmin(EmploymentDetailEntity entity);
+
+
+    @Named("entityToLimitedDtoForUser")
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "user", source = "user")
+    @Mapping(target = "position", source = "position")
+    @Mapping(target = "department", source = "department")
+    @Mapping(target = "team", source = "team")
+    @Mapping(target = "role", source = "role")
+    @Mapping(target = "startDate", source = "startDate")
+    @Mapping(target = "salary", ignore = true)
+    @Mapping(target = "workingStatus", source = "workingStatus")
+    public abstract EmploymentDetailResponseDto entityToLimitedDtoForUser(EmploymentDetailEntity entity);
+
+    @Override
+    public EmploymentDetailEntity requestDtoToEntity(EmploymentDetailRequestDto dto) {
+        if (dto == null) {
+            return null;
         }
 
-        @Override
-        default void updateEntityFromDto(EmploymentDetailRequestDto dto, @MappingTarget EmploymentDetailEntity entity) {
-                if (dto == null) {
-                        return;
-                }
+        EntityMappingUtil mappingUtil = getEntityMappingUtil();
 
-                EntityMappingUtil mappingUtil = getEntityMappingUtil();
-                
-                if (dto.getUserId() != null) {
-                        entity.setUser(mappingUtil.mapUserIdToEntity(dto.getUserId()));
-                }
-                
-                if (dto.getPositionId() != null) {
-                        entity.setPosition(mappingUtil.mapPositionIdToEntity(dto.getPositionId()));
-                }
-                
-                if (dto.getDepartmentId() != null) {
-                        entity.setDepartment(mappingUtil.mapDepartmentIdToEntity(dto.getDepartmentId()));
-                }
-                
-                if (dto.getTeamId() != null) {
-                        entity.setTeam(mappingUtil.mapTeamIdToEntity(dto.getTeamId()));
-                }
-                
-                if (dto.getRoleId() != null) {
-                        entity.setRole(mappingUtil.mapRoleIdToEntity(dto.getRoleId()));
-                }
-                
-                if (dto.getStartDate() != null) {
-                        entity.setStartDate(dto.getStartDate());
-                }
-                
-                if (dto.getSalary() != null) {
-                        entity.setSalary(dto.getSalary());
-                }
-                
-                if (dto.getWorkingStatus() != null) {
-                        entity.setWorkingStatus(dto.getWorkingStatus());
-                }
+        return EmploymentDetailEntity.builder()
+                .user(mappingUtil.mapUserIdToEntity(dto.getUserId()))
+                .position(mappingUtil.mapPositionIdToEntity(dto.getPositionId()))
+                .department(mappingUtil.mapDepartmentIdToEntity(dto.getDepartmentId()))
+                .team(dto.getTeamId() != null ? mappingUtil.mapTeamIdToEntity(dto.getTeamId()) : null)
+                .role(mappingUtil.mapRoleIdToEntity(dto.getRoleId()))
+                .startDate(dto.getStartDate())
+                .salary(dto.getSalary())
+                .workingStatus(dto.getWorkingStatus())
+                .build();
+    }
+
+    @Override
+    public void updateEntityFromDto(EmploymentDetailRequestDto dto, @MappingTarget EmploymentDetailEntity entity) {
+        if (dto == null) {
+            return;
         }
+
+        EntityMappingUtil mappingUtil = getEntityMappingUtil();
+
+        if (dto.getUserId() != null) {
+            entity.setUser(mappingUtil.mapUserIdToEntity(dto.getUserId()));
+        }
+
+        if (dto.getPositionId() != null) {
+            entity.setPosition(mappingUtil.mapPositionIdToEntity(dto.getPositionId()));
+        }
+
+        if (dto.getDepartmentId() != null) {
+            entity.setDepartment(mappingUtil.mapDepartmentIdToEntity(dto.getDepartmentId()));
+        }
+
+        if (dto.getTeamId() != null) {
+            entity.setTeam(mappingUtil.mapTeamIdToEntity(dto.getTeamId()));
+        }
+
+        if (dto.getRoleId() != null) {
+            entity.setRole(mappingUtil.mapRoleIdToEntity(dto.getRoleId()));
+        }
+
+        if (dto.getStartDate() != null) {
+            entity.setStartDate(dto.getStartDate());
+        }
+
+        if (dto.getSalary() != null) {
+            entity.setSalary(dto.getSalary());
+        }
+
+        if (dto.getWorkingStatus() != null) {
+            entity.setWorkingStatus(dto.getWorkingStatus());
+        }
+    }
 }

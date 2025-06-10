@@ -1,7 +1,7 @@
 package org.socius.sociuswebbackend.services;
 
 import org.socius.sociuswebbackend.model.dtos.employee.EmployeeCreationRequestDto;
-import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 
 
 public interface AdminService {
@@ -12,5 +12,5 @@ public interface AdminService {
      * @param requestDto Thông tin nhân viên cần tạo
      * @return Thông tin nhân viên đã tạo
      */
-    UserResponseDto createEmployee(EmployeeCreationRequestDto requestDto);
+    EmploymentDetailResponseDto createEmployee(EmployeeCreationRequestDto requestDto);
 }

@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.model.dtos.employment;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class EmploymentHistoryResponseDto extends BaseDto {
     private UserResponseDto user;
     private PositionResponseDto position;

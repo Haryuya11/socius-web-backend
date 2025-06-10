@@ -1,5 +1,6 @@
 package org.socius.sociuswebbackend.mappers;
 
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.List;
@@ -28,6 +29,9 @@ public interface GenericMapper<E, R, Q> {
     /**
      * Update existing entity from request DTO
      */
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromDto(Q dto, @MappingTarget E entity);
 
     /**

@@ -1,61 +1,113 @@
 package org.socius.sociuswebbackend.config;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.socius.sociuswebbackend.services.ConfigService;
-import org.socius.sociuswebbackend.websocket.UserOnlineWebSocketHandler;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 @Configuration
 @EnableWebSocketMessageBroker
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Autowired
-    private ConfigService configService;
+    private final ConfigService configService;
 
-    @Autowired
-    private UserOnlineWebSocketHandler userOnlineWebSocketHandler;
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        // Enable simple broker với các destination patterns
+        config.enableSimpleBroker("/topic", "/queue", "/user")
+                .setHeartbeatValue(new long[]{25000, 25000}) // [server, client] heartbeat in ms
+                .setTaskScheduler(taskScheduler());
+
+        // Set application destination prefix
+        config.setApplicationDestinationPrefixes("/app");
+
+        // Set user destination prefix cho user-specific messages
+        config.setUserDestinationPrefix("/user");
+
+        // Preserve published order
+        config.setPreservePublishOrder(true);
+    }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-
-        // Lấy danh sách các origin được phép từ ConfigService
-        String[] allowedOrigins = configService.getList("cors.allowed.origins")
-                .toArray(new String[0]);
-
-        // Điểm kết nối chung
-        registry.addEndpoint("/ws")
-                .setAllowedOrigins(allowedOrigins)
-                .withSockJS();
-
-        // Điểm kết nối riêng cho heartbeat
         registry.addEndpoint("/ws-heartbeat")
-                .setAllowedOrigins(allowedOrigins)
-                .addInterceptors(userOnlineWebSocketHandler)
-                .withSockJS();
+                .setAllowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000")
+                .withSockJS()
+                .setHeartbeatTime(25000) // 25 seconds
+                .setDisconnectDelay(30000) // 30 seconds
+                .setStreamBytesLimit(512 * 1024) // 512KB
+                .setHttpMessageCacheSize(1000)
+                .setClientLibraryUrl("https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js");
     }
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // Prefix cho các endpoint gửi tin nhắn tới server
-        registry.setApplicationDestinationPrefixes("/app");
-
-        // Prefix cho các channel mà client có thể subscribe
-        registry.enableSimpleBroker("/topic", "/queue");
-
-        // Prefix cho các tin nhắn private
-        registry.setUserDestinationPrefix("/user");
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(new SessionValidationInterceptor())
+                .taskExecutor()
+                .corePoolSize(4)
+                .maxPoolSize(8)
+                .keepAliveSeconds(60);
     }
 
     @Override
-    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
-        // Tăng thời gian timeout cho các kết nối WebSocket
-        registration.setSendTimeLimit(15 * 1000)
-                .setSendBufferSizeLimit(512 * 1024)
-                .setMessageSizeLimit(128 * 1024);
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        registration.taskExecutor()
+                .corePoolSize(4)
+                .maxPoolSize(8)
+                .keepAliveSeconds(60);
+    }
+
+    @Bean
+    public TaskScheduler taskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(2);
+        scheduler.setThreadNamePrefix("websocket-heartbeat-");
+        scheduler.initialize();
+        return scheduler;
+    }
+
+    // Session validation interceptor
+    private static class SessionValidationInterceptor implements ChannelInterceptor {
+        private static final Logger logger = LoggerFactory.getLogger(SessionValidationInterceptor.class);
+
+        @Override
+        public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
+            StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+
+            assert accessor != null;
+            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                String sessionId = accessor.getFirstNativeHeader("sessionId");
+                String userId = accessor.getFirstNativeHeader("userId");
+
+                logger.info("WebSocket connection attempt - SessionId: {}, UserId: {}", sessionId, userId);
+
+                if (sessionId == null || userId == null) {
+                    logger.warn("Missing session credentials in WebSocket connection");
+                    throw new IllegalArgumentException("Missing session credentials");
+                }
+
+                // Set user principal
+                accessor.setUser(() -> userId);
+            }
+
+            return message;
+        }
     }
 }

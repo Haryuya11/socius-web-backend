@@ -1,29 +1,27 @@
 package org.socius.sociuswebbackend.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.LoginResponseDto;
 import org.socius.sociuswebbackend.model.dtos.auth.PasswordChangeRequestDto;
 import org.socius.sociuswebbackend.model.dtos.auth.SessionInfoDto;
 import org.socius.sociuswebbackend.model.enums.PasswordChangeResult;
 import org.socius.sociuswebbackend.services.AuthenticationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
-    @Autowired
-    private AuthenticationService authenticationService;
+    final private AuthenticationService authenticationService;
 
     /**
      * Xác thực người dùng và tạo phiên đăng nhập
@@ -35,7 +33,7 @@ public class AuthController {
      * thái xác thực
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(
+    public ResponseEntity<LoginResponseDto> login(
             @Valid @RequestBody LoginRequestDto loginRequest,
             HttpServletRequest request,
             HttpServletResponse response) {
@@ -43,12 +41,8 @@ public class AuthController {
         LoginResponseDto result = authenticationService.login(loginRequest, request, response);
         if (result.isAuthenticated()) {
             return ResponseEntity.ok(result);
-        } else if(result.getMessage().contains("Không tìm thấy người dùng")){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result.getMessage());
-        } else if (result.getMessage().contains("Sai mật khẩu")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result.getMessage());
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
         }
     }
 
@@ -60,12 +54,7 @@ public class AuthController {
      * @return HTTP 200 OK sau khi đăng xuất thành công
      */
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
-
-        if (!authenticationService.isAuthenticated(request)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
-        }
-
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         authenticationService.logout(request, response);
         return ResponseEntity.ok().build();
     }
@@ -78,12 +67,12 @@ public class AuthController {
      * chưa
      */
     @GetMapping("/session")
-    public ResponseEntity<?> checkSession(HttpServletRequest request) {
+    public ResponseEntity<SessionInfoDto> checkSession(HttpServletRequest request) {
         SessionInfoDto sessionInfo = authenticationService.getCurrentSession(request);
         if (sessionInfo != null) {
             return ResponseEntity.ok(sessionInfo);
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
@@ -95,23 +84,17 @@ public class AuthController {
      * mật khẩu hiện tại không đúng hoặc mật khẩu mới không khớp
      */
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(
+    public ResponseEntity<Void> changePassword(
             @Valid @RequestBody PasswordChangeRequestDto requestDto,
             HttpServletRequest request) {
-        if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
-            return ResponseEntity.badRequest().body("Password vầ Confirm password không khớp");
-        }
+        authenticationService.changePassword(requestDto, request);
+        return ResponseEntity.ok().build();
+    }
 
-        PasswordChangeResult result = authenticationService.changePassword(requestDto, request);
-
-        return switch (result) {
-            case SUCCESS -> ResponseEntity.ok("Đổi mật khẩu thành công");
-            case NOT_AUTHENTICATED -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa đăng nhập");
-            case USER_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Người dùng không tồn tại");
-            case ACCOUNT_NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tài khoản không tồn tại");
-            case INCORRECT_PASSWORD ->
-                    ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Mật khẩu hiện tại không đúng");
-            default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống");
-        };
+    @PostMapping("/reset-password")
+    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody String email) {
+        authenticationService.resetPassword(email);
+        return ResponseEntity.ok().build();
     }
 }

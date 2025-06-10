@@ -25,12 +25,10 @@ public class EmploymentHistoryEntity extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @NotNull(message = "Position must not be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "position_id", nullable = false)
     private PositionEntity position;
 
-    @NotNull(message = "Department must not be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id", nullable = false)
     private DepartmentEntity department;
@@ -39,7 +37,6 @@ public class EmploymentHistoryEntity extends BaseEntity {
     @JoinColumn(name = "team_id")
     private TeamEntity team;
 
-    @NotNull(message = "Role must not be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
     private RoleEntity role;
@@ -61,8 +58,15 @@ public class EmploymentHistoryEntity extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @PrePersist
-    @PreUpdate void validateDates() {
+    @Override
+    protected void validateEntity() {
+        validateDates();
+    }
+
+    /**
+     * Validate rằng end date phải sau start date
+     */
+    private void validateDates() {
         if (endDate != null && startDate != null && endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("End date must be after start date");
         }
