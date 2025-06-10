@@ -1,7 +1,10 @@
 package org.socius.sociuswebbackend.config;
 
 import lombok.RequiredArgsConstructor;
+//import org.socius.sociuswebbackend.filter.ChatbotAuthenticationFilter;
 import org.socius.sociuswebbackend.security.CsrfCookieFilter;
+import org.socius.sociuswebbackend.services.ConfigService;
+import org.socius.sociuswebbackend.services.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -9,15 +12,19 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -31,6 +38,8 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final UserService userService;
+    private final ConfigService configService;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -53,7 +62,8 @@ public class SecurityConfig {
                                 "/api/auth/login",         // Login endpoint
                                 "/api/auth/logout",        // Logout endpoint
                                 "/api/csrf/token",          // CSRF token endpoint
-                                "/api/user-online/**"
+                                "/api/user-online/**",
+                                "/api/chatbot/**"
                         )
                         .csrfTokenRequestHandler(requestHandler)
                 )
@@ -75,7 +85,8 @@ public class SecurityConfig {
                                 "/user/**",
                                 "/api/user-online/**",
                                 "/api/notification/**",
-                                "/api/static/**"
+                                "/api/static/**",
+                                "/api/chatbot/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/api/admin/**",
@@ -144,4 +155,19 @@ public class SecurityConfig {
     public CsrfTokenRequestHandler csrfTokenRequestHandler() {
         return new CsrfTokenRequestAttributeHandler();
     }
+
+    @Bean
+    public HttpFirewall httpFirewall() {
+        StrictHttpFirewall firewall = new StrictHttpFirewall();
+        firewall.setAllowUrlEncodedDoubleSlash(true); // Cho phép //
+        firewall.setAllowUrlEncodedPercent(true);     // Cho phép %
+        firewall.setAllowUrlEncodedPeriod(true);      // Cho phép .
+        return firewall;
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.httpFirewall(httpFirewall());
+    }
+
 }

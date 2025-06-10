@@ -10,6 +10,7 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -147,5 +148,17 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", e.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        log.warn("Type mismatch exception: {}", ex.getMessage());
+
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Invalid parameter format");
+        response.put("message", "Parameter '" + ex.getName() + "' has invalid format");
+        response.put("timestamp", LocalDateTime.now().toString());
+
+        return ResponseEntity.badRequest().body(response);
     }
 }

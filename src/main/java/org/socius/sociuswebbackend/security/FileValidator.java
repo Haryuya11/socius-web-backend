@@ -64,7 +64,7 @@ public class FileValidator {
      */
     public boolean isAllowedDirectory(String directory) {
         // Danh sách các thư mục được phép
-        Set<String> allowedDirectories = Set.of("images", "videos", "documents", "audios", "files");
+        Set<String> allowedDirectories = Set.of("images", "videos", "audios", "files", "misc");
         return allowedDirectories.contains(directory);
     }
 
@@ -99,23 +99,33 @@ public class FileValidator {
         }
 
         // Kiểm tra magic number của các loại file phổ biến
-        if (contentType.equals("image/jpeg")) {
-            // JPEG: FF D8 FF
-            return fileBytes[0] == (byte) 0xFF && fileBytes[1] == (byte) 0xD8 && fileBytes[2] == (byte) 0xFF;
-        } else if (contentType.equals("image/png")) {
-            // PNG: 89 50 4E 47
-            return fileBytes[0] == (byte) 0x89 && fileBytes[1] == 'P' && fileBytes[2] == 'N' && fileBytes[3] == 'G';
-        } else if (contentType.equals("application/pdf")) {
-            // PDF: 25 50 44 46 (% P D F)
-            return fileBytes[0] == '%' && fileBytes[1] == 'P' && fileBytes[2] == 'D' && fileBytes[3] == 'F';
-        } else if (contentType.equals("audio/mpeg")) {
-            // MP3: FF FB or FF F3 or FF F2 or ID3
-            return (fileBytes[0] == (byte) 0xFF && (fileBytes[1] == (byte) 0xFB || fileBytes[1] == (byte) 0xF3 || fileBytes[1] == (byte) 0xF2)) ||
-                    (fileBytes[0] == 'I' && fileBytes[1] == 'D' && fileBytes[2] == '3');
-        } else if (contentType.equals("video/mp4")) {
-            // MP4:.... ftyp
-            if (fileBytes.length < 12) return false;
-            return (fileBytes[4] == 'f' && fileBytes[5] == 't' && fileBytes[6] == 'y' && fileBytes[7] == 'p');
+        switch (contentType) {
+            case "image/jpeg" -> {
+                // JPEG: FF D8 FF
+                return fileBytes[0] == (byte) 0xFF && fileBytes[1] == (byte) 0xD8 && fileBytes[2] == (byte) 0xFF;
+                // JPEG: FF D8 FF
+            }
+            case "image/png" -> {
+                // PNG: 89 50 4E 47
+                return fileBytes[0] == (byte) 0x89 && fileBytes[1] == 'P' && fileBytes[2] == 'N' && fileBytes[3] == 'G';
+                // PNG: 89 50 4E 47
+            }
+            case "application/pdf" -> {
+                // PDF: 25 50 44 46 (% P D F)
+                return fileBytes[0] == '%' && fileBytes[1] == 'P' && fileBytes[2] == 'D' && fileBytes[3] == 'F';
+                // PDF: 25 50 44 46 (% P D F)
+            }
+            case "audio/mpeg" -> {
+                // MP3: FF FB or FF F3 or FF F2 or ID3
+                return (fileBytes[0] == (byte) 0xFF && (fileBytes[1] == (byte) 0xFB || fileBytes[1] == (byte) 0xF3 || fileBytes[1] == (byte) 0xF2)) ||
+                        (fileBytes[0] == 'I' && fileBytes[1] == 'D' && fileBytes[2] == '3');
+                // MP3: FF FB or FF F3 or FF F2 or ID3
+            }
+            case "video/mp4" -> {
+                // MP4:.... ftyp
+                if (fileBytes.length < 12) return false;
+                return (fileBytes[4] == 'f' && fileBytes[5] == 't' && fileBytes[6] == 'y' && fileBytes[7] == 'p');
+            }
         }
 
         // Đối với các loại tệp khác (ví dụ: text/plain, các tệp office...),

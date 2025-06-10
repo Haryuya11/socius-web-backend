@@ -525,15 +525,15 @@ VALUES
 INSERT INTO tasks (name, description, deadline, status, assigned_to, created_at, updated_at)
 VALUES ('Thiết kế UI', 'Thiết kế layout cho trang dashboard quản trị', '2025-06-15', 'in_progress',
         '00778899-0011-22aa-44bb-55cc66dd77ee', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       ('Tối ưu DB', 'Tối ưu các truy vấn SQL trong module báo cáo', '2025-06-10', 'pending',
+       ('Tối ưu DB', 'Tối ưu các truy vấn SQL trong module báo cáo', '2025-06-20', 'pending',
         'ff667788-9900-1122-aa44-bb55cc66dd77', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
        ('Test đăng ký', 'Viết test case cho màn hình đăng ký người dùng mới', '2025-06-20', 'completed',
         'a1990011-22aa-44bb-55cc-66dd77ee8899', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       ('Hệ thống TB', 'Tạo WebSocket backend gửi thông báo real-time', '2025-06-12', 'in_progress',
+       ('Hệ thống TB', 'Tạo WebSocket backend gửi thông báo real-time', '2025-06-20', 'in_progress',
         'cc33dd44-ee55-ff66-7788-99001122aa44', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
        ('Cập nhật UI', 'Nâng cấp hiển thị danh sách sản phẩm và hiệu ứng hover', '2025-06-20', 'pending',
         'ee55ff66-7788-9900-1122-aa44bb55cc66', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       ('Tài liệu SD', 'Soạn thảo tài liệu user manual cho khách hàng', '2025-06-11', 'completed',
+       ('Tài liệu SD', 'Soạn thảo tài liệu user manual cho khách hàng', '2025-06-20', 'completed',
         'ee55ff66-7788-9900-1122-aa44bb55cc66', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
        ('Refactor TT', 'Tối ưu mã nguồn xử lý thanh toán và giảm lỗi timeout', '2025-06-17', 'in_progress',
         'cc33dd44-ee55-ff66-7788-99001122aa44', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -733,4 +733,10 @@ VALUES ('rabbitmq.prefetch.count', '10', 'Số lượng tin nhắn được gử
        ('websocket.heartbeat.timeout', '300000', 'Thời gian chờ heartbeat WebSocket (ms)'),
        ('rabbitmq.max.retries', '3', 'Số lần thử lại tối đa khi gửi tin nhắn RabbitMQ'),
        ('user.online.timeout.minutes', '10', 'Thời gian chờ để xác định trạng thái online của người dùng (phút)')
+ON CONFLICT (setting_key) DO NOTHING;
+
+
+INSERT INTO app_settings (setting_key, setting_value, description, created_at, updated_at)
+VALUES ('chatbot.secret.key', 'your-super-secret-chatbot-key-here', 'Secret key for chatbot authentication',
+        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (setting_key) DO NOTHING;

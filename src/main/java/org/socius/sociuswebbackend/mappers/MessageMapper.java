@@ -18,6 +18,13 @@ public abstract class MessageMapper extends BaseEntityMapper implements GenericM
     @Mapping(source = "conversation.id", target = "conversationId")
     public abstract MessageResponseDto entityToDto(MessageEntity entity);
 
+    @AfterMapping
+    protected void setSystemMessageId(@MappingTarget MessageResponseDto dto, MessageEntity entity) {
+        if (dto.getId() == null && entity.getId() != null) {
+            dto.setId(entity.getId());
+        }
+    }
+
     @Override
     @Mapping(target = "conversation", ignore = true)
     @Mapping(target = "sender", ignore = true)
