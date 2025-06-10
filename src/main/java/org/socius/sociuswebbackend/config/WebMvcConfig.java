@@ -35,7 +35,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowCredentials(true);
     }
 
-
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String uploadDir = configService.getString("file.upload.dir", "./uploads");

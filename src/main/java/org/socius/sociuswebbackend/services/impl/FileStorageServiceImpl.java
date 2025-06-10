@@ -31,7 +31,6 @@ public class FileStorageServiceImpl implements FileStorageService {
     final private ConfigService configService;
     final private FileValidator fileValidator;
 
-
     @Override
     public String storeFile(MultipartFile file, String directory) throws IOException {
         if (file.isEmpty()) throw new IOException("Không thể lưu tệp tin rỗng");
