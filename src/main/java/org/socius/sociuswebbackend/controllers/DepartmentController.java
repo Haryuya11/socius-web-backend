@@ -2,8 +2,10 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.DepartmentService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +29,7 @@ public class DepartmentController {
      * @return Danh sách các phòng ban
      */
     @GetMapping()
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.DEPARTMENT_GET_ALL)
     public ResponseEntity<List<DepartmentResponseDto>> getAllDepartments() {
         List<DepartmentResponseDto> departments = departmentService.findAllActiveDepartments();
         return ResponseEntity.ok(departments);
@@ -41,7 +43,7 @@ public class DepartmentController {
      * @return Thông tin phòng ban cùng với danh sách thành viên nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{departmentId}/members")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.DEPARTMENT_GET_ALL)
     public ResponseEntity<Map<String, Object>> getDepartmentWithMember(
             @PathVariable UUID departmentId,
             Pageable pageable
@@ -59,6 +61,7 @@ public class DepartmentController {
      * @return Thông tin phòng ban nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{id}")
+    @RequirePermission(PermissionConstants.DEPARTMENT_READ)
     public ResponseEntity<DepartmentResponseDto> getDepartmentById(@PathVariable UUID id) {
         DepartmentResponseDto department = departmentService.findById(id);
         return ResponseEntity.ok(department);
@@ -71,7 +74,7 @@ public class DepartmentController {
      * @return Thông tin phòng ban đã được tạo
      */
     @PostMapping("/create")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.DEPARTMENT_CREATE)
     public ResponseEntity<?> createDepartment(@Valid @RequestBody DepartmentRequestDto requestDto) {
         DepartmentResponseDto createdDepartment = departmentService.create(requestDto);
         return ResponseEntity.ok(createdDepartment);
@@ -84,7 +87,7 @@ public class DepartmentController {
      * @return ResponseEntity với mã trạng thái 204 No Content nếu xóa thành công
      */
     @DeleteMapping("/delete/{departmentId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.DEPARTMENT_DELETE)
     public ResponseEntity<?> deleteDepartment(@PathVariable UUID departmentId) {
         departmentService.delete(departmentId);
         return ResponseEntity.noContent().build();
@@ -98,7 +101,7 @@ public class DepartmentController {
      * @return Thông tin phòng ban đã được cập nhật
      */
     @PutMapping("/update/{departmentId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.DEPARTMENT_UPDATE)
     public ResponseEntity<DepartmentResponseDto> updateDepartment(@PathVariable UUID departmentId, @Valid @RequestBody DepartmentRequestDto requestDto) {
         DepartmentResponseDto updatedDepartment = departmentService.update(departmentId, requestDto);
         return ResponseEntity.ok(updatedDepartment);

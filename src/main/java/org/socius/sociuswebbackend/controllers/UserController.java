@@ -6,9 +6,11 @@ import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserRequestDto;
 import org.socius.sociuswebbackend.model.dtos.user.UserResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.UserService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +33,7 @@ public class UserController {
      * @return Thông tin người dùng hoặc 404 nếu không tìm thấy
      */
     @GetMapping("/{userId}")
+    @RequirePermission({PermissionConstants.USER_READ_ALL, PermissionConstants.USER_READ_OWN})
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID userId) {
         UserResponseDto user = userService.findById(userId);
         return ResponseEntity.ok(user);
@@ -43,6 +46,7 @@ public class UserController {
      * @return Thông tin người dùng hiện tại hoặc 401 nếu chưa đăng nhập
      */
     @GetMapping("/current-user")
+    @RequirePermission({PermissionConstants.USER_READ_ALL, PermissionConstants.USER_READ_OWN})
     public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
         EmploymentDetailResponseDto userDetail = userService.getCurrentUser(request);
         return ResponseEntity.ok(userDetail);
@@ -75,6 +79,7 @@ public class UserController {
      * @return Danh sách lịch sử lương cùng với thông tin phân trang
      */
     @GetMapping("/{userId}/salary-history")
+    @RequirePermission({PermissionConstants.EMPLOYEE_SALARY_VIEW_ALL, PermissionConstants.EMPLOYEE_SALARY_VIEW_OWN})
     public ResponseEntity<Map<String, Object>> getSalaryHistory(
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "0") int page,
@@ -172,8 +177,8 @@ public class UserController {
     /**
      * Cập nhật thông tin người dùng
      *
-     * @param userId          ID của người dùng cần cập nhật
-     * @param userRequestDto  DTO chứa thông tin cập nhật người dùng
+     * @param userId         ID của người dùng cần cập nhật
+     * @param userRequestDto DTO chứa thông tin cập nhật người dùng
      * @return Thông tin người dùng đã được cập nhật
      */
     @PutMapping("/{userId}/update")

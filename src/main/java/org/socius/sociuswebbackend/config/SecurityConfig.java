@@ -1,13 +1,13 @@
 package org.socius.sociuswebbackend.config;
 
 import lombok.RequiredArgsConstructor;
-//import org.socius.sociuswebbackend.filter.ChatbotAuthenticationFilter;
+import org.socius.sociuswebbackend.filter.ChatbotAuthenticationFilter;
 import org.socius.sociuswebbackend.security.CsrfCookieFilter;
-import org.socius.sociuswebbackend.services.ConfigService;
-import org.socius.sociuswebbackend.services.UserService;
+import org.socius.sociuswebbackend.security.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,15 +31,15 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
-    private final UserService userService;
-    private final ConfigService configService;
+    private final ChatbotAuthenticationFilter chatbotAuthenticationFilter;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -48,59 +48,57 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName("_csrf");
+
         http
+                .authenticationProvider(authenticationProvider())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository())
                         .ignoringRequestMatchers(
-                                "/ws-heartbeat/**",        // Cho phép WebSocket
-                                "/ws-heartbeat/info",      // SockJS info endpoint
-                                "/ws-heartbeat/websocket", // WebSocket upgrade
-                                "/api/auth/login",         // Login endpoint
-                                "/api/auth/logout",        // Logout endpoint
-                                "/api/csrf/token",          // CSRF token endpoint
-                                "/api/user-online/**",
-                                "/api/chatbot/**"
+                                "/ws-heartbeat/**",
+                                "/ws-heartbeat/info",
+                                "/ws-heartbeat/websocket",
+                                "/api/auth/login",
+                                "/api/auth/logout",
+                                "/api/csrf/token",
+                                "/api/chatbot/**",
+                                "/api/user-online/offline/**",
+                                "/api/user-online/heartbeat",
+                                "/api/user-online/refresh/**"
                         )
                         .csrfTokenRequestHandler(requestHandler)
                 )
+                .addFilterBefore(chatbotAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/login",
-                                "/api/auth/change-password",
-                                "/api/auth/session",
-                                "/api/users/**",
-                                "/api/public/**",
-                                "/api/session/**",
                                 "/error",
                                 "/ws/**",
                                 "/ws-heartbeat/**",
-                                "/ws-heartbeat/info/**",
-                                "/app/**",
-                                "/topic/**",
-                                "/user/**",
-                                "/api/user-online/**",
-                                "/api/notification/**",
-                                "/api/static/**",
-                                "/api/chatbot/**"
+                                "/ws-heartbeat/info/**"
                         ).permitAll()
+                        // Thêm các endpoint conversation cần thiết
                         .requestMatchers(
-                                "/api/admin/**",
-                                "/api/master-data/**"
-                        ).hasAuthority("ACCESS_ADMIN_PAGE")
+                                "/api/conversations/**",
+                                "/api/messages/**",
+                                "/api/user/**",
+                                "/api/session/**",
+                                "/api/user-online/**"
+                        ).authenticated()
+                        .requestMatchers("/api/admin/**").hasAuthority("ACCESS_ADMIN_PAGE")
                         .requestMatchers("/api/auth/logout").authenticated()
+                        .requestMatchers("/api/chatbot/**").authenticated()
+                        .requestMatchers("/api/auth/chatbot-token").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
-                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Chỉ tạo session khi cần thiết
-                                .maximumSessions(1) // Giới hạn số phiên đăng nhập đồng thời là 1
-                                .maxSessionsPreventsLogin(false) // Cho phép đăng nhập mới nếu đã có phiên khác
-//                        .sessionRegistry(new org.springframework.security.core.session.SessionRegistryImpl())
-                                .expiredUrl("/api/auth/session-expired")
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .maximumSessions(3) // Tăng số session đồng thời để tránh conflict
+                        .maxSessionsPreventsLogin(false)
+                        .expiredUrl("/api/auth/session-expired")
                 );
 
         return http.build();
@@ -110,11 +108,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(Arrays.asList(
+        configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+        ));
+
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -122,11 +124,19 @@ public class SecurityConfig {
                 "X-CSRF-TOKEN",
                 "Cache-Control",
                 "Accept",
-                "Origin"
+                "Origin",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
         ));
+
+        configuration.setExposedHeaders(Arrays.asList(
+                "X-CSRF-TOKEN",
+                "Access-Control-Allow-Origin",
+                "Access-Control-Allow-Credentials"
+        ));
+
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -159,9 +169,9 @@ public class SecurityConfig {
     @Bean
     public HttpFirewall httpFirewall() {
         StrictHttpFirewall firewall = new StrictHttpFirewall();
-        firewall.setAllowUrlEncodedDoubleSlash(true); // Cho phép //
-        firewall.setAllowUrlEncodedPercent(true);     // Cho phép %
-        firewall.setAllowUrlEncodedPeriod(true);      // Cho phép .
+        firewall.setAllowUrlEncodedDoubleSlash(true);
+        firewall.setAllowUrlEncodedPercent(true);
+        firewall.setAllowUrlEncodedPeriod(true);
         return firewall;
     }
 
@@ -170,4 +180,11 @@ public class SecurityConfig {
         return (web) -> web.httpFirewall(httpFirewall());
     }
 
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(customUserDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
 }

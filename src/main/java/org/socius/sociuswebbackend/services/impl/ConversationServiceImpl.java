@@ -361,6 +361,11 @@ public class ConversationServiceImpl implements ConversationService {
         List<ConversationEntity> conversations = conversationRepository
                 .findAllActiveConversationsByUserId(userId);
 
+                if (conversations.isEmpty()) {
+        logger.info("Người dùng {} chưa có cuộc trò chuyện nào", userId);
+        return new ArrayList<>();
+    }
+
         // Lấy danh sách conversation IDs để query last messages một lần
         List<UUID> conversationIds = conversations.stream()
                 .map(ConversationEntity::getId)

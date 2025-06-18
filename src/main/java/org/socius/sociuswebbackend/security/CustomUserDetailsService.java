@@ -23,7 +23,6 @@ import java.util.Optional;
 public class CustomUserDetailsService implements UserDetailsService {
 
     final private UserRepository userRepository;
-
     final private AccountRepository accountRepository;
 
     @Override

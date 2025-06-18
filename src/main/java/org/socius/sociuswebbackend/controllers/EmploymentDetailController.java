@@ -2,10 +2,12 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.employee.EmployeeTerminationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.employee.EmployeeUpdateRequestDto;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
 import org.socius.sociuswebbackend.model.dtos.salary.SalaryUpdateRequestDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.EmploymentDetailService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -31,6 +33,7 @@ public class EmploymentDetailController {
      * với mã trạng thái HTTP 200 (OK)
      */
     @GetMapping("/all")
+    @RequirePermission(PermissionConstants.EMPLOYEE_READ_ALL)
     public ResponseEntity<Map<String, Object>> getAllEmployees(Pageable pageable) {
         return ResponseEntity.ok(employmentDetailService.getAllActiveEmployees(pageable));
     }
@@ -43,7 +46,7 @@ public class EmploymentDetailController {
      * với mã trạng thái HTTP 200 (OK), chỉ dành cho người dùng có quyền admin
      */
     @GetMapping("/admin/all")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.EMPLOYEE_READ_ALL)
     public ResponseEntity<Map<String, Object>> getAllEmployeesForAdmin(Pageable pageable) {
         return ResponseEntity.ok(employmentDetailService.getAllActiveEmployeesForAdmin(pageable));
     }
@@ -56,7 +59,7 @@ public class EmploymentDetailController {
      * @return Thông tin nhân viên đã được cập nhật
      */
     @PostMapping("/assign/{employeeId}/role/{roleId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.ROLE_ASSIGN)
     public ResponseEntity<EmploymentDetailResponseDto> assignRoleToEmployee(
             @PathVariable UUID employeeId,
             @PathVariable UUID roleId
@@ -66,7 +69,7 @@ public class EmploymentDetailController {
     }
 
     @PostMapping("/assign-multiple/role/{roleId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.ROLE_ASSIGN)
     public ResponseEntity<List<EmploymentDetailResponseDto>> assignRoleToMultipleEmployees(
             @RequestBody List<UUID> employeeIds,
             @PathVariable UUID roleId
@@ -82,7 +85,7 @@ public class EmploymentDetailController {
      * @return Thông tin chi tiết việc làm sau khi cập nhật
      */
     @DeleteMapping("/remove/{employeeId}/role")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.EMPLOYEE_ROLE_DELETE)
     public ResponseEntity<EmploymentDetailResponseDto> removeRoleFromEmployee(@PathVariable UUID employeeId) {
         employmentDetailService.removeRoleFromEmployee(employeeId);
         return ResponseEntity.noContent().build();
@@ -95,7 +98,7 @@ public class EmploymentDetailController {
      * @return Thông tin chi tiết việc làm sau khi cập nhật
      */
     @DeleteMapping("/remove-multiple")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @RequirePermission(PermissionConstants.EMPLOYEE_ROLE_DELETE)
     public ResponseEntity<List<EmploymentDetailResponseDto>> removeRoleFromMultipleEmployees(
             @RequestBody @Valid List<UUID> employeeIds) {
         employmentDetailService.removeRoleFromMultipleEmployees(employeeIds);
@@ -112,7 +115,7 @@ public class EmploymentDetailController {
      * @return Response thành công
      */
     @PostMapping("/add/{employeeId}/team/{teamId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.TEAM_ASSIGN)
     public ResponseEntity<?> addEmployeeToTeam(@PathVariable UUID teamId, @PathVariable UUID employeeId) {
         employmentDetailService.addEmployeeToTeam(teamId, employeeId);
         return ResponseEntity.ok().build();
@@ -125,7 +128,7 @@ public class EmploymentDetailController {
      * @return Response thành công
      */
     @DeleteMapping("/remove/{employeeId}/team")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.EMPLOYEE_TEAM_DELETE)
     public ResponseEntity<?> removeEmployeeFromTeam(@PathVariable UUID employeeId) {
         employmentDetailService.removeEmployeeFromTeam(employeeId);
         return ResponseEntity.noContent().build();
@@ -141,7 +144,7 @@ public class EmploymentDetailController {
      * @return Response thành công
      */
     @PostMapping("/add/{employeeId}/position/{positionId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.POSITION_ASSIGN)
     public ResponseEntity<?> addEmployeeToPosition(@PathVariable UUID positionId, @PathVariable UUID employeeId) {
         employmentDetailService.addEmployeeToPosition(positionId, employeeId);
         return ResponseEntity.ok().build();
@@ -154,7 +157,7 @@ public class EmploymentDetailController {
      * @return Response thành công
      */
     @DeleteMapping("/remove/{employeeId}/position")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.EMPLOYEE_POSITION_DELETE)
     public ResponseEntity<?> removeEmployeeFromPosition(@PathVariable UUID employeeId) {
         employmentDetailService.removeEmployeeFromPosition(employeeId);
         return ResponseEntity.noContent().build();
@@ -170,7 +173,7 @@ public class EmploymentDetailController {
      * @return Response thành công
      */
     @PostMapping("/add/{employeeId}/department/{departmentId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.DEPARTMENT_ASSIGN)
     public ResponseEntity<?> addEmployeeToDepartment(@PathVariable UUID departmentId, @PathVariable UUID employeeId) {
         employmentDetailService.addEmployeeToDepartment(departmentId, employeeId);
         return ResponseEntity.ok().build();
@@ -183,7 +186,7 @@ public class EmploymentDetailController {
      * @return Response thành công
      */
     @DeleteMapping("/remove/{employeeId}/department")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.EMPLOYEE_DEPARTMENT_DELETE)
     public ResponseEntity<?> removeEmployeeFromDepartment(@PathVariable UUID employeeId) {
         employmentDetailService.removeEmployeeFromDepartment(employeeId);
         return ResponseEntity.noContent().build();

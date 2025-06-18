@@ -51,17 +51,4 @@ public class SessionController {
         boolean isValid = sessionValidationService.isSessionValid(sessionId);
         return ResponseEntity.ok(isValid);
     }
-
-    /**
-     * Lấy sessionId của user (nếu có session hợp lệ)
-     */
-    @GetMapping("/user/{userId}/session-id")
-    public ResponseEntity<String> getUserSessionId(@PathVariable UUID userId) {
-        String sessionId = sessionValidationService.getUserSessionId(userId);
-        if (sessionId != null) {
-            return ResponseEntity.ok(sessionId);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
 }

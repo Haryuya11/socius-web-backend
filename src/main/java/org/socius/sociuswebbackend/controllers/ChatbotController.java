@@ -1,9 +1,11 @@
 package org.socius.sociuswebbackend.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentRequestDto;
 import org.socius.sociuswebbackend.model.dtos.department.DepartmentResponseDto;
 import org.socius.sociuswebbackend.model.dtos.employee.EmployeeCreationRequestDto;
@@ -17,6 +19,8 @@ import org.socius.sociuswebbackend.model.dtos.task.TaskRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
+import org.socius.sociuswebbackend.model.entities.UserEntity;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +32,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/chatbot")
 @RequiredArgsConstructor
-//@PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+@RequirePermission(PermissionConstants.CHATBOT_ACCESS)
 public class ChatbotController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatbotController.class);
@@ -48,9 +52,23 @@ public class ChatbotController {
      * Tạo team mới qua chatbot
      */
     @PostMapping("/team/create")
-    public ResponseEntity<TeamResponseDto> createTeam(@Valid @RequestBody TeamRequestDto requestDto) {
+    public ResponseEntity<TeamResponseDto> createTeam(
+            @Valid @RequestBody TeamRequestDto requestDto,
+            HttpServletRequest request) {
+
+        // Lấy user từ token thay vì SecurityContext
+        UserEntity creator = (UserEntity) request.getAttribute("CHATBOT_USER");
+        if (creator == null) {
+            throw new RuntimeException("Không tìm thấy thông tin người dùng");
+        }
+
+        // Set leaderId từ token user
+        requestDto.setLeaderId(creator.getId());
+
         TeamResponseDto createdTeam = teamService.create(requestDto);
-        logger.info("Chatbot: Tạo team thành công - {}", createdTeam.getName());
+        logger.info("Chatbot: Tạo team thành công - {} bởi {}",
+                createdTeam.getName(), creator.getEmail());
+
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTeam);
     }
 

@@ -2,8 +2,10 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.employee.EmployeeCreationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.AdminService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -27,6 +28,7 @@ public class AdminController {
      * @return Thông tin nhân viên đã tạo
      */
     @PostMapping("/employee")
+    @RequirePermission(PermissionConstants.EMPLOYEE_CREATE)
     public ResponseEntity<EmploymentDetailResponseDto> createEmployee(@Valid @RequestBody EmployeeCreationRequestDto requestDto) {
         EmploymentDetailResponseDto createdEmployee = adminService.createEmployee(requestDto);
         return ResponseEntity.ok(createdEmployee);

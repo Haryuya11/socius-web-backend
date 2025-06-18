@@ -2,8 +2,10 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.team.TeamRequestDto;
 import org.socius.sociuswebbackend.model.dtos.team.TeamResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.TeamService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +29,7 @@ public class TeamController {
      * @return Danh sách các team
      */
     @GetMapping()
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.TEAM_GET_ALL)
     public ResponseEntity<List<TeamResponseDto>> getAllTeams() {
         List<TeamResponseDto> teams = teamService.findAllActiveTeams();
         return ResponseEntity.ok(teams);
@@ -42,6 +44,7 @@ public class TeamController {
      * @return Thông tin team cùng với danh sách thành viên nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{teamId}/members")
+    @RequirePermission(PermissionConstants.TEAM_GET_ALL)
     public ResponseEntity<Map<String, Object>> getTeamWithMembers(
             @PathVariable UUID teamId,
             Pageable pageable
@@ -56,6 +59,7 @@ public class TeamController {
      * @return Thông tin team nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{teamId}")
+    @RequirePermission(PermissionConstants.ROLE_READ)
     public ResponseEntity<TeamResponseDto> getTeamById(@PathVariable UUID teamId) {
         TeamResponseDto team = teamService.findById(teamId);
         return ResponseEntity.ok(team);
@@ -68,7 +72,7 @@ public class TeamController {
      * @return Thông tin team đã được tạo
      */
     @PostMapping("/create")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.TEAM_CREATE)
     public ResponseEntity<TeamResponseDto> createTeam(@Valid @RequestBody TeamRequestDto requestDto) {
         TeamResponseDto createdTeam = teamService.create(requestDto);
         return ResponseEntity.ok(createdTeam);
@@ -81,7 +85,7 @@ public class TeamController {
      * @return ResponseEntity với mã trạng thái 204 No Content nếu xóa thành công
      */
     @DeleteMapping("/delete/{teamId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.TEAM_DELETE)
     public ResponseEntity<TeamResponseDto> deleteTeam(@PathVariable UUID teamId) {
         teamService.delete(teamId);
         return ResponseEntity.noContent().build();
@@ -95,7 +99,7 @@ public class TeamController {
      * @return Thông tin team đã được cập nhật
      */
     @PutMapping("/update/{teamId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.TEAM_UPDATE)
     public ResponseEntity<TeamResponseDto> updateTeam(@PathVariable UUID teamId, @Valid @RequestBody TeamRequestDto requestDto) {
         TeamResponseDto updatedTeam = teamService.update(teamId, requestDto);
         return ResponseEntity.ok(updatedTeam);
@@ -110,6 +114,7 @@ public class TeamController {
      * @return Map chứa danh sách task, tổng số task, số trang, và tổng phần tử, hoặc 404 nếu không tìm thấy
      */
     @GetMapping("/{teamId}/tasks")
+    @RequirePermission(PermissionConstants.TASK_TEAM_GET)
     public ResponseEntity<Map<String, Object>> getTeamTasks(
             @PathVariable UUID teamId,
             @RequestParam(defaultValue = "0") int page,

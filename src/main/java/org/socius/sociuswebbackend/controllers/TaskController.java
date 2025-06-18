@@ -2,8 +2,10 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.task.TaskRequestDto;
 import org.socius.sociuswebbackend.model.dtos.task.TaskResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,7 @@ public class TaskController {
      * @return Thông tin task vừa tạo, hoặc 400 nếu dữ liệu không hợp lệ
      */
     @PostMapping("/create")
+    @RequirePermission(PermissionConstants.TASK_CREATE)
     public ResponseEntity<TaskResponseDto> createTask(
             @Valid @RequestBody TaskRequestDto dto
     ) {
@@ -37,6 +40,7 @@ public class TaskController {
      * @return Thông tin task đã cập nhật, hoặc 400 nếu taskId/status không hợp lệ
      */
     @PatchMapping("/{taskId}/update-status/{status}")
+    @RequirePermission(PermissionConstants.TASK_UPDATE_STATUS)
     public ResponseEntity<TaskResponseDto> updateTaskStatus(
             @PathVariable UUID taskId,
             @PathVariable String status) {

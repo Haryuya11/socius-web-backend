@@ -1,9 +1,11 @@
 package org.socius.sociuswebbackend.controllers;
 
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationMemberDto;
 import org.socius.sociuswebbackend.model.dtos.conversation.ConversationResponseDto;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.ConversationService;
 import org.socius.sociuswebbackend.services.MessageService;
 import org.springframework.data.domain.Page;
@@ -18,6 +20,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/conversations")
 @RequiredArgsConstructor
+@RequirePermission(PermissionConstants.CHAT_ACCESS)
 public class ConversationController {
 
     private final ConversationService conversationService;

@@ -12,27 +12,36 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
-    final private SessionExtensionInterceptor sessionExtensionInterceptor;
-    final private ConfigService configService;
+    private final SessionExtensionInterceptor sessionExtensionInterceptor;
+    private final ConfigService configService;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(sessionExtensionInterceptor).addPathPatterns("/api/**");
+        registry.addInterceptor(sessionExtensionInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns(
+                        "/api/auth/login",
+                        "/api/auth/logout",
+                        "/ws-heartbeat/**"
+                );
     }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
-                .allowCredentials(true);
+                .exposedHeaders("X-CSRF-TOKEN", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials")
+                .allowCredentials(true)
+                .maxAge(3600);
 
         registry.addMapping("/api/static/**")
-                .allowedOrigins("http://localhost:3000")
+                .allowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000")
                 .allowedMethods("GET")
                 .allowedHeaders("*")
-                .allowCredentials(true);
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 
     @Override
@@ -42,5 +51,4 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addResourceLocations("file:" + uploadDir + "/")
                 .setCachePeriod(3600);
     }
-
 }

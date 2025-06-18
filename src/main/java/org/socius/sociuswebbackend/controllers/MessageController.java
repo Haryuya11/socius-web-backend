@@ -4,11 +4,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.message.MessageRequestDto;
 import org.socius.sociuswebbackend.model.dtos.message.MessageResponseDto;
 import org.socius.sociuswebbackend.model.dtos.message.ReadReceiptDto;
 import org.socius.sociuswebbackend.model.dtos.message.SyncMessagesRequestDto;
 import org.socius.sociuswebbackend.model.enums.MessageType;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.FileStorageService;
 import org.socius.sociuswebbackend.services.MessageService;
 import org.springframework.http.HttpStatus;
@@ -25,7 +27,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/messages")
-@PreAuthorize("isAuthenticated()")
+@RequirePermission(PermissionConstants.CHAT_ACCESS)
 @RequiredArgsConstructor
 public class MessageController {
     private static final Logger logger = LoggerFactory.getLogger(MessageController.class);

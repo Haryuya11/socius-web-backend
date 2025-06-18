@@ -1,7 +1,9 @@
 package org.socius.sociuswebbackend.controllers;
 
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.employment.EmploymentDetailResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.EmployeeTransferService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,7 +13,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/employee-transfer")
-@PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
 @RequiredArgsConstructor
 public class EmployeeTransferController {
     private final EmployeeTransferService employeeTransferService;
@@ -24,6 +25,7 @@ public class EmployeeTransferController {
      * @return Thông tin chi tiết việc làm sau khi cập nhật
      */
     @PostMapping("/{employeeId}/department/{newDepartmentId}")
+    @RequirePermission(PermissionConstants.EMPLOYEE_TRANSFER_DEPARTMENT)
     public ResponseEntity<EmploymentDetailResponseDto> transferDepartment(
             @PathVariable UUID employeeId,
             @PathVariable UUID newDepartmentId) {
@@ -40,6 +42,7 @@ public class EmployeeTransferController {
      * @return Thông tin chi tiết việc làm sau khi cập nhật
      */
     @PostMapping("/{employeeId}/team/{newTeamId}")
+    @RequirePermission(PermissionConstants.EMPLOYEE_TRANSFER_TEAM)
     public ResponseEntity<EmploymentDetailResponseDto> transferTeam(
             @PathVariable UUID employeeId,
             @PathVariable UUID newTeamId) {
@@ -50,6 +53,7 @@ public class EmployeeTransferController {
     }
 
     @PostMapping("/{employeeId}/position/{newPositionId}")
+    @RequirePermission(PermissionConstants.EMPLOYEE_TRANSFER_POSITION)
     public ResponseEntity<EmploymentDetailResponseDto> transferPosition(
             @PathVariable UUID employeeId,
             @PathVariable UUID newPositionId
@@ -68,6 +72,7 @@ public class EmployeeTransferController {
      * @return Thông tin chi tiết việc làm sau khi cập nhật
      */
     @PostMapping("/{employeeId}/role/{newRoleId}")
+    @RequirePermission(PermissionConstants.EMPLOYEE_TRANSFER_ROLE)
     public ResponseEntity<EmploymentDetailResponseDto> transferEmployeeRole(
             @PathVariable UUID employeeId,
             @PathVariable UUID newRoleId) {

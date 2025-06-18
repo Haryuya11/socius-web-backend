@@ -3,8 +3,10 @@ package org.socius.sociuswebbackend.controllers;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationRequestDto;
 import org.socius.sociuswebbackend.model.dtos.notification.NotificationResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.NotificationService;
 import org.socius.sociuswebbackend.util.RabbitMQKeyBuilder;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +40,7 @@ public class NotificationController {
      * @return ResponseEntity chứa NotificationResponseDto với thông tin thông báo đã tạo.
      */
     @PostMapping
+    @RequirePermission(PermissionConstants.NOTIFICATION_CREATE)
     public ResponseEntity<NotificationResponseDto> createNotification(
             @Valid @RequestBody NotificationRequestDto requestDto) {
         NotificationResponseDto responseDto = notificationService.createNotification(requestDto);
@@ -55,11 +59,12 @@ public class NotificationController {
      * Tự động đánh dấu các thông báo chưa đọc trong trang hiện tại là đã đọc.
      *
      * @param userId ID của người dùng nhận thông báo.
-     * @param page Số trang (mặc định: 0).
-     * @param size Số thông báo mỗi trang (mặc định: 10).
+     * @param page   Số trang (mặc định: 0).
+     * @param size   Số thông báo mỗi trang (mặc định: 10).
      * @return ResponseEntity chứa Page<NotificationResponseDto> với danh sách thông báo.
      */
     @GetMapping("/user/{userId}")
+    @RequirePermission(PermissionConstants.NOTIFICATION_READ_OWN)
     public ResponseEntity<Page<NotificationResponseDto>> getNotificationsByUserId(
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "0") int page,
@@ -73,10 +78,11 @@ public class NotificationController {
      * Đánh dấu thông báo là đã đọc cho người dùng cụ thể.
      *
      * @param notificationId ID của thông báo.
-     * @param userId ID của người dùng (query param).
+     * @param userId         ID của người dùng (query param).
      * @return ResponseEntity với status 200 nếu thành công, 400 nếu user không phải recipient, hoặc 404 nếu notification không tồn tại.
      */
     @PutMapping("/{notificationId}/read")
+    @RequirePermission(PermissionConstants.NOTIFICATION_READ_OWN)
     public ResponseEntity<Void> markNotificationAsRead(
             @PathVariable UUID notificationId,
             @RequestParam UUID userId

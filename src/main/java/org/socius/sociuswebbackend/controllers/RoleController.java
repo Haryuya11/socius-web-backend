@@ -2,9 +2,11 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.permission.PermissionResponseDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleRequestDto;
 import org.socius.sociuswebbackend.model.dtos.role.RoleResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.RoleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,7 +21,7 @@ import java.util.UUID;
 @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
 public class RoleController {
 
-    final private RoleService roleService;
+    private final RoleService roleService;
 
     /**
      * Lấy danh sách tất cả các vai trò
@@ -27,6 +29,7 @@ public class RoleController {
      * @return Danh sách các vai trò
      */
     @GetMapping("/all")
+    @RequirePermission(PermissionConstants.ROLE_GET_ALL)
     public ResponseEntity<List<RoleResponseDto>> getAllRoles() {
         List<RoleResponseDto> roles = roleService.findAllActiveRoles();
         return ResponseEntity.ok(roles);
@@ -39,6 +42,7 @@ public class RoleController {
      * @return Thông tin vai trò nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{id}")
+    @RequirePermission(PermissionConstants.ROLE_READ)
     public ResponseEntity<RoleResponseDto> getRoleById(@PathVariable UUID id) {
         RoleResponseDto role = roleService.findById(id);
         return ResponseEntity.ok(role);
@@ -51,6 +55,7 @@ public class RoleController {
      * @return Thông tin vai trò đã được tạo
      */
     @PostMapping("/create")
+    @RequirePermission(PermissionConstants.ROLE_CREATE)
     public ResponseEntity<RoleResponseDto> createRole(@Valid @RequestBody RoleRequestDto requestDto) {
         RoleResponseDto createdRole = roleService.create(requestDto);
         return ResponseEntity.ok(createdRole);
@@ -64,6 +69,7 @@ public class RoleController {
      * @return Thông tin vai trò đã được cập nhật
      */
     @PostMapping("/update/{id}")
+    @RequirePermission(PermissionConstants.ROLE_UPDATE)
     public ResponseEntity<RoleResponseDto> updateRole(
             @PathVariable UUID id,
             @Valid @RequestBody RoleRequestDto requestDto) {
@@ -78,6 +84,7 @@ public class RoleController {
      * @return ResponseEntity với status 200 nếu thành công, 404 nếu không tìm thấy vai trò
      */
     @DeleteMapping("/delete/{id}")
+    @RequirePermission(PermissionConstants.ROLE_DELETE)
     public ResponseEntity<Void> deleteRole(@PathVariable UUID id) {
         roleService.delete(id);
         return ResponseEntity.noContent().build();
@@ -89,6 +96,7 @@ public class RoleController {
      * @return Danh sách các permission
      */
     @GetMapping("/permissions")
+    @RequirePermission(PermissionConstants.ROLE_GET_ALL)
     public ResponseEntity<List<PermissionResponseDto>> getAllPermissions() {
         List<PermissionResponseDto> permissions = roleService.getAllPermissions();
         if (permissions.isEmpty()) {
@@ -105,6 +113,7 @@ public class RoleController {
      * @return Thông tin vai trò đã được cập nhật
      */
     @PostMapping("/add/{roleId}/permissions/{permissionId}")
+    @RequirePermission(PermissionConstants.ADD_PERMISSION_TO_ROLE)
     public ResponseEntity<RoleResponseDto> addPermissionToRole(
             @PathVariable UUID roleId,
             @PathVariable UUID permissionId) {
@@ -120,6 +129,7 @@ public class RoleController {
      * @return Thông tin vai trò đã được cập nhật
      */
     @PostMapping("/add/{roleId}/permissions")
+    @RequirePermission(PermissionConstants.ADD_PERMISSION_TO_ROLE)
     public ResponseEntity<RoleResponseDto> addPermissionsToRole(
             @PathVariable UUID roleId,
             @RequestBody List<UUID> permissionIds) {
@@ -135,6 +145,7 @@ public class RoleController {
      * @return ResponseEntity với status 204 No Content
      */
     @DeleteMapping("/remove/{roleId}/permissions/{permissionId}")
+    @RequirePermission(PermissionConstants.REMOVE_PERMISSION_FROM_ROLE)
     public ResponseEntity<?> removePermissionFromRole(
             @PathVariable UUID roleId,
             @PathVariable UUID permissionId) {
@@ -150,6 +161,7 @@ public class RoleController {
      * @return ResponseEntity với status 204 No Content
      */
     @DeleteMapping("/remove/{roleId}/permissions")
+    @RequirePermission(PermissionConstants.REMOVE_PERMISSION_FROM_ROLE)
     public ResponseEntity<?> removePermissionsFromRole(
             @PathVariable UUID roleId,
             @RequestBody List<UUID> permissionIds) {

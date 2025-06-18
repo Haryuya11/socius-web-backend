@@ -2,8 +2,10 @@ package org.socius.sociuswebbackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.position.PositionRequestDto;
 import org.socius.sociuswebbackend.model.dtos.position.PositionResponseDto;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.PositionService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +29,7 @@ public class PositionController {
      * @return Danh sách các vị trí
      */
     @GetMapping()
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.POSITION_GET_ALL)
     public ResponseEntity<List<PositionResponseDto>> getAllPositions() {
         List<PositionResponseDto> positions = positionService.findAllActivePositions();
         return ResponseEntity.ok(positions);
@@ -41,7 +43,7 @@ public class PositionController {
      * @return Thông tin phòng ban cùng với danh sách thành viên nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{positionId}/members")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.POSITION_GET_ALL)
     public ResponseEntity<Map<String, Object>> getPositionWithMembers(
             @PathVariable UUID positionId,
             Pageable pageable
@@ -56,6 +58,7 @@ public class PositionController {
      * @return Thông tin vị trí nếu tìm thấy, null nếu không tìm thấy
      */
     @GetMapping("/{id}")
+    @RequirePermission(PermissionConstants.POSITION_READ)
     public ResponseEntity<PositionResponseDto> getPositionById(@PathVariable UUID id) {
         PositionResponseDto position = positionService.findById(id);
         return ResponseEntity.ok(position);
@@ -68,7 +71,7 @@ public class PositionController {
      * @return Thông tin vị trí đã được tạo
      */
     @PostMapping("/create")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.POSITION_CREATE)
     public ResponseEntity<PositionResponseDto> createPosition(@Valid @RequestBody PositionRequestDto requestDto) {
         PositionResponseDto createdPosition = positionService.create(requestDto);
         return ResponseEntity.ok(createdPosition);
@@ -81,7 +84,7 @@ public class PositionController {
      * @return ResponseEntity với mã trạng thái 204 No Content nếu xóa thành công
      */
     @DeleteMapping("/delete/{positionId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.POSITION_DELETE)
     public ResponseEntity<PositionResponseDto> deletePosition(@PathVariable UUID positionId) {
         positionService.delete(positionId);
         return ResponseEntity.noContent().build();
@@ -95,7 +98,7 @@ public class PositionController {
      * @return Thông tin vị trí đã được cập nhật
      */
     @PutMapping("/update/{positionId}")
-    @PreAuthorize("hasAuthority('ACCESS_ADMIN_PAGE')")
+    @RequirePermission(PermissionConstants.POSITION_UPDATE)
     public ResponseEntity<PositionResponseDto> updatePosition(@PathVariable UUID positionId, @Valid @RequestBody PositionRequestDto requestDto) {
         PositionResponseDto updatedPosition = positionService.update(positionId, requestDto);
         return ResponseEntity.ok(updatedPosition);

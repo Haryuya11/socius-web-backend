@@ -3,6 +3,7 @@ package org.socius.sociuswebbackend.controllers;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.socius.sociuswebbackend.config.PermissionConstants;
 import org.socius.sociuswebbackend.model.dtos.file.FileMetadataDto;
 import org.socius.sociuswebbackend.model.entities.MessageEntity;
 import org.socius.sociuswebbackend.model.entities.UserEntity;
@@ -10,6 +11,7 @@ import org.socius.sociuswebbackend.repositories.ConversationMemberRepository;
 import org.socius.sociuswebbackend.repositories.ConversationRepository;
 import org.socius.sociuswebbackend.repositories.MessageRepository;
 import org.socius.sociuswebbackend.repositories.UserRepository;
+import org.socius.sociuswebbackend.security.RequirePermission;
 import org.socius.sociuswebbackend.services.FileStorageService;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -28,7 +30,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/files")
-@PreAuthorize("isAuthenticated()")
+@RequirePermission(PermissionConstants.CHAT_ACCESS)
 @RequiredArgsConstructor
 public class FileController {
 
@@ -36,9 +38,6 @@ public class FileController {
 
     final private FileStorageService fileStorageService;
     final private MessageRepository messageRepository;
-    final private UserRepository userRepository;
-    final private ConversationRepository conversationRepository;
-    final private ConversationMemberRepository conversationMemberRepository;
 
     @GetMapping("/{messageId}")
     public ResponseEntity<Resource> downloadFile(@PathVariable UUID messageId) {
